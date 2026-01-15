@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Search, Filter, TrendingUp, TrendingDown } from 'lucide-react';
+import { Search, Filter, TrendingUp, TrendingDown, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { mockStocks, sectors, formatMarketCap, formatVolume, Stock } from '@/data/mockStocks';
 import { Link } from 'react-router-dom';
+import { useSearchStock, StockQuote } from '@/hooks/useStockAPI';
+import { useToast } from '@/hooks/use-toast';
 
 const ScreenerPage = () => {
   const [search, setSearch] = useState('');
@@ -16,9 +18,72 @@ const ScreenerPage = () => {
   const [selectedRisk, setSelectedRisk] = useState<string>('all');
   const [priceRange, setPriceRange] = useState([0, 600]);
   const [marketCapFilter, setMarketCapFilter] = useState<string>('all');
+  const [searchedStocks, setSearchedStocks] = useState<StockQuote[]>([]);
+  
+  const searchStock = useSearchStock();
+  const { toast } = useToast();
+
+  const handleTickerSearch = async () => {
+    if (!search.trim()) return;
+    
+    // Check if it looks like a ticker symbol (uppercase, short)
+    const ticker = search.trim().toUpperCase();
+    
+    // Don't search if already in searched stocks
+    if (searchedStocks.some(s => s.symbol === ticker)) return;
+    
+    try {
+      const result = await searchStock.mutateAsync(ticker);
+      setSearchedStocks(prev => {
+        // Avoid duplicates
+        if (prev.some(s => s.symbol === result.symbol)) return prev;
+        return [result, ...prev];
+      });
+      toast({ 
+        title: 'Stock found!', 
+        description: `Added ${result.companyName} (${result.symbol}) to results` 
+      });
+    } catch (error) {
+      toast({ 
+        title: 'Stock not found', 
+        description: `Could not find ticker "${ticker}"`, 
+        variant: 'destructive' 
+      });
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleTickerSearch();
+    }
+  };
+
+  // Combine searched stocks with mock stocks, searched stocks first
+  const allStocks = useMemo(() => {
+    const searchedAsStock: Stock[] = searchedStocks.map(s => ({
+      symbol: s.symbol,
+      companyName: s.companyName,
+      price: s.price,
+      change: s.change,
+      changePercent: s.changePercent,
+      volume: s.volume || 0,
+      marketCap: s.marketCap || 0,
+      sector: s.sector || 'Unknown',
+      riskLevel: s.riskLevel || 'medium',
+      high52Week: s.high,
+      low52Week: s.low,
+    }));
+    
+    // Filter out any mock stocks that are now in searched (to show live data)
+    const filteredMocks = mockStocks.filter(
+      m => !searchedStocks.some(s => s.symbol === m.symbol)
+    );
+    
+    return [...searchedAsStock, ...filteredMocks];
+  }, [searchedStocks]);
 
   const filteredStocks = useMemo(() => {
-    return mockStocks.filter(stock => {
+    return allStocks.filter(stock => {
       const matchesSearch = stock.symbol.toLowerCase().includes(search.toLowerCase()) ||
         stock.companyName.toLowerCase().includes(search.toLowerCase());
       const matchesSector = selectedSector === 'all' || stock.sector === selectedSector;
@@ -32,7 +97,7 @@ const ScreenerPage = () => {
 
       return matchesSearch && matchesSector && matchesRisk && matchesPrice && matchesMarketCap;
     });
-  }, [search, selectedSector, selectedRisk, priceRange, marketCapFilter]);
+  }, [search, selectedSector, selectedRisk, priceRange, marketCapFilter, allStocks]);
 
   return (
     <DashboardLayout>
@@ -47,9 +112,30 @@ const ScreenerPage = () => {
           <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Filter className="w-5 h-5" />Filters</CardTitle></CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input placeholder="Search stocks..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
+              <div className="relative flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input 
+                    placeholder="Search or enter ticker..." 
+                    value={search} 
+                    onChange={(e) => setSearch(e.target.value)} 
+                    onKeyDown={handleKeyDown}
+                    className="pl-10" 
+                  />
+                </div>
+                <Button 
+                  variant="secondary" 
+                  size="icon"
+                  onClick={handleTickerSearch}
+                  disabled={searchStock.isPending || !search.trim()}
+                  title="Search ticker from API"
+                >
+                  {searchStock.isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Search className="w-4 h-4" />
+                  )}
+                </Button>
               </div>
               <Select value={selectedSector} onValueChange={setSelectedSector}>
                 <SelectTrigger><SelectValue placeholder="Sector" /></SelectTrigger>
