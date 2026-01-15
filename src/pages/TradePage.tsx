@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ArrowUpDown, TrendingUp, TrendingDown } from 'lucide-react';
+import { ArrowUpDown, TrendingUp, TrendingDown, Search, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -8,25 +8,83 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
-import { mockStocks, getStockBySymbol } from '@/data/mockStocks';
+import { mockStocks, getStockBySymbol, Stock } from '@/data/mockStocks';
 import { usePortfolio, useHoldings, useExecuteTrade } from '@/hooks/usePortfolio';
 import { useToast } from '@/hooks/use-toast';
+import { useStockQuote, useSearchStock, StockQuote } from '@/hooks/useStockAPI';
 
 const TradePage = () => {
   const [searchParams] = useSearchParams();
   const initialSymbol = searchParams.get('symbol') || '';
   
   const [selectedSymbol, setSelectedSymbol] = useState(initialSymbol);
+  const [tickerSearch, setTickerSearch] = useState('');
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
   const [orderType, setOrderType] = useState<'market' | 'limit' | 'stop'>('market');
   const [shares, setShares] = useState('');
+  const [liveStockData, setLiveStockData] = useState<StockQuote | null>(null);
   
   const { data: portfolio } = usePortfolio();
   const { data: holdings } = useHoldings();
   const executeTrade = useExecuteTrade();
   const { toast } = useToast();
+  const searchStock = useSearchStock();
+  
+  // Fetch live data for selected symbol
+  const { data: liveQuote, isLoading: isLoadingQuote } = useStockQuote(selectedSymbol);
+  
+  // Update live stock data when quote changes
+  useEffect(() => {
+    if (liveQuote) {
+      setLiveStockData(liveQuote);
+    }
+  }, [liveQuote]);
 
-  const selectedStock = getStockBySymbol(selectedSymbol);
+  const handleTickerSearch = async () => {
+    if (!tickerSearch.trim()) return;
+    
+    const ticker = tickerSearch.trim().toUpperCase();
+    
+    try {
+      const result = await searchStock.mutateAsync(ticker);
+      setSelectedSymbol(result.symbol);
+      setLiveStockData(result);
+      setTickerSearch('');
+      toast({ 
+        title: 'Stock found!', 
+        description: `Loaded ${result.companyName} (${result.symbol})` 
+      });
+    } catch (error) {
+      toast({ 
+        title: 'Stock not found', 
+        description: `Could not find ticker "${ticker}"`, 
+        variant: 'destructive' 
+      });
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleTickerSearch();
+    }
+  };
+
+  // Use live data if available, otherwise fall back to mock data
+  const mockStock = getStockBySymbol(selectedSymbol);
+  const selectedStock: Stock | null = liveStockData ? {
+    symbol: liveStockData.symbol,
+    companyName: liveStockData.companyName,
+    price: liveStockData.price,
+    change: liveStockData.change,
+    changePercent: liveStockData.changePercent,
+    volume: liveStockData.volume || 0,
+    marketCap: liveStockData.marketCap || 0,
+    sector: liveStockData.sector || mockStock?.sector || 'Unknown',
+    riskLevel: liveStockData.riskLevel || 'medium',
+    high52Week: liveStockData.high,
+    low52Week: liveStockData.low,
+  } : mockStock || null;
+  
   const totalCost = selectedStock ? Number(shares) * selectedStock.price : 0;
   const currentHolding = holdings?.find(h => h.symbol === selectedSymbol);
 
@@ -68,21 +126,63 @@ const TradePage = () => {
               <CardTitle>Select Stock</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Select value={selectedSymbol} onValueChange={setSelectedSymbol}>
-                <SelectTrigger><SelectValue placeholder="Choose a stock" /></SelectTrigger>
-                <SelectContent>
-                  {mockStocks.map(s => (
-                    <SelectItem key={s.symbol} value={s.symbol}>{s.symbol} - {s.companyName}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {/* Ticker Search */}
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input 
+                    placeholder="Enter any ticker (e.g., AAPL, TSLA)..." 
+                    value={tickerSearch}
+                    onChange={(e) => setTickerSearch(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    className="pl-10" 
+                  />
+                </div>
+                <Button 
+                  variant="secondary"
+                  onClick={handleTickerSearch}
+                  disabled={searchStock.isPending || !tickerSearch.trim()}
+                >
+                  {searchStock.isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    'Search'
+                  )}
+                </Button>
+              </div>
 
-              {selectedStock && (
+              {/* Or select from Russell 5000 list */}
+              <div className="relative">
+                <p className="text-xs text-muted-foreground mb-2">Or select from Russell 5000:</p>
+                <Select value={selectedSymbol} onValueChange={(value) => {
+                  setSelectedSymbol(value);
+                  setLiveStockData(null); // Clear live data to trigger refetch
+                }}>
+                  <SelectTrigger><SelectValue placeholder="Choose a stock" /></SelectTrigger>
+                  <SelectContent>
+                    {mockStocks.map(s => (
+                      <SelectItem key={s.symbol} value={s.symbol}>{s.symbol} - {s.companyName}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {isLoadingQuote && selectedSymbol && (
+                <div className="p-4 rounded-lg bg-secondary/50 flex items-center justify-center">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                  <span className="ml-2 text-muted-foreground">Loading live data...</span>
+                </div>
+              )}
+
+              {selectedStock && !isLoadingQuote && (
                 <div className="p-4 rounded-lg bg-secondary/50 space-y-3">
                   <div className="flex justify-between items-center">
                     <div>
                       <p className="text-2xl font-bold">{selectedStock.symbol}</p>
                       <p className="text-sm text-muted-foreground">{selectedStock.companyName}</p>
+                      {liveStockData && (
+                        <p className="text-xs text-primary">Live data</p>
+                      )}
                     </div>
                     <div className="text-right">
                       <p className="text-2xl font-bold">${selectedStock.price.toFixed(2)}</p>
@@ -93,8 +193,8 @@ const TradePage = () => {
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div><span className="text-muted-foreground">52W High:</span> ${selectedStock.high52Week}</div>
-                    <div><span className="text-muted-foreground">52W Low:</span> ${selectedStock.low52Week}</div>
+                    <div><span className="text-muted-foreground">Day High:</span> ${selectedStock.high52Week.toFixed(2)}</div>
+                    <div><span className="text-muted-foreground">Day Low:</span> ${selectedStock.low52Week.toFixed(2)}</div>
                     <div><span className="text-muted-foreground">Sector:</span> {selectedStock.sector}</div>
                     <div><span className="text-muted-foreground">Risk:</span> {selectedStock.riskLevel}</div>
                   </div>
