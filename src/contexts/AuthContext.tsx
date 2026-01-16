@@ -7,7 +7,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   signUp: (email: string, password: string, displayName?: string) => Promise<{ error: Error | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signIn: (email: string, password: string, stayLoggedIn?: boolean) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -52,7 +52,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { error };
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, stayLoggedIn: boolean = true) => {
+    // If not staying logged in, we'll clear storage on signout only
+    // Supabase persists sessions by default, but we can control this via storage
+    if (!stayLoggedIn) {
+      // Mark in sessionStorage that we don't want persistent login
+      sessionStorage.setItem('temp_session', 'true');
+    } else {
+      sessionStorage.removeItem('temp_session');
+    }
+    
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
