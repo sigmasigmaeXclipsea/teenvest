@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ArrowUpDown, TrendingUp, TrendingDown, Search, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
-import { mockStocks, getStockBySymbol, Stock } from '@/data/mockStocks';
+import { Stock } from '@/data/mockStocks';
+import { russell5000Tickers, searchTickers, getTickerInfo, getTotalTickerCount } from '@/data/russell5000Tickers';
 import { usePortfolio, useHoldings, useExecuteTrade } from '@/hooks/usePortfolio';
 import { useToast } from '@/hooks/use-toast';
 import { useStockQuote, useSearchStock, StockQuote } from '@/hooks/useStockAPI';
@@ -151,21 +152,28 @@ const TradePage = () => {
                 </Button>
               </div>
 
-              {/* Or select from Russell 5000 list */}
-              <div className="relative">
-                <p className="text-xs text-muted-foreground mb-2">Or select from Russell 5000:</p>
-                <Select value={selectedSymbol} onValueChange={(value) => {
-                  setSelectedSymbol(value);
-                  setLiveStockData(null); // Clear live data to trigger refetch
-                }}>
-                  <SelectTrigger><SelectValue placeholder="Choose a stock" /></SelectTrigger>
-                  <SelectContent>
-                    {mockStocks.map(s => (
-                      <SelectItem key={s.symbol} value={s.symbol}>{s.symbol} - {s.companyName}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Search suggestions */}
+              {tickerSearch && (
+                <div className="border rounded-lg bg-background max-h-48 overflow-y-auto">
+                  <p className="text-xs text-muted-foreground p-2 border-b">
+                    {getTotalTickerCount()} Russell stocks available - showing matches:
+                  </p>
+                  {searchTickers(tickerSearch, 10).map(t => (
+                    <button
+                      key={t.symbol}
+                      className="w-full text-left px-3 py-2 hover:bg-secondary text-sm flex justify-between items-center"
+                      onClick={() => {
+                        setSelectedSymbol(t.symbol);
+                        setLiveStockData(null);
+                        setTickerSearch('');
+                      }}
+                    >
+                      <span><strong>{t.symbol}</strong> - {t.name}</span>
+                      <span className="text-xs text-muted-foreground">{t.sector}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
 
               {isLoadingQuote && selectedSymbol && (
                 <div className="p-4 rounded-lg bg-secondary/50 flex items-center justify-center">
