@@ -302,10 +302,26 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      leaderboard_view: {
+        Row: {
+          cash_balance: number | null
+          display_name: string | null
+          starting_balance: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      get_leaderboard: {
+        Args: never
+        Returns: {
+          display_name: string
+          gain_percent: number
+          rank: number
+          total_value: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
