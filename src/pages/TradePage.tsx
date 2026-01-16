@@ -70,8 +70,8 @@ const TradePage = () => {
     }
   };
 
-  // Use live data if available, otherwise fall back to mock data
-  const mockStock = getStockBySymbol(selectedSymbol);
+  // Use live data if available, otherwise fall back to ticker info
+  const tickerInfo = getTickerInfo(selectedSymbol);
   const selectedStock: Stock | null = liveStockData ? {
     symbol: liveStockData.symbol,
     companyName: liveStockData.companyName,
@@ -80,11 +80,11 @@ const TradePage = () => {
     changePercent: liveStockData.changePercent,
     volume: liveStockData.volume || 0,
     marketCap: liveStockData.marketCap || 0,
-    sector: liveStockData.sector || mockStock?.sector || 'Unknown',
+    sector: liveStockData.sector || tickerInfo?.sector || 'Unknown',
     riskLevel: liveStockData.riskLevel || 'medium',
     high52Week: liveStockData.high,
     low52Week: liveStockData.low,
-  } : mockStock || null;
+  } : null;
   
   const totalCost = selectedStock ? Number(shares) * selectedStock.price : 0;
   const currentHolding = holdings?.find(h => h.symbol === selectedSymbol);
