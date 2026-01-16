@@ -302,15 +302,7 @@ export type Database = {
       }
     }
     Views: {
-      leaderboard_view: {
-        Row: {
-          cash_balance: number | null
-          display_name: string | null
-          starting_balance: number | null
-          user_id: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       get_leaderboard: {
