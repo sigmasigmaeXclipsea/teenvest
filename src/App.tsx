@@ -10,6 +10,8 @@ import SignupPage from "./pages/SignupPage";
 import DashboardPage from "./pages/DashboardPage";
 import ScreenerPage from "./pages/ScreenerPage";
 import TradePage from "./pages/TradePage";
+import HistoryPage from "./pages/HistoryPage";
+import LearnPage from "./pages/LearnPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +30,8 @@ const App = () => (
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/screener" element={<ScreenerPage />} />
             <Route path="/trade" element={<TradePage />} />
+            <Route path="/history" element={<HistoryPage />} />
+            <Route path="/learn" element={<LearnPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

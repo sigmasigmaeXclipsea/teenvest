@@ -5,8 +5,6 @@ import {
   BarChart3, 
   Briefcase, 
   BookOpen, 
-  Trophy, 
-  Eye,
   History,
   LogOut,
   Menu,
@@ -22,13 +20,10 @@ interface DashboardLayoutProps {
 
 const navItems = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/screener', icon: BarChart3, label: 'Screener' },
+  { path: '/screener', icon: BarChart3, label: 'Screener & Watchlist' },
   { path: '/trade', icon: Briefcase, label: 'Trade' },
-  { path: '/watchlist', icon: Eye, label: 'Watchlist' },
   { path: '/history', icon: History, label: 'History' },
   { path: '/learn', icon: BookOpen, label: 'Learn' },
-  { path: '/achievements', icon: Trophy, label: 'Achievements' },
-  { path: '/leaderboard', icon: TrendingUp, label: 'Leaderboard' },
 ];
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
