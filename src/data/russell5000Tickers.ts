@@ -966,7 +966,8 @@ export const searchTickers = (query: string, limit = 20): TickerInfo[] => {
 };
 
 // Get ticker info by symbol
-export const getTickerInfo = (symbol: string): TickerInfo | undefined => {
+export const getTickerInfo = (symbol: string | undefined | null): TickerInfo | undefined => {
+  if (!symbol) return undefined;
   return russell5000Tickers.find(t => t.symbol.toUpperCase() === symbol.toUpperCase());
 };
 

@@ -157,19 +157,21 @@ const ScreenerPage = () => {
     
     // Overlay live data
     allLiveData.forEach(liveStock => {
+      if (!liveStock?.symbol) return; // Skip if no symbol
+      
       const tickerInfo = getTickerInfo(liveStock.symbol);
       stocksMap.set(liveStock.symbol, {
         symbol: liveStock.symbol,
-        companyName: liveStock.companyName,
-        price: liveStock.price,
-        change: liveStock.change,
-        changePercent: liveStock.changePercent,
+        companyName: liveStock.companyName || liveStock.symbol,
+        price: liveStock.price || 0,
+        change: liveStock.change || 0,
+        changePercent: liveStock.changePercent || 0,
         volume: liveStock.volume || 0,
         marketCap: liveStock.marketCap || 0,
         sector: liveStock.sector || tickerInfo?.sector || 'Unknown',
         riskLevel: liveStock.riskLevel || 'medium',
-        high52Week: liveStock.high,
-        low52Week: liveStock.low,
+        high52Week: liveStock.high || 0,
+        low52Week: liveStock.low || 0,
       });
     });
     
