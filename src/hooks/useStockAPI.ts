@@ -33,7 +33,7 @@ interface APIResponse {
   marketCap?: number;
 }
 
-const fetchStockQuote = async (symbol: string): Promise<StockQuote> => {
+export const fetchStockQuote = async (symbol: string): Promise<StockQuote> => {
   const response = await fetch(`${API_BASE_URL}/${symbol.toUpperCase()}`);
   
   if (!response.ok) {
