@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Search, Filter, TrendingUp, TrendingDown, Loader2, Star, StarOff, Eye, RefreshCw } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { formatMarketCap, formatVolume, Stock } from '@/data/mockStocks';
 import { russell5000Tickers, searchTickers, getAllSectors, getTotalTickerCount, getTickerInfo, popularTickers } from '@/data/russell5000Tickers';
 import { Link } from 'react-router-dom';
-import { useSearchStock, useMultipleStockQuotes, StockQuote } from '@/hooks/useStockAPI';
+import { fetchStockQuote, useSearchStock, useMultipleStockQuotes, StockQuote } from '@/hooks/useStockAPI';
 import { useWatchlist, useAddToWatchlist, useRemoveFromWatchlist } from '@/hooks/useWatchlist';
 import { useToast } from '@/hooks/use-toast';
 
@@ -22,8 +22,11 @@ const ScreenerPage = () => {
   const [priceRange, setPriceRange] = useState([0, 1000]);
   const [marketCapFilter, setMarketCapFilter] = useState<string>('all');
   const [searchedStocks, setSearchedStocks] = useState<StockQuote[]>([]);
+  const [autoFetchedStocks, setAutoFetchedStocks] = useState<StockQuote[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
+  
+  const fetchedSymbolsRef = useRef<Set<string>>(new Set());
   
   const searchStock = useSearchStock();
   const { toast } = useToast();
@@ -32,7 +35,9 @@ const ScreenerPage = () => {
   const removeFromWatchlist = useRemoveFromWatchlist();
   
   // Auto-fetch popular stocks on load
-  const { data: popularStockData, isLoading: loadingPopular, refetch: refetchPopular } = useMultipleStockQuotes(popularTickers.map(t => t.symbol));
+  const { data: popularStockData, isLoading: loadingPopular, refetch: refetchPopular } = useMultipleStockQuotes(
+    popularTickers.map(t => t.symbol)
+  );
   
   // Also fetch watchlist stocks
   const watchlistSymbols = useMemo(() => watchlist?.map(w => w.symbol) || [], [watchlist]);
@@ -45,24 +50,23 @@ const ScreenerPage = () => {
   const allLiveData = useMemo(() => {
     const combined: StockQuote[] = [];
     
-    if (popularStockData) {
-      combined.push(...popularStockData);
-    }
+    if (popularStockData) combined.push(...popularStockData);
     if (watchlistStockData) {
       watchlistStockData.forEach(stock => {
-        if (!combined.some(s => s.symbol === stock.symbol)) {
-          combined.push(stock);
-        }
+        if (!combined.some(s => s.symbol === stock.symbol)) combined.push(stock);
+      });
+    }
+    if (autoFetchedStocks.length > 0) {
+      autoFetchedStocks.forEach(stock => {
+        if (!combined.some(s => s.symbol === stock.symbol)) combined.push(stock);
       });
     }
     searchedStocks.forEach(stock => {
-      if (!combined.some(s => s.symbol === stock.symbol)) {
-        combined.push(stock);
-      }
+      if (!combined.some(s => s.symbol === stock.symbol)) combined.push(stock);
     });
     
     return combined;
-  }, [popularStockData, watchlistStockData, searchedStocks]);
+  }, [popularStockData, watchlistStockData, autoFetchedStocks, searchedStocks]);
 
   const isInWatchlist = (symbol: string) => {
     return watchlist?.some(w => w.symbol === symbol);
@@ -187,7 +191,6 @@ const ScreenerPage = () => {
   const filteredStocks = useMemo(() => {
     let stocksToFilter = allStocks;
     
-    // If on watchlist tab, only show watchlist items
     if (activeTab === 'watchlist') {
       stocksToFilter = allStocks.filter(stock => 
         watchlist?.some(w => w.symbol === stock.symbol)
@@ -213,6 +216,39 @@ const ScreenerPage = () => {
       return matchesSearch && matchesSector && matchesRisk && matchesPrice && matchesMarketCap;
     }).slice(0, 100);
   }, [search, selectedSector, selectedRisk, priceRange, marketCapFilter, allStocks, activeTab, watchlist]);
+
+  // Auto-fetch live data for the first visible rows so the table shows numbers (not dashes)
+  useEffect(() => {
+    const symbolsToFetch = filteredStocks
+      .filter(s => s.price === 0)
+      .slice(0, 20)
+      .map(s => s.symbol)
+      .filter(Boolean)
+      .filter(sym => !fetchedSymbolsRef.current.has(sym));
+
+    if (symbolsToFetch.length === 0) return;
+
+    symbolsToFetch.forEach(sym => fetchedSymbolsRef.current.add(sym));
+
+    (async () => {
+      const results = await Promise.allSettled(symbolsToFetch.map(sym => fetchStockQuote(sym)));
+      const ok = results
+        .filter((r): r is PromiseFulfilledResult<StockQuote> => r.status === 'fulfilled')
+        .map(r => r.value);
+
+      if (ok.length > 0) {
+        setAutoFetchedStocks(prev => {
+          const merged = [...prev];
+          ok.forEach(s => {
+            const idx = merged.findIndex(p => p.symbol === s.symbol);
+            if (idx >= 0) merged[idx] = s;
+            else merged.push(s);
+          });
+          return merged;
+        });
+      }
+    })();
+  }, [filteredStocks]);
 
   const StockRow = ({ stock }: { stock: Stock }) => {
     const inWatchlist = isInWatchlist(stock.symbol);
