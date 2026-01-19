@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { Search, Filter, TrendingUp, TrendingDown, Loader2, Star, StarOff, Eye } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Search, Filter, TrendingUp, TrendingDown, Loader2, Star, StarOff, Eye, RefreshCw } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,9 +9,9 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { formatMarketCap, formatVolume, Stock } from '@/data/mockStocks';
-import { russell5000Tickers, searchTickers, getAllSectors, getTotalTickerCount, getTickerInfo } from '@/data/russell5000Tickers';
+import { russell5000Tickers, searchTickers, getAllSectors, getTotalTickerCount, getTickerInfo, popularTickers } from '@/data/russell5000Tickers';
 import { Link } from 'react-router-dom';
-import { useSearchStock, StockQuote } from '@/hooks/useStockAPI';
+import { useSearchStock, useMultipleStockQuotes, StockQuote } from '@/hooks/useStockAPI';
 import { useWatchlist, useAddToWatchlist, useRemoveFromWatchlist } from '@/hooks/useWatchlist';
 import { useToast } from '@/hooks/use-toast';
 
@@ -19,7 +19,7 @@ const ScreenerPage = () => {
   const [search, setSearch] = useState('');
   const [selectedSector, setSelectedSector] = useState<string>('all');
   const [selectedRisk, setSelectedRisk] = useState<string>('all');
-  const [priceRange, setPriceRange] = useState([0, 600]);
+  const [priceRange, setPriceRange] = useState([0, 1000]);
   const [marketCapFilter, setMarketCapFilter] = useState<string>('all');
   const [searchedStocks, setSearchedStocks] = useState<StockQuote[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -31,8 +31,38 @@ const ScreenerPage = () => {
   const addToWatchlist = useAddToWatchlist();
   const removeFromWatchlist = useRemoveFromWatchlist();
   
+  // Auto-fetch popular stocks on load
+  const { data: popularStockData, isLoading: loadingPopular, refetch: refetchPopular } = useMultipleStockQuotes(popularTickers.map(t => t.symbol));
+  
+  // Also fetch watchlist stocks
+  const watchlistSymbols = useMemo(() => watchlist?.map(w => w.symbol) || [], [watchlist]);
+  const { data: watchlistStockData, refetch: refetchWatchlist } = useMultipleStockQuotes(watchlistSymbols);
+  
   const sectors = getAllSectors();
   const totalStocks = getTotalTickerCount();
+
+  // Combine all fetched live data
+  const allLiveData = useMemo(() => {
+    const combined: StockQuote[] = [];
+    
+    if (popularStockData) {
+      combined.push(...popularStockData);
+    }
+    if (watchlistStockData) {
+      watchlistStockData.forEach(stock => {
+        if (!combined.some(s => s.symbol === stock.symbol)) {
+          combined.push(stock);
+        }
+      });
+    }
+    searchedStocks.forEach(stock => {
+      if (!combined.some(s => s.symbol === stock.symbol)) {
+        combined.push(stock);
+      }
+    });
+    
+    return combined;
+  }, [popularStockData, watchlistStockData, searchedStocks]);
 
   const isInWatchlist = (symbol: string) => {
     return watchlist?.some(w => w.symbol === symbol);
@@ -52,6 +82,12 @@ const ScreenerPage = () => {
     }
   };
 
+  const handleRefresh = () => {
+    refetchPopular();
+    refetchWatchlist();
+    toast({ title: 'Refreshing...', description: 'Fetching latest stock data' });
+  };
+
   // Get ticker suggestions based on search
   const tickerSuggestions = useMemo(() => {
     if (search.length < 1) return [];
@@ -62,8 +98,9 @@ const ScreenerPage = () => {
     const symbolToSearch = ticker || search.trim().toUpperCase();
     if (!symbolToSearch) return;
     
-    if (searchedStocks.some(s => s.symbol === symbolToSearch)) {
+    if (allLiveData.some(s => s.symbol === symbolToSearch)) {
       setShowSuggestions(false);
+      setSearch('');
       return;
     }
     
@@ -97,45 +134,52 @@ const ScreenerPage = () => {
     }
   };
 
-  // Convert Russell 5000 tickers to Stock format for display
-  const russellStocksAsBase: Stock[] = useMemo(() => {
-    return russell5000Tickers.map(t => ({
-      symbol: t.symbol,
-      companyName: t.name,
-      price: 0,
-      change: 0,
-      changePercent: 0,
-      volume: 0,
-      marketCap: 0,
-      sector: t.sector,
-      riskLevel: 'medium' as const,
-      high52Week: 0,
-      low52Week: 0,
-    }));
-  }, []);
-
-  // Combine searched stocks with Russell 5000 base data
+  // Convert Russell 5000 tickers to Stock format, merging with live data
   const allStocks = useMemo(() => {
-    const searchedAsStock: Stock[] = searchedStocks.map(s => ({
-      symbol: s.symbol,
-      companyName: s.companyName,
-      price: s.price,
-      change: s.change,
-      changePercent: s.changePercent,
-      volume: s.volume || 0,
-      marketCap: s.marketCap || 0,
-      sector: s.sector || getTickerInfo(s.symbol)?.sector || 'Unknown',
-      riskLevel: s.riskLevel || 'medium',
-      high52Week: s.high,
-      low52Week: s.low,
-    }));
+    const stocksMap = new Map<string, Stock>();
     
-    const filteredRussell = russellStocksAsBase.filter(
-      m => !searchedStocks.some(s => s.symbol === m.symbol)
-    );
+    // Add all Russell stocks as base
+    russell5000Tickers.forEach(t => {
+      stocksMap.set(t.symbol, {
+        symbol: t.symbol,
+        companyName: t.name,
+        price: 0,
+        change: 0,
+        changePercent: 0,
+        volume: 0,
+        marketCap: 0,
+        sector: t.sector,
+        riskLevel: 'medium' as const,
+        high52Week: 0,
+        low52Week: 0,
+      });
+    });
     
-    return [...searchedAsStock, ...filteredRussell];
-  }, [searchedStocks, russellStocksAsBase]);
+    // Overlay live data
+    allLiveData.forEach(liveStock => {
+      const tickerInfo = getTickerInfo(liveStock.symbol);
+      stocksMap.set(liveStock.symbol, {
+        symbol: liveStock.symbol,
+        companyName: liveStock.companyName,
+        price: liveStock.price,
+        change: liveStock.change,
+        changePercent: liveStock.changePercent,
+        volume: liveStock.volume || 0,
+        marketCap: liveStock.marketCap || 0,
+        sector: liveStock.sector || tickerInfo?.sector || 'Unknown',
+        riskLevel: liveStock.riskLevel || 'medium',
+        high52Week: liveStock.high,
+        low52Week: liveStock.low,
+      });
+    });
+    
+    // Sort: stocks with live data first
+    return Array.from(stocksMap.values()).sort((a, b) => {
+      if (a.price > 0 && b.price === 0) return -1;
+      if (a.price === 0 && b.price > 0) return 1;
+      return 0;
+    });
+  }, [allLiveData]);
 
   // Filter stocks based on active tab and filters
   const filteredStocks = useMemo(() => {
@@ -174,58 +218,54 @@ const ScreenerPage = () => {
     
     return (
       <tr className="border-b last:border-0 hover:bg-secondary/30 transition-colors">
-        <td className="py-4">
-          <div className="flex items-center gap-3">
+        <td className="py-3 px-2">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => handleToggleWatchlist(stock.symbol, stock.companyName)}
               className="text-muted-foreground hover:text-primary transition-colors"
               title={inWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}
             >
               {inWatchlist ? (
-                <Star className="w-5 h-5 fill-primary text-primary" />
+                <Star className="w-4 h-4 fill-primary text-primary" />
               ) : (
-                <StarOff className="w-5 h-5" />
+                <StarOff className="w-4 h-4" />
               )}
             </button>
             <div>
-              <p className="font-semibold">{stock.symbol}</p>
-              <p className="text-sm text-muted-foreground truncate max-w-[150px]">{stock.companyName}</p>
+              <p className="font-semibold text-sm">{stock.symbol}</p>
+              <p className="text-xs text-muted-foreground truncate max-w-[100px]">{stock.companyName}</p>
             </div>
           </div>
         </td>
-        <td className="py-4 font-medium">
+        <td className="py-3 px-2 font-medium text-sm">
           {hasLiveData ? `$${stock.price.toFixed(2)}` : (
-            <span className="text-muted-foreground text-sm">—</span>
+            <span className="text-muted-foreground">—</span>
           )}
         </td>
-        <td className={`py-4 ${stock.change >= 0 ? 'text-primary' : 'text-destructive'}`}>
+        <td className={`py-3 px-2 text-sm ${stock.change >= 0 ? 'text-primary' : 'text-destructive'}`}>
           {hasLiveData ? (
             <div className="flex items-center gap-1">
-              {stock.change >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-              <span>{stock.change >= 0 ? '+' : ''}{stock.change.toFixed(2)}</span>
-              <span className="text-xs">({stock.changePercent.toFixed(2)}%)</span>
+              {stock.change >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+              <span className="whitespace-nowrap">
+                {stock.changePercent >= 0 ? '+' : ''}{stock.changePercent.toFixed(2)}%
+              </span>
             </div>
           ) : (
-            <span className="text-muted-foreground text-sm">—</span>
+            <span className="text-muted-foreground">—</span>
           )}
         </td>
-        <td className="py-4 hidden md:table-cell">
+        <td className="py-3 px-2 text-sm">
           {stock.marketCap > 0 ? formatMarketCap(stock.marketCap) : '—'}
         </td>
-        <td className="py-4 hidden lg:table-cell">
+        <td className="py-3 px-2 text-sm hidden sm:table-cell">
           {stock.volume > 0 ? formatVolume(stock.volume) : '—'}
         </td>
-        <td className="py-4 hidden xl:table-cell">
-          {hasLiveData ? (
-            <span className="text-sm">${stock.high52Week?.toFixed(2) || '—'} / ${stock.low52Week?.toFixed(2) || '—'}</span>
-          ) : '—'}
+        <td className="py-3 px-2">
+          <Badge variant="outline" className="text-xs">{stock.sector}</Badge>
         </td>
-        <td className="py-4">
-          <Badge variant="outline">{stock.sector}</Badge>
-        </td>
-        <td className="py-4">
+        <td className="py-3 px-2">
           <Link to={`/trade?symbol=${stock.symbol}`}>
-            <Button size="sm">Trade</Button>
+            <Button size="sm" className="h-7 text-xs">Trade</Button>
           </Link>
         </td>
       </tr>
@@ -235,12 +275,24 @@ const ScreenerPage = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold">Stock Screener & Watchlist</h1>
-          <p className="text-muted-foreground">
-            Search from {totalStocks.toLocaleString()} Russell 5000 stocks • 
-            {watchlist?.length || 0} in your watchlist
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold">Stock Screener & Watchlist</h1>
+            <p className="text-muted-foreground">
+              Search from {totalStocks.toLocaleString()} Russell 5000 stocks • 
+              {watchlist?.length || 0} in your watchlist
+            </p>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleRefresh}
+            disabled={loadingPopular}
+            className="gap-2"
+          >
+            <RefreshCw className={`w-4 h-4 ${loadingPopular ? 'animate-spin' : ''}`} />
+            Refresh Prices
+          </Button>
         </div>
 
         {/* Tabs */}
@@ -258,7 +310,7 @@ const ScreenerPage = () => {
 
           {/* Filters Card */}
           <Card className="mt-4">
-            <CardHeader>
+            <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Filter className="w-5 h-5" />
                 Filters
@@ -270,7 +322,7 @@ const ScreenerPage = () => {
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input 
-                      placeholder="Search ticker or company..." 
+                      placeholder="Search ticker..." 
                       value={search} 
                       onChange={(e) => {
                         setSearch(e.target.value);
@@ -335,14 +387,14 @@ const ScreenerPage = () => {
                   <SelectTrigger><SelectValue placeholder="Market Cap" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Caps</SelectItem>
-                    <SelectItem value="large">Large Cap ($200B+)</SelectItem>
-                    <SelectItem value="mid">Mid Cap ($10B-$200B)</SelectItem>
-                    <SelectItem value="small">Small Cap (&lt;$10B)</SelectItem>
+                    <SelectItem value="large">Large ($200B+)</SelectItem>
+                    <SelectItem value="mid">Mid ($10B-$200B)</SelectItem>
+                    <SelectItem value="small">Small (&lt;$10B)</SelectItem>
                   </SelectContent>
                 </Select>
                 <div>
                   <p className="text-sm text-muted-foreground mb-2">Price: ${priceRange[0]} - ${priceRange[1]}</p>
-                  <Slider value={priceRange} onValueChange={setPriceRange} min={0} max={600} step={10} />
+                  <Slider value={priceRange} onValueChange={setPriceRange} min={0} max={1000} step={10} />
                 </div>
               </div>
             </CardContent>
@@ -351,27 +403,24 @@ const ScreenerPage = () => {
           {/* Results */}
           <TabsContent value="all" className="mt-4">
             <Card>
-              <CardHeader>
-                <CardTitle>
-                  {filteredStocks.length} stocks shown 
-                  <span className="text-sm font-normal text-muted-foreground ml-2">
-                    (Search & click to fetch live prices)
-                  </span>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2">
+                  {filteredStocks.length} stocks shown
+                  {loadingPopular && <Loader2 className="w-4 h-4 animate-spin" />}
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-0">
                 <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b text-left text-sm text-muted-foreground">
-                        <th className="pb-3 font-medium">Symbol</th>
-                        <th className="pb-3 font-medium">Price</th>
-                        <th className="pb-3 font-medium">Change</th>
-                        <th className="pb-3 font-medium hidden md:table-cell">Market Cap</th>
-                        <th className="pb-3 font-medium hidden lg:table-cell">Volume</th>
-                        <th className="pb-3 font-medium hidden xl:table-cell">52W H/L</th>
-                        <th className="pb-3 font-medium">Sector</th>
-                        <th className="pb-3 font-medium">Action</th>
+                  <table className="w-full text-sm">
+                    <thead className="bg-secondary/30">
+                      <tr className="border-b text-left text-muted-foreground">
+                        <th className="py-3 px-2 font-medium">Symbol</th>
+                        <th className="py-3 px-2 font-medium">Price</th>
+                        <th className="py-3 px-2 font-medium">Change</th>
+                        <th className="py-3 px-2 font-medium">Mkt Cap</th>
+                        <th className="py-3 px-2 font-medium hidden sm:table-cell">Volume</th>
+                        <th className="py-3 px-2 font-medium">Sector</th>
+                        <th className="py-3 px-2 font-medium">Action</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -387,26 +436,25 @@ const ScreenerPage = () => {
 
           <TabsContent value="watchlist" className="mt-4">
             <Card>
-              <CardHeader>
+              <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2">
                   <Star className="w-5 h-5 text-primary" />
                   Your Watchlist ({filteredStocks.length})
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-0">
                 {filteredStocks.length > 0 ? (
                   <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b text-left text-sm text-muted-foreground">
-                          <th className="pb-3 font-medium">Symbol</th>
-                          <th className="pb-3 font-medium">Price</th>
-                          <th className="pb-3 font-medium">Change</th>
-                          <th className="pb-3 font-medium hidden md:table-cell">Market Cap</th>
-                          <th className="pb-3 font-medium hidden lg:table-cell">Volume</th>
-                          <th className="pb-3 font-medium hidden xl:table-cell">52W H/L</th>
-                          <th className="pb-3 font-medium">Sector</th>
-                          <th className="pb-3 font-medium">Action</th>
+                    <table className="w-full text-sm">
+                      <thead className="bg-secondary/30">
+                        <tr className="border-b text-left text-muted-foreground">
+                          <th className="py-3 px-2 font-medium">Symbol</th>
+                          <th className="py-3 px-2 font-medium">Price</th>
+                          <th className="py-3 px-2 font-medium">Change</th>
+                          <th className="py-3 px-2 font-medium">Mkt Cap</th>
+                          <th className="py-3 px-2 font-medium hidden sm:table-cell">Volume</th>
+                          <th className="py-3 px-2 font-medium">Sector</th>
+                          <th className="py-3 px-2 font-medium">Action</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -417,7 +465,7 @@ const ScreenerPage = () => {
                     </table>
                   </div>
                 ) : (
-                  <div className="text-center py-12">
+                  <div className="text-center py-12 px-4">
                     <Star className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
                     <h3 className="text-lg font-semibold mb-2">No stocks in watchlist</h3>
                     <p className="text-muted-foreground mb-4">
