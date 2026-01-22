@@ -44,114 +44,112 @@ const LandingPage = () => {
         </div>
       </header>
 
-      {/* Hero Section - MAXIMUM IMPACT */}
-      <section className="container mx-auto px-4 pt-20 pb-24 md:pt-32 md:pb-36 relative">
-        {/* Dramatic background elements */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-gradient-radial from-primary/20 via-primary/5 to-transparent rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute top-20 left-10 w-40 h-40 bg-primary/20 rounded-full blur-3xl float" />
-        <div className="absolute bottom-20 right-10 w-60 h-60 bg-accent/20 rounded-full blur-3xl float" style={{ animationDelay: '2s' }} />
-        <div className="absolute top-40 right-20 w-32 h-32 bg-chart-3/20 rounded-full blur-3xl float" style={{ animationDelay: '4s' }} />
+      {/* Hero Section */}
+      <section className="container mx-auto px-4 pt-12 pb-16 md:pt-20 md:pb-24 relative">
+        {/* Background elements */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-gradient-radial from-primary/15 via-primary/5 to-transparent rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-10 left-10 w-24 h-24 bg-primary/15 rounded-full blur-2xl float" />
+        <div className="absolute bottom-10 right-10 w-32 h-32 bg-accent/15 rounded-full blur-2xl float" style={{ animationDelay: '2s' }} />
         
-        <div className="max-w-5xl mx-auto text-center relative">
+        <div className="max-w-4xl mx-auto text-center relative">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/20 text-foreground px-5 py-2.5 rounded-full text-sm font-bold mb-10 animate-fade-in border border-primary/30 shadow-lg">
-            <Flame className="w-4 h-4 text-warning animate-pulse" />
+          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-primary/15 via-accent/15 to-primary/15 text-foreground px-4 py-2 rounded-full text-xs font-semibold mb-6 animate-fade-in border border-primary/20">
+            <Flame className="w-3.5 h-3.5 text-warning animate-pulse" />
             <span className="uppercase tracking-widest">The Future Starts Now</span>
-            <Rocket className="w-4 h-4 text-primary animate-bounce-subtle" />
+            <Rocket className="w-3.5 h-3.5 text-primary animate-bounce-subtle" />
           </div>
           
-          {/* Main Headline - BOLD */}
-          <h1 className="text-6xl md:text-8xl lg:text-9xl font-black tracking-tighter mb-8 animate-fade-in-up leading-[0.9]" style={{ animationDelay: '0.1s' }}>
-            <span className="block text-foreground">BUILD YOUR</span>
-            <span className="block gradient-text text-glow mt-2">EMPIRE</span>
+          {/* Main Headline */}
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-5 animate-fade-in-up leading-tight" style={{ animationDelay: '0.1s' }}>
+            <span className="block text-foreground">Build Your</span>
+            <span className="block gradient-text mt-1">Empire</span>
           </h1>
           
           {/* Subheadline */}
-          <p className="text-xl md:text-2xl text-muted-foreground mb-12 max-w-3xl mx-auto animate-fade-in-up opacity-0 font-medium leading-relaxed" style={{ animationDelay: '0.2s' }}>
-            Master investing with <span className="text-primary font-bold">zero risk</span>. Trade stocks, crush the leaderboard, 
+          <p className="text-base md:text-lg text-muted-foreground mb-8 max-w-2xl mx-auto animate-fade-in-up opacity-0 leading-relaxed" style={{ animationDelay: '0.2s' }}>
+            Master investing with <span className="text-primary font-semibold">zero risk</span>. Trade stocks, crush the leaderboard, 
             and stack skills that'll make your future self proud.
           </p>
           
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-5 animate-fade-in-up opacity-0" style={{ animationDelay: '0.3s' }}>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 animate-fade-in-up opacity-0" style={{ animationDelay: '0.3s' }}>
             <Link to="/signup">
-              <Button size="lg" className="gap-3 bg-gradient-to-r from-primary via-primary-glow to-accent hover:scale-105 transition-all duration-300 shadow-2xl glow-primary text-lg font-bold px-10 py-7 rounded-2xl group">
+              <Button size="default" className="gap-2 bg-gradient-to-r from-primary via-primary-glow to-accent hover:scale-105 transition-all duration-300 shadow-lg glow-primary font-semibold px-6 py-5 rounded-xl group">
                 Start Trading Now
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
             <Link to="/learn">
-              <Button size="lg" variant="outline" className="border-2 border-primary/50 hover:bg-primary/10 hover:border-primary text-lg font-bold px-10 py-7 rounded-2xl transition-all duration-300">
-                <BookOpen className="w-5 h-5 mr-2" />
+              <Button size="default" variant="outline" className="border border-primary/40 hover:bg-primary/10 hover:border-primary font-semibold px-6 py-5 rounded-xl transition-all duration-300">
+                <BookOpen className="w-4 h-4 mr-2" />
                 Level Up First
               </Button>
             </Link>
           </div>
           
           {/* Stats Bar */}
-          <div className="mt-20 flex flex-wrap items-center justify-center gap-8 md:gap-16 animate-fade-in-up opacity-0" style={{ animationDelay: '0.5s' }}>
+          <div className="mt-12 flex flex-wrap items-center justify-center gap-6 md:gap-12 animate-fade-in-up opacity-0" style={{ animationDelay: '0.5s' }}>
             {[
               { value: '10K+', label: 'Teen Traders' },
               { value: '$50M+', label: 'Paper Traded' },
               { value: '100%', label: 'Risk-Free' }
             ].map((stat, i) => (
               <div key={i} className="text-center">
-                <p className="text-3xl md:text-4xl font-black gradient-text">{stat.value}</p>
-                <p className="text-sm text-muted-foreground font-medium uppercase tracking-wider mt-1">{stat.label}</p>
+                <p className="text-2xl md:text-3xl font-bold gradient-text">{stat.value}</p>
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mt-1">{stat.label}</p>
               </div>
             ))}
           </div>
           
           {/* Scroll indicator */}
-          <div className="mt-20 animate-fade-in opacity-0" style={{ animationDelay: '0.7s' }}>
-            <div className="inline-flex flex-col items-center gap-2 text-muted-foreground">
-              <span className="text-xs uppercase tracking-widest font-semibold">Scroll</span>
-              <ChevronDown className="w-5 h-5 scroll-indicator" />
+          <div className="mt-12 animate-fade-in opacity-0" style={{ animationDelay: '0.7s' }}>
+            <div className="inline-flex flex-col items-center gap-1 text-muted-foreground">
+              <span className="text-[10px] uppercase tracking-widest font-medium">Scroll</span>
+              <ChevronDown className="w-4 h-4 scroll-indicator" />
             </div>
           </div>
         </div>
       </section>
 
-      {/* AI Assistant Banner - BOLD */}
-      <section className="border-y-2 border-primary/20 bg-gradient-to-r from-background via-primary/5 to-background py-20 relative overflow-hidden">
-        <div className="absolute inset-0 noise" />
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
+      {/* AI Assistant Banner */}
+      <section className="border-y border-primary/20 bg-gradient-to-r from-background via-primary/5 to-background py-12 relative overflow-hidden">
+        <div className="absolute inset-0 noise opacity-50" />
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-64 h-64 bg-primary/10 rounded-full blur-3xl" />
+        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-64 h-64 bg-accent/10 rounded-full blur-3xl" />
         
         <div className="container mx-auto px-4 relative">
-          <div className="max-w-6xl mx-auto">
-            <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
-              {/* AI Bot - More Aggressive */}
+          <div className="max-w-5xl mx-auto">
+            <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
+              {/* AI Bot */}
               <div className="relative">
-                <div className="w-40 h-40 lg:w-52 lg:h-52 rounded-3xl bg-gradient-to-br from-primary via-primary-glow to-accent flex items-center justify-center shadow-2xl glow-primary animate-scale-in rotate-3 hover:rotate-0 transition-transform duration-500">
-                  <Bot className="w-20 h-20 lg:w-28 lg:h-28 text-white" />
+                <div className="w-28 h-28 lg:w-36 lg:h-36 rounded-2xl bg-gradient-to-br from-primary via-primary-glow to-accent flex items-center justify-center shadow-xl glow-primary animate-scale-in rotate-3 hover:rotate-0 transition-transform duration-500">
+                  <Bot className="w-14 h-14 lg:w-18 lg:h-18 text-white" />
                 </div>
-                <div className="absolute -top-4 -right-4 w-16 h-16 rounded-2xl bg-gradient-to-br from-warning to-chart-5 flex items-center justify-center animate-bounce-subtle shadow-xl">
-                  <Sparkles className="w-8 h-8 text-white" />
+                <div className="absolute -top-2 -right-2 w-10 h-10 rounded-xl bg-gradient-to-br from-warning to-chart-5 flex items-center justify-center animate-bounce-subtle shadow-lg">
+                  <Sparkles className="w-5 h-5 text-white" />
                 </div>
-                <div className="absolute -bottom-4 -left-4 w-12 h-12 rounded-xl bg-gradient-to-br from-chart-3 to-accent flex items-center justify-center shadow-xl">
-                  <Zap className="w-6 h-6 text-white" />
+                <div className="absolute -bottom-2 -left-2 w-8 h-8 rounded-lg bg-gradient-to-br from-chart-3 to-accent flex items-center justify-center shadow-lg">
+                  <Zap className="w-4 h-4 text-white" />
                 </div>
               </div>
               
-              {/* Content - Punchy Copy */}
+              {/* Content */}
               <div className="flex-1 text-center lg:text-left">
-                <h2 className="text-4xl md:text-5xl lg:text-6xl font-black mb-6 tracking-tight">
-                  Your <span className="gradient-text">24/7</span>
-                  <br />AI Coach
+                <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-3 tracking-tight">
+                  Your <span className="gradient-text">24/7</span> AI Coach
                 </h2>
-                <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-xl font-medium">
+                <p className="text-sm md:text-base text-muted-foreground mb-5 max-w-lg">
                   No dumb questions. Get instant answers, portfolio breakdowns, and 
                   investing wisdom — written for teens, not Wall Street bros.
                 </p>
-                <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
+                <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
                   {[
                     { icon: MessageCircle, text: 'Instant Answers', color: 'from-primary to-primary-glow' },
                     { icon: Target, text: 'Smart Insights', color: 'from-accent to-chart-5' },
                     { icon: TrendingUp, text: 'Portfolio Tips', color: 'from-chart-3 to-primary' }
                   ].map((item, i) => (
-                    <div key={i} className={`flex items-center gap-3 bg-gradient-to-r ${item.color} px-5 py-3 rounded-xl text-sm font-bold text-white shadow-lg hover:scale-105 transition-transform`}>
-                      <item.icon className="w-5 h-5" />
+                    <div key={i} className={`flex items-center gap-2 bg-gradient-to-r ${item.color} px-3 py-1.5 rounded-lg text-xs font-semibold text-white shadow hover:scale-105 transition-transform`}>
+                      <item.icon className="w-3.5 h-3.5" />
                       {item.text}
                     </div>
                   ))}
@@ -162,45 +160,45 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Why Invest Early Section - AGGRESSIVE */}
-      <section className="bg-background py-28 md:py-36 relative overflow-hidden">
+      {/* Why Invest Early Section */}
+      <section className="bg-background py-16 md:py-20 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-accent/5" />
         <div className="container mx-auto px-4 relative">
-          <div className="text-center mb-20">
-            <p className="text-sm font-bold uppercase tracking-[0.3em] text-primary mb-4">Why Start Early?</p>
-            <h2 className="text-5xl md:text-6xl lg:text-7xl font-black tracking-tight mb-6">
-              TIME IS <span className="gradient-text">MONEY</span>
+          <div className="text-center mb-12">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary mb-2">Why Start Early?</p>
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-3">
+              Time Is <span className="gradient-text">Money</span>
             </h2>
-            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto font-medium">
+            <p className="text-sm md:text-base text-muted-foreground max-w-xl mx-auto">
               Every year you wait costs you thousands. The math doesn't lie.
             </p>
           </div>
           
-          {/* Featured Cards - BIGGER & BOLDER */}
-          <div className="grid md:grid-cols-2 gap-10 max-w-6xl mx-auto mb-16">
+          {/* Featured Cards */}
+          <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto mb-10">
             {/* Compound Growth Card */}
-            <Card className="border-0 shadow-2xl bg-gradient-to-br from-card via-card to-primary/10 overflow-hidden group hover:scale-[1.02] transition-all duration-500 rounded-3xl">
-              <CardContent className="p-10 md:p-14">
-                <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary via-primary-glow to-accent flex items-center justify-center mb-8 shadow-xl glow-primary group-hover:scale-110 transition-transform duration-500">
-                  <TrendingUp className="w-12 h-12 text-primary-foreground" />
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-primary/5 overflow-hidden group hover:scale-[1.02] transition-all duration-500 rounded-2xl">
+              <CardContent className="p-6 md:p-8">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary via-primary-glow to-accent flex items-center justify-center mb-5 shadow-lg glow-primary group-hover:scale-110 transition-transform duration-500">
+                  <TrendingUp className="w-7 h-7 text-primary-foreground" />
                 </div>
-                <h3 className="text-3xl md:text-4xl font-black mb-4 tracking-tight">Compound Growth</h3>
-                <p className="text-lg text-muted-foreground mb-8 font-medium">
+                <h3 className="text-xl md:text-2xl font-bold mb-2 tracking-tight">Compound Growth</h3>
+                <p className="text-sm text-muted-foreground mb-5">
                   Your biggest flex? Starting early. Watch your money stack while others sleep.
                 </p>
-                <div className="bg-gradient-to-br from-primary/20 to-accent/10 rounded-2xl p-8 border border-primary/30">
-                  <div className="grid grid-cols-2 gap-6 text-center mb-6">
-                    <div className="p-4 bg-background/50 rounded-xl">
-                      <p className="text-4xl md:text-5xl font-black gradient-text">$500K+</p>
-                      <p className="text-sm text-muted-foreground font-semibold mt-2 uppercase tracking-wider">Start at 15</p>
+                <div className="bg-gradient-to-br from-primary/15 to-accent/10 rounded-xl p-5 border border-primary/20">
+                  <div className="grid grid-cols-2 gap-4 text-center mb-4">
+                    <div className="p-3 bg-background/50 rounded-lg">
+                      <p className="text-2xl md:text-3xl font-bold gradient-text">$500K+</p>
+                      <p className="text-[10px] text-muted-foreground font-medium mt-1 uppercase tracking-wider">Start at 15</p>
                     </div>
-                    <div className="p-4 bg-background/50 rounded-xl">
-                      <p className="text-4xl md:text-5xl font-black text-muted-foreground/50">$250K</p>
-                      <p className="text-sm text-muted-foreground font-semibold mt-2 uppercase tracking-wider">Start at 25</p>
+                    <div className="p-3 bg-background/50 rounded-lg">
+                      <p className="text-2xl md:text-3xl font-bold text-muted-foreground/50">$250K</p>
+                      <p className="text-[10px] text-muted-foreground font-medium mt-1 uppercase tracking-wider">Start at 25</p>
                     </div>
                   </div>
-                  <div className="flex items-center justify-center gap-2 text-primary font-bold">
-                    <Flame className="w-5 h-5" />
+                  <div className="flex items-center justify-center gap-1.5 text-primary text-xs font-semibold">
+                    <Flame className="w-3.5 h-3.5" />
                     <span>2X more by starting 10 years earlier</span>
                   </div>
                 </div>
@@ -208,24 +206,24 @@ const LandingPage = () => {
             </Card>
 
             {/* Financial Literacy Card */}
-            <Card className="border-0 shadow-2xl bg-gradient-to-br from-card via-card to-accent/10 overflow-hidden group hover:scale-[1.02] transition-all duration-500 rounded-3xl">
-              <CardContent className="p-10 md:p-14">
-                <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-accent via-chart-5 to-primary flex items-center justify-center mb-8 shadow-xl glow-accent group-hover:scale-110 transition-transform duration-500">
-                  <BookOpen className="w-12 h-12 text-white" />
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-accent/5 overflow-hidden group hover:scale-[1.02] transition-all duration-500 rounded-2xl">
+              <CardContent className="p-6 md:p-8">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-accent via-chart-5 to-primary flex items-center justify-center mb-5 shadow-lg glow-accent group-hover:scale-110 transition-transform duration-500">
+                  <BookOpen className="w-7 h-7 text-white" />
                 </div>
-                <h3 className="text-3xl md:text-4xl font-black mb-4 tracking-tight">Level Up Your Brain</h3>
-                <p className="text-lg text-muted-foreground mb-8 font-medium">
+                <h3 className="text-xl md:text-2xl font-bold mb-2 tracking-tight">Level Up Your Brain</h3>
+                <p className="text-sm text-muted-foreground mb-5">
                   Skills that separate winners from the rest. This is your cheat code.
                 </p>
-                <div className="space-y-4">
+                <div className="space-y-2">
                   {[
                     { skill: 'Master Your Money', icon: '💰' },
                     { skill: 'Read Markets Like a Pro', icon: '📈' },
                     { skill: 'Manage Risk Like a Boss', icon: '🛡️' }
                   ].map((item, i) => (
-                    <div key={i} className="flex items-center gap-4 bg-gradient-to-r from-accent/20 to-primary/10 rounded-xl p-5 border border-accent/30 hover:border-accent/60 transition-all duration-300 hover:scale-[1.02] cursor-default">
-                      <span className="text-2xl">{item.icon}</span>
-                      <span className="font-bold text-lg">{item.skill}</span>
+                    <div key={i} className="flex items-center gap-3 bg-gradient-to-r from-accent/15 to-primary/10 rounded-lg p-3 border border-accent/20 hover:border-accent/40 transition-all duration-300 hover:scale-[1.01] cursor-default">
+                      <span className="text-lg">{item.icon}</span>
+                      <span className="font-semibold text-sm">{item.skill}</span>
                     </div>
                   ))}
                 </div>
@@ -235,46 +233,46 @@ const LandingPage = () => {
 
           {/* Risk-Free Badge */}
           <div className="flex justify-center">
-            <div className="inline-flex items-center gap-4 bg-gradient-to-r from-chart-3/20 via-primary/20 to-chart-3/20 px-8 py-5 rounded-2xl border border-chart-3/30 shadow-xl">
-              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-chart-3 to-primary flex items-center justify-center shadow-lg">
-                <Shield className="w-7 h-7 text-white" />
+            <div className="inline-flex items-center gap-3 bg-gradient-to-r from-chart-3/15 via-primary/15 to-chart-3/15 px-5 py-3 rounded-xl border border-chart-3/20 shadow-lg">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-chart-3 to-primary flex items-center justify-center shadow">
+                <Shield className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="font-black text-xl">100% Risk-Free</p>
-                <p className="text-muted-foreground font-medium">Paper trade with fake money. Real skills.</p>
+                <p className="font-bold text-sm">100% Risk-Free</p>
+                <p className="text-muted-foreground text-xs">Paper trade with fake money. Real skills.</p>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Features Section - POWER GRID */}
-      <section className="py-24 relative bg-gradient-to-b from-background via-secondary/30 to-background">
+      {/* Features Section */}
+      <section className="py-14 relative bg-gradient-to-b from-background via-secondary/20 to-background">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <p className="text-sm font-bold uppercase tracking-[0.3em] text-accent mb-4">Your Arsenal</p>
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-black mb-6 tracking-tight">
-              TOOLS THAT <span className="gradient-text">DOMINATE</span>
+          <div className="text-center mb-10">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent mb-2">Your Arsenal</p>
+            <h2 className="text-2xl md:text-3xl font-bold mb-3 tracking-tight">
+              Tools That <span className="gradient-text">Dominate</span>
             </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto font-medium">
+            <p className="text-sm text-muted-foreground max-w-xl mx-auto">
               Everything you need to crush it. No fluff, just power.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-6xl mx-auto">
             {[
               { icon: BarChart3, title: 'Stock Screener', desc: 'Filter stocks like a pro. Price, sector, risk — you control it.', gradient: 'from-primary to-primary-glow' },
               { icon: Briefcase, title: 'Paper Trading', desc: 'Trade with fake money. Real market vibes, zero losses.', gradient: 'from-accent to-chart-5' },
               { icon: BookOpen, title: 'Power Lessons', desc: 'Bite-sized wisdom. Get smarter in minutes, not hours.', gradient: 'from-chart-3 to-primary' },
               { icon: Trophy, title: 'Leaderboards', desc: 'Compete. Dominate. Flex on your friends.', gradient: 'from-warning to-chart-5' }
             ].map((feature, i) => (
-              <Card key={i} className="group border-0 shadow-xl bg-gradient-to-br from-card to-card hover:to-primary/10 overflow-hidden hover:scale-105 transition-all duration-500 rounded-2xl cursor-default">
-                <CardContent className="p-8">
-                  <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-6 shadow-xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-500`}>
-                    <feature.icon className="w-8 h-8 text-white" />
+              <Card key={i} className="group border-0 shadow-md bg-gradient-to-br from-card to-card hover:to-primary/5 overflow-hidden hover:scale-[1.03] transition-all duration-500 rounded-xl cursor-default">
+                <CardContent className="p-5">
+                  <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-500`}>
+                    <feature.icon className="w-5 h-5 text-white" />
                   </div>
-                  <h3 className="font-black text-xl mb-3 tracking-tight">{feature.title}</h3>
-                  <p className="text-muted-foreground font-medium">{feature.desc}</p>
+                  <h3 className="font-bold text-base mb-1.5 tracking-tight">{feature.title}</h3>
+                  <p className="text-muted-foreground text-xs">{feature.desc}</p>
                 </CardContent>
               </Card>
             ))}
@@ -282,48 +280,46 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* CTA Section - MAXIMUM URGENCY */}
-      <section className="relative py-28 overflow-hidden">
+      {/* CTA Section */}
+      <section className="relative py-16 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary-glow to-accent" />
         <div className="absolute inset-0 noise opacity-20" />
         <div className="absolute top-0 left-0 w-full h-full">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-white/10 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-white/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
         </div>
         
         <div className="container mx-auto px-4 text-center relative">
-          <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur px-5 py-2 rounded-full mb-8">
-            <Flame className="w-5 h-5 text-white animate-pulse" />
-            <span className="text-white font-bold uppercase tracking-wider text-sm">Join the Movement</span>
+          <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur px-4 py-1.5 rounded-full mb-5">
+            <Flame className="w-4 h-4 text-white animate-pulse" />
+            <span className="text-white font-semibold uppercase tracking-wider text-xs">Join the Movement</span>
           </div>
-          <h2 className="text-4xl md:text-6xl lg:text-7xl font-black text-white mb-6 tracking-tight">
-            STOP WATCHING.
-            <br />
-            <span className="opacity-90">START WINNING.</span>
+          <h2 className="text-2xl md:text-4xl font-bold text-white mb-4 tracking-tight">
+            Stop Watching. Start Winning.
           </h2>
-          <p className="text-white/80 mb-12 max-w-2xl mx-auto text-xl font-medium">
+          <p className="text-white/80 mb-8 max-w-xl mx-auto text-sm md:text-base">
             Your friends are already building wealth. What are you waiting for?
           </p>
           <Link to="/signup">
-            <Button size="lg" className="gap-3 bg-white text-primary hover:bg-white/90 text-xl font-black px-12 py-8 rounded-2xl shadow-2xl hover:scale-105 transition-all duration-300 group">
+            <Button size="default" className="gap-2 bg-white text-primary hover:bg-white/90 font-bold px-8 py-5 rounded-xl shadow-xl hover:scale-105 transition-all duration-300 group">
               Start Now — It's Free
-              <Rocket className="w-6 h-6 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+              <Rocket className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
             </Button>
           </Link>
         </div>
       </section>
 
-      {/* Footer - Clean */}
-      <footer className="border-t border-border/50 py-10 bg-background">
+      {/* Footer */}
+      <footer className="border-t border-border/50 py-6 bg-background">
         <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary via-primary-glow to-accent flex items-center justify-center shadow-lg">
-                <TrendingUp className="w-5 h-5 text-white" />
+          <div className="flex flex-col md:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary via-primary-glow to-accent flex items-center justify-center shadow">
+                <TrendingUp className="w-4 h-4 text-white" />
               </div>
-              <span className="font-black text-lg gradient-text">TeenVest</span>
+              <span className="font-bold text-sm gradient-text">TeenVest</span>
             </div>
-            <p className="text-sm text-muted-foreground font-medium">
+            <p className="text-xs text-muted-foreground">
               © 2024 TeenVest. Paper trading for educational purposes only.
             </p>
           </div>
