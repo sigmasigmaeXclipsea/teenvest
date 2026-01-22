@@ -135,7 +135,7 @@ const LandingPage = () => {
           >
             {[
               { value: '1,500+', label: 'Stocks to Trade' },
-              { value: '$100K', label: 'Virtual Cash' },
+              { value: '$10K', label: 'Virtual Cash' },
               { value: '0%', label: 'Risk' }
             ].map((stat, i) => (
               <div key={i} className="text-center">
