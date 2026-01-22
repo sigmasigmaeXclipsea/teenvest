@@ -87,121 +87,37 @@ export const useExecuteTrade = () => {
     }) => {
       if (!user) throw new Error('Not authenticated');
 
-      const totalAmount = shares * price;
+      // Use atomic stored procedure for trade execution
+      // This prevents race conditions by using row-level locking and transactions
+      const { data, error } = await supabase.rpc('execute_trade', {
+        p_user_id: user.id,
+        p_symbol: symbol,
+        p_company_name: companyName,
+        p_trade_type: tradeType,
+        p_order_type: orderType,
+        p_shares: shares,
+        p_price: price,
+        p_sector: sector || null,
+      });
 
-      // Get current portfolio
-      const { data: portfolio, error: portfolioError } = await supabase
-        .from('portfolios')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (portfolioError) throw portfolioError;
-
-      if (tradeType === 'buy') {
-        if (Number(portfolio.cash_balance) < totalAmount) {
+      if (error) {
+        // Map database errors to user-friendly messages
+        if (error.message.includes('Insufficient funds')) {
           throw new Error('Insufficient funds');
         }
-
-        // Update cash balance
-        const { error: updateError } = await supabase
-          .from('portfolios')
-          .update({ cash_balance: Number(portfolio.cash_balance) - totalAmount })
-          .eq('user_id', user.id);
-
-        if (updateError) throw updateError;
-
-        // Check if holding exists
-        const { data: existingHolding } = await supabase
-          .from('holdings')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('symbol', symbol)
-          .single();
-
-        if (existingHolding) {
-          // Update existing holding
-          const newShares = Number(existingHolding.shares) + shares;
-          const newAvgCost = ((Number(existingHolding.shares) * Number(existingHolding.average_cost)) + totalAmount) / newShares;
-          
-          const { error: holdingError } = await supabase
-            .from('holdings')
-            .update({ shares: newShares, average_cost: newAvgCost })
-            .eq('id', existingHolding.id);
-
-          if (holdingError) throw holdingError;
-        } else {
-          // Create new holding
-          const { error: holdingError } = await supabase
-            .from('holdings')
-            .insert({
-              user_id: user.id,
-              symbol,
-              company_name: companyName,
-              shares,
-              average_cost: price,
-              sector,
-            });
-
-          if (holdingError) throw holdingError;
-        }
-      } else {
-        // Sell
-        const { data: existingHolding } = await supabase
-          .from('holdings')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('symbol', symbol)
-          .single();
-
-        if (!existingHolding || Number(existingHolding.shares) < shares) {
+        if (error.message.includes('Insufficient shares')) {
           throw new Error('Insufficient shares');
         }
-
-        // Update cash balance
-        const { error: updateError } = await supabase
-          .from('portfolios')
-          .update({ cash_balance: Number(portfolio.cash_balance) + totalAmount })
-          .eq('user_id', user.id);
-
-        if (updateError) throw updateError;
-
-        const remainingShares = Number(existingHolding.shares) - shares;
-        if (remainingShares === 0) {
-          // Delete holding
-          const { error: deleteError } = await supabase
-            .from('holdings')
-            .delete()
-            .eq('id', existingHolding.id);
-
-          if (deleteError) throw deleteError;
-        } else {
-          // Update holding
-          const { error: holdingError } = await supabase
-            .from('holdings')
-            .update({ shares: remainingShares })
-            .eq('id', existingHolding.id);
-
-          if (holdingError) throw holdingError;
+        if (error.message.includes('No holding found')) {
+          throw new Error('Insufficient shares');
         }
+        if (error.message.includes('Portfolio not found')) {
+          throw new Error('Portfolio not found');
+        }
+        throw error;
       }
 
-      // Record trade
-      const { error: tradeError } = await supabase
-        .from('trades')
-        .insert({
-          user_id: user.id,
-          symbol,
-          company_name: companyName,
-          trade_type: tradeType,
-          order_type: orderType,
-          shares,
-          price,
-          total_amount: totalAmount,
-          status: 'completed',
-        });
-
-      if (tradeError) throw tradeError;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['portfolio'] });

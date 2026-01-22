@@ -381,6 +381,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      execute_trade: {
+        Args: {
+          p_company_name: string
+          p_order_type: string
+          p_price: number
+          p_sector?: string
+          p_shares: number
+          p_symbol: string
+          p_trade_type: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       get_leaderboard: {
         Args: never
         Returns: {
