@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { BookOpen, Clock, CheckCircle, ChevronRight, GraduationCap, Award, HelpCircle, XCircle, CheckCircle2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { useLearningModules, useUserProgress, useCompleteModule } from '@/hooks/useLearning';
 import { useQuizQuestions, useQuizResults, useSaveQuizResult } from '@/hooks/useQuiz';
 import { useToast } from '@/hooks/use-toast';
+import LearningAI from '@/components/LearningAI';
 
 const LearnPage = () => {
   const { data: modules, isLoading: modulesLoading } = useLearningModules();
@@ -153,6 +154,16 @@ const LearnPage = () => {
             </p>
           </CardContent>
         </Card>
+
+        {/* AI Learning Coach */}
+        <LearningAI
+          quizResults={quizResults?.map(r => ({
+            ...r,
+            module_title: modules?.find(m => m.id === r.module_id)?.title,
+          })) || []}
+          completedModules={progress?.filter(p => p.completed) || []}
+          allModules={modules || []}
+        />
 
         {/* Modules Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
