@@ -16,6 +16,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useState } from 'react';
+import { useAchievementTracker } from '@/hooks/useAchievementTracker';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -37,6 +38,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  // Track and auto-award achievements
+  useAchievementTracker();
 
   const handleLogout = async () => {
     await signOut();
