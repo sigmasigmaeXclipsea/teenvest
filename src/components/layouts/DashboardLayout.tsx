@@ -10,7 +10,8 @@ import {
   Menu,
   X,
   Settings,
-  Trophy
+  Trophy,
+  Shield
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,6 +29,7 @@ const navItems = [
   { path: '/learn', icon: BookOpen, label: 'Learn' },
   { path: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
   { path: '/settings', icon: Settings, label: 'Settings' },
+  { path: '/admin', icon: Shield, label: 'Admin Panel' },
 ];
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
