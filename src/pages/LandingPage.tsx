@@ -2,10 +2,8 @@ import { Link } from 'react-router-dom';
 import { TrendingUp, BookOpen, Trophy, Shield, ArrowRight, BarChart3, Briefcase, Target, Bot, MessageCircle, Sparkles, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-
 const LandingPage = () => {
-  return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
+  return <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Animated background gradient */}
       <div className="fixed inset-0 animated-gradient opacity-50 pointer-events-none" />
       
@@ -50,19 +48,26 @@ const LandingPage = () => {
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-8 animate-fade-in border border-primary/20">
             <Trophy className="w-4 h-4" />
-            <span>Join 10,000+ teen investors</span>
+            <span>Be the start of something bigger
+          </span>
             <Sparkles className="w-4 h-4 animate-pulse" />
           </div>
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+          <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 animate-fade-in-up" style={{
+          animationDelay: '0.1s'
+        }}>
             Start Your Investment
             <br />
             <span className="gradient-text text-glow">Journey Today</span>
           </h1>
-          <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto animate-fade-in-up opacity-0" style={{ animationDelay: '0.2s' }}>
+          <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto animate-fade-in-up opacity-0" style={{
+          animationDelay: '0.2s'
+        }}>
             Learn to invest with zero risk. Practice paper trading, build your portfolio, 
             and develop financial skills that will last a lifetime.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up opacity-0" style={{ animationDelay: '0.3s' }}>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up opacity-0" style={{
+          animationDelay: '0.3s'
+        }}>
             <Link to="/signup">
               <Button size="lg" className="gap-2 bg-gradient-to-r from-primary to-primary-glow hover:opacity-90 shadow-xl glow-primary text-lg px-8 py-6">
                 Start Trading Free
@@ -77,15 +82,23 @@ const LandingPage = () => {
           </div>
           
           {/* Scroll indicator */}
-          <div className="mt-16 animate-fade-in opacity-0" style={{ animationDelay: '0.5s' }}>
+          <div className="mt-16 animate-fade-in opacity-0" style={{
+          animationDelay: '0.5s'
+        }}>
             <ChevronDown className="w-6 h-6 mx-auto text-muted-foreground scroll-indicator" />
           </div>
         </div>
         
         {/* Floating decorative elements */}
-        <div className="absolute top-20 left-10 w-20 h-20 bg-primary/10 rounded-full blur-3xl float" style={{ animationDelay: '0s' }} />
-        <div className="absolute bottom-20 right-10 w-32 h-32 bg-accent/10 rounded-full blur-3xl float" style={{ animationDelay: '2s' }} />
-        <div className="absolute top-40 right-20 w-16 h-16 bg-primary/5 rounded-full blur-2xl float" style={{ animationDelay: '4s' }} />
+        <div className="absolute top-20 left-10 w-20 h-20 bg-primary/10 rounded-full blur-3xl float" style={{
+        animationDelay: '0s'
+      }} />
+        <div className="absolute bottom-20 right-10 w-32 h-32 bg-accent/10 rounded-full blur-3xl float" style={{
+        animationDelay: '2s'
+      }} />
+        <div className="absolute top-40 right-20 w-16 h-16 bg-primary/5 rounded-full blur-2xl float" style={{
+        animationDelay: '4s'
+      }} />
       </section>
 
       {/* AI Assistant Banner */}
@@ -103,7 +116,9 @@ const LandingPage = () => {
                   <Sparkles className="w-6 h-6 text-primary" />
                 </div>
                 {/* Orbiting ring */}
-                <div className="absolute inset-0 border-2 border-primary/20 rounded-full animate-spin-slow" style={{ margin: '-10px' }} />
+                <div className="absolute inset-0 border-2 border-primary/20 rounded-full animate-spin-slow" style={{
+                margin: '-10px'
+              }} />
               </div>
               
               {/* Content */}
@@ -117,16 +132,19 @@ const LandingPage = () => {
                   teen-friendly language!
                 </p>
                 <div className="flex flex-wrap gap-3 justify-center lg:justify-start">
-                  {[
-                    { icon: MessageCircle, text: 'Instant answers' },
-                    { icon: BookOpen, text: 'Personalized lessons' },
-                    { icon: TrendingUp, text: 'Portfolio advice' },
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-center gap-2 glass-card px-4 py-2 rounded-full text-sm hover-lift">
+                  {[{
+                  icon: MessageCircle,
+                  text: 'Instant answers'
+                }, {
+                  icon: BookOpen,
+                  text: 'Personalized lessons'
+                }, {
+                  icon: TrendingUp,
+                  text: 'Portfolio advice'
+                }].map((item, i) => <div key={i} className="flex items-center gap-2 glass-card px-4 py-2 rounded-full text-sm hover-lift">
                       <item.icon className="w-4 h-4 text-primary" />
                       {item.text}
-                    </div>
-                  ))}
+                    </div>)}
                 </div>
               </div>
             </div>
@@ -185,12 +203,10 @@ const LandingPage = () => {
                   Build essential money skills that will serve you for life. Understanding markets sets you apart.
                 </p>
                 <div className="space-y-3">
-                  {['Budgeting & Saving', 'Market Analysis', 'Risk Management'].map((skill, i) => (
-                    <div key={i} className="flex items-center gap-3 bg-accent/10 rounded-lg p-3 border border-accent/20 hover:border-accent/40 transition-colors">
+                  {['Budgeting & Saving', 'Market Analysis', 'Risk Management'].map((skill, i) => <div key={i} className="flex items-center gap-3 bg-accent/10 rounded-lg p-3 border border-accent/20 hover:border-accent/40 transition-colors">
                       <div className="w-2 h-2 rounded-full bg-accent" />
                       <span className="text-sm font-medium">{skill}</span>
-                    </div>
-                  ))}
+                    </div>)}
                 </div>
               </CardContent>
             </Card>
@@ -308,8 +324,6 @@ const LandingPage = () => {
           </div>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 };
-
 export default LandingPage;
