@@ -20,6 +20,7 @@ import LeaderboardPage from "./pages/LeaderboardPage";
 import StockPage from "./pages/StockPage";
 import SettingsPage from "./pages/SettingsPage";
 import AdminPage from "./pages/AdminPage";
+import ProfilePage from "./pages/ProfilePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -51,6 +52,8 @@ const App = () => (
               <Route path="/learn" element={<ProtectedRoute><ErrorBoundary><LearnPage /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/learn/:moduleId" element={<ProtectedRoute><ErrorBoundary><LessonPage /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/leaderboard" element={<ProtectedRoute><ErrorBoundary><LeaderboardPage /></ErrorBoundary></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><ErrorBoundary><ProfilePage /></ErrorBoundary></ProtectedRoute>} />
+              <Route path="/profile/:userId" element={<ProtectedRoute><ErrorBoundary><ProfilePage /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/stocks/:symbol" element={<ProtectedRoute><ErrorBoundary><StockPage /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><ErrorBoundary><SettingsPage /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/admin" element={<ProtectedRoute><ErrorBoundary><AdminPage /></ErrorBoundary></ProtectedRoute>} />

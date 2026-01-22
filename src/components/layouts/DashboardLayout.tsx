@@ -11,7 +11,9 @@ import {
   X,
   Settings,
   Trophy,
-  Shield
+  Shield,
+  Award,
+  User
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,6 +30,7 @@ const navItems = [
   { path: '/trade', icon: Briefcase, label: 'Trade' },
   { path: '/history', icon: History, label: 'History' },
   { path: '/learn', icon: BookOpen, label: 'Learn' },
+  { path: '/profile', icon: User, label: 'Profile & Achievements' },
   { path: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
   { path: '/settings', icon: Settings, label: 'Settings' },
   { path: '/admin', icon: Shield, label: 'Admin Panel' },
