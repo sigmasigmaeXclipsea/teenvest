@@ -188,10 +188,15 @@ const ScreenerPage = () => {
         });
       }
       
-      // Sort: stocks with live data first
+      // Sort: stocks with live data first, then alphabetically by symbol
       return Array.from(stocksMap.values()).sort((a, b) => {
         const aPrice = Number(a.price) || 0;
         const bPrice = Number(b.price) || 0;
+        // If both have prices or both don't, sort alphabetically
+        if ((aPrice > 0) === (bPrice > 0)) {
+          return a.symbol.localeCompare(b.symbol);
+        }
+        // Otherwise, stocks with prices come first
         if (aPrice > 0 && bPrice === 0) return -1;
         if (aPrice === 0 && bPrice > 0) return 1;
         return 0;
