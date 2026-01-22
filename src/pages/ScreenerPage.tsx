@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { Search, Filter, TrendingUp, TrendingDown, Loader2, Star, StarOff, Eye, RefreshCw, ChevronUp } from 'lucide-react';
+import { Search, Filter, TrendingUp, TrendingDown, Loader2, Star, StarOff, Eye, RefreshCw, ChevronUp, ChevronDown, ArrowUpDown, Flame, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +16,9 @@ import { fetchStockQuote, useSearchStock, useMultipleStockQuotes, StockQuote } f
 import { useWatchlist, useAddToWatchlist, useRemoveFromWatchlist } from '@/hooks/useWatchlist';
 import { useToast } from '@/hooks/use-toast';
 
+type SortColumn = 'symbol' | 'price' | 'changePercent' | 'marketCap' | 'volume' | 'riskLevel';
+type SortDirection = 'asc' | 'desc';
+
 const ScreenerPage = () => {
   const [search, setSearch] = useState('');
   const [selectedSector, setSelectedSector] = useState<string>('all');
@@ -27,6 +30,8 @@ const ScreenerPage = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
   const [visibleCount, setVisibleCount] = useState(100);
+  const [sortColumn, setSortColumn] = useState<SortColumn>('symbol');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const scrollRef = useRef<HTMLDivElement>(null);
   
   const fetchedSymbolsRef = useRef<Set<string>>(new Set());
@@ -216,6 +221,26 @@ const ScreenerPage = () => {
     }
   }, [allLiveData]);
 
+  // Top Gainers & Losers from live data
+  const { topGainers, topLosers } = useMemo(() => {
+    const stocksWithData = allStocks.filter(s => s.price > 0 && s.changePercent !== 0);
+    const sorted = [...stocksWithData].sort((a, b) => b.changePercent - a.changePercent);
+    return {
+      topGainers: sorted.slice(0, 5),
+      topLosers: sorted.slice(-5).reverse()
+    };
+  }, [allStocks]);
+
+  // Handle column sorting
+  const handleSort = (column: SortColumn) => {
+    if (sortColumn === column) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection(column === 'symbol' ? 'asc' : 'desc');
+    }
+  };
+
   // Filter stocks based on active tab and filters
   const filteredStocks = useMemo(() => {
     let stocksToFilter = allStocks;
@@ -226,7 +251,7 @@ const ScreenerPage = () => {
       );
     }
     
-    return stocksToFilter.filter(stock => {
+    const filtered = stocksToFilter.filter(stock => {
       const matchesSearch = stock.symbol.toLowerCase().includes(search.toLowerCase()) ||
         stock.companyName.toLowerCase().includes(search.toLowerCase());
       const matchesSector = selectedSector === 'all' || stock.sector === selectedSector;
@@ -244,7 +269,42 @@ const ScreenerPage = () => {
 
       return matchesSearch && matchesSector && matchesRisk && matchesPrice && matchesMarketCap;
     });
-  }, [search, selectedSector, selectedRisk, priceRange, marketCapFilter, allStocks, activeTab, watchlist]);
+
+    // Apply sorting
+    return filtered.sort((a, b) => {
+      const aPrice = Number(a.price) || 0;
+      const bPrice = Number(b.price) || 0;
+      
+      // Always prioritize stocks with live data
+      if (aPrice > 0 && bPrice === 0) return -1;
+      if (aPrice === 0 && bPrice > 0) return 1;
+      
+      let comparison = 0;
+      switch (sortColumn) {
+        case 'symbol':
+          comparison = a.symbol.localeCompare(b.symbol);
+          break;
+        case 'price':
+          comparison = aPrice - bPrice;
+          break;
+        case 'changePercent':
+          comparison = (a.changePercent || 0) - (b.changePercent || 0);
+          break;
+        case 'marketCap':
+          comparison = (a.marketCap || 0) - (b.marketCap || 0);
+          break;
+        case 'volume':
+          comparison = (a.volume || 0) - (b.volume || 0);
+          break;
+        case 'riskLevel':
+          const riskOrder = { low: 1, medium: 2, high: 3 };
+          comparison = riskOrder[a.riskLevel] - riskOrder[b.riskLevel];
+          break;
+      }
+      
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+  }, [search, selectedSector, selectedRisk, priceRange, marketCapFilter, allStocks, activeTab, watchlist, sortColumn, sortDirection]);
 
   // Get visible stocks (for infinite scroll)
   const visibleStocks = useMemo(() => {
@@ -430,6 +490,75 @@ const ScreenerPage = () => {
           </Button>
         </div>
 
+        {/* Top Gainers & Losers Section */}
+        {topGainers.length > 0 && (
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card className="border-primary/20">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Flame className="w-4 h-4 text-primary" />
+                  Top Gainers
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="space-y-2">
+                  {topGainers.map(stock => (
+                    <Link 
+                      key={stock.symbol} 
+                      to={`/stocks/${stock.symbol}`}
+                      className="flex items-center justify-between p-2 rounded-lg hover:bg-secondary/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-sm">{stock.symbol}</span>
+                        <span className="text-xs text-muted-foreground truncate max-w-[80px]">{stock.companyName}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">${stock.price.toFixed(2)}</span>
+                        <Badge className="bg-primary/20 text-primary border-0 text-xs">
+                          <TrendingUp className="w-3 h-3 mr-1" />
+                          +{stock.changePercent.toFixed(2)}%
+                        </Badge>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-destructive/20">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <TrendingDown className="w-4 h-4 text-destructive" />
+                  Top Losers
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="space-y-2">
+                  {topLosers.map(stock => (
+                    <Link 
+                      key={stock.symbol} 
+                      to={`/stocks/${stock.symbol}`}
+                      className="flex items-center justify-between p-2 rounded-lg hover:bg-secondary/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-sm">{stock.symbol}</span>
+                        <span className="text-xs text-muted-foreground truncate max-w-[80px]">{stock.companyName}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">${stock.price.toFixed(2)}</span>
+                        <Badge className="bg-destructive/20 text-destructive border-0 text-xs">
+                          <TrendingDown className="w-3 h-3 mr-1" />
+                          {stock.changePercent.toFixed(2)}%
+                        </Badge>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
@@ -572,12 +701,42 @@ const ScreenerPage = () => {
                   <table className="w-full text-sm">
                     <thead className="bg-secondary/30 sticky top-0 z-10">
                       <tr className="border-b text-left text-muted-foreground">
-                        <th className="py-3 px-2 font-medium bg-secondary/30">Symbol</th>
-                        <th className="py-3 px-2 font-medium bg-secondary/30">Price</th>
-                        <th className="py-3 px-2 font-medium bg-secondary/30">Change</th>
-                        <th className="py-3 px-2 font-medium bg-secondary/30">Mkt Cap</th>
-                        <th className="py-3 px-2 font-medium bg-secondary/30">Volume</th>
-                        <th className="py-3 px-2 font-medium hidden md:table-cell bg-secondary/30">Risk</th>
+                        <th className="py-3 px-2 font-medium bg-secondary/30">
+                          <button onClick={() => handleSort('symbol')} className="flex items-center gap-1 hover:text-foreground transition-colors">
+                            Symbol
+                            {sortColumn === 'symbol' ? (sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
+                          </button>
+                        </th>
+                        <th className="py-3 px-2 font-medium bg-secondary/30">
+                          <button onClick={() => handleSort('price')} className="flex items-center gap-1 hover:text-foreground transition-colors">
+                            Price
+                            {sortColumn === 'price' ? (sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
+                          </button>
+                        </th>
+                        <th className="py-3 px-2 font-medium bg-secondary/30">
+                          <button onClick={() => handleSort('changePercent')} className="flex items-center gap-1 hover:text-foreground transition-colors">
+                            Change
+                            {sortColumn === 'changePercent' ? (sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
+                          </button>
+                        </th>
+                        <th className="py-3 px-2 font-medium bg-secondary/30">
+                          <button onClick={() => handleSort('marketCap')} className="flex items-center gap-1 hover:text-foreground transition-colors">
+                            Mkt Cap
+                            {sortColumn === 'marketCap' ? (sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
+                          </button>
+                        </th>
+                        <th className="py-3 px-2 font-medium bg-secondary/30">
+                          <button onClick={() => handleSort('volume')} className="flex items-center gap-1 hover:text-foreground transition-colors">
+                            Volume
+                            {sortColumn === 'volume' ? (sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
+                          </button>
+                        </th>
+                        <th className="py-3 px-2 font-medium hidden md:table-cell bg-secondary/30">
+                          <button onClick={() => handleSort('riskLevel')} className="flex items-center gap-1 hover:text-foreground transition-colors">
+                            Risk
+                            {sortColumn === 'riskLevel' ? (sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
+                          </button>
+                        </th>
                         <th className="py-3 px-2 font-medium hidden sm:table-cell bg-secondary/30">Sector</th>
                         <th className="py-3 px-2 font-medium bg-secondary/30">Action</th>
                       </tr>
@@ -614,12 +773,42 @@ const ScreenerPage = () => {
                     <table className="w-full text-sm">
                       <thead className="bg-secondary/30 sticky top-0 z-10">
                         <tr className="border-b text-left text-muted-foreground">
-                          <th className="py-3 px-2 font-medium bg-secondary/30">Symbol</th>
-                          <th className="py-3 px-2 font-medium bg-secondary/30">Price</th>
-                          <th className="py-3 px-2 font-medium bg-secondary/30">Change</th>
-                          <th className="py-3 px-2 font-medium bg-secondary/30">Mkt Cap</th>
-                          <th className="py-3 px-2 font-medium bg-secondary/30">Volume</th>
-                          <th className="py-3 px-2 font-medium hidden md:table-cell bg-secondary/30">Risk</th>
+                          <th className="py-3 px-2 font-medium bg-secondary/30">
+                            <button onClick={() => handleSort('symbol')} className="flex items-center gap-1 hover:text-foreground transition-colors">
+                              Symbol
+                              {sortColumn === 'symbol' ? (sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
+                            </button>
+                          </th>
+                          <th className="py-3 px-2 font-medium bg-secondary/30">
+                            <button onClick={() => handleSort('price')} className="flex items-center gap-1 hover:text-foreground transition-colors">
+                              Price
+                              {sortColumn === 'price' ? (sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
+                            </button>
+                          </th>
+                          <th className="py-3 px-2 font-medium bg-secondary/30">
+                            <button onClick={() => handleSort('changePercent')} className="flex items-center gap-1 hover:text-foreground transition-colors">
+                              Change
+                              {sortColumn === 'changePercent' ? (sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
+                            </button>
+                          </th>
+                          <th className="py-3 px-2 font-medium bg-secondary/30">
+                            <button onClick={() => handleSort('marketCap')} className="flex items-center gap-1 hover:text-foreground transition-colors">
+                              Mkt Cap
+                              {sortColumn === 'marketCap' ? (sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
+                            </button>
+                          </th>
+                          <th className="py-3 px-2 font-medium bg-secondary/30">
+                            <button onClick={() => handleSort('volume')} className="flex items-center gap-1 hover:text-foreground transition-colors">
+                              Volume
+                              {sortColumn === 'volume' ? (sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
+                            </button>
+                          </th>
+                          <th className="py-3 px-2 font-medium hidden md:table-cell bg-secondary/30">
+                            <button onClick={() => handleSort('riskLevel')} className="flex items-center gap-1 hover:text-foreground transition-colors">
+                              Risk
+                              {sortColumn === 'riskLevel' ? (sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
+                            </button>
+                          </th>
                           <th className="py-3 px-2 font-medium hidden sm:table-cell bg-secondary/30">Sector</th>
                           <th className="py-3 px-2 font-medium bg-secondary/30">Action</th>
                         </tr>
