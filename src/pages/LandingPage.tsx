@@ -69,44 +69,75 @@ const LandingPage = () => {
       </section>
 
       {/* Why Invest Early Section */}
-      <section className="border-t border-border bg-secondary/30 py-20">
+      <section className="border-t border-border bg-secondary/30 py-24 md:py-32">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">
               Why Start Investing as a Teen?
             </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               The earlier you start, the more time your money has to grow through compound interest
             </p>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <Card className="border-0 shadow-lg">
-              <CardContent className="p-6 text-center">
-                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                  <TrendingUp className="w-8 h-8 text-primary" />
+          {/* Featured Cards - Compound Growth & Financial Literacy */}
+          <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto mb-12">
+            <Card className="border-2 border-primary/20 shadow-xl bg-gradient-to-br from-card to-primary/5 overflow-hidden">
+              <CardContent className="p-8 md:p-10">
+                <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
+                  <TrendingUp className="w-10 h-10 text-primary" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Compound Growth</h3>
-                <p className="text-muted-foreground">
-                  Investing $100/month starting at 15 could grow to $500,000+ by retirement — 
-                  versus $250,000 if you start at 25.
+                <h3 className="text-2xl md:text-3xl font-bold mb-4">Compound Growth</h3>
+                <p className="text-lg text-muted-foreground mb-6">
+                  Time is your biggest advantage. The earlier you start, the more your money works for you.
                 </p>
+                <div className="bg-primary/10 rounded-xl p-6">
+                  <div className="grid grid-cols-2 gap-4 text-center">
+                    <div>
+                      <p className="text-3xl md:text-4xl font-bold text-primary">$500K+</p>
+                      <p className="text-sm text-muted-foreground mt-1">Start at 15</p>
+                    </div>
+                    <div>
+                      <p className="text-3xl md:text-4xl font-bold text-muted-foreground">$250K</p>
+                      <p className="text-sm text-muted-foreground mt-1">Start at 25</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground text-center mt-4">
+                    *Based on $100/month with 8% average annual return
+                  </p>
+                </div>
               </CardContent>
             </Card>
 
-            <Card className="border-0 shadow-lg">
-              <CardContent className="p-6 text-center">
-                <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-4">
-                  <BookOpen className="w-8 h-8 text-accent" />
+            <Card className="border-2 border-accent/20 shadow-xl bg-gradient-to-br from-card to-accent/5 overflow-hidden">
+              <CardContent className="p-8 md:p-10">
+                <div className="w-20 h-20 rounded-2xl bg-accent/10 flex items-center justify-center mb-6">
+                  <BookOpen className="w-10 h-10 text-accent" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Financial Literacy</h3>
-                <p className="text-muted-foreground">
-                  Learn essential money skills early. Understanding markets, budgeting, and 
-                  investing sets you up for lifelong financial success.
+                <h3 className="text-2xl md:text-3xl font-bold mb-4">Financial Literacy</h3>
+                <p className="text-lg text-muted-foreground mb-6">
+                  Build essential money skills that will serve you for life. Understanding markets sets you apart.
                 </p>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 bg-accent/10 rounded-lg p-3">
+                    <div className="w-2 h-2 rounded-full bg-accent" />
+                    <span className="text-sm font-medium">Budgeting & Saving</span>
+                  </div>
+                  <div className="flex items-center gap-3 bg-accent/10 rounded-lg p-3">
+                    <div className="w-2 h-2 rounded-full bg-accent" />
+                    <span className="text-sm font-medium">Market Analysis</span>
+                  </div>
+                  <div className="flex items-center gap-3 bg-accent/10 rounded-lg p-3">
+                    <div className="w-2 h-2 rounded-full bg-accent" />
+                    <span className="text-sm font-medium">Risk Management</span>
+                  </div>
+                </div>
               </CardContent>
             </Card>
+          </div>
 
+          {/* Risk-Free Learning - Smaller card */}
+          <div className="max-w-md mx-auto">
             <Card className="border-0 shadow-lg">
               <CardContent className="p-6 text-center">
                 <div className="w-16 h-16 rounded-full bg-chart-3/10 flex items-center justify-center mx-auto mb-4">

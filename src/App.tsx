@@ -12,7 +12,9 @@ import ScreenerPage from "./pages/ScreenerPage";
 import TradePage from "./pages/TradePage";
 import HistoryPage from "./pages/HistoryPage";
 import LearnPage from "./pages/LearnPage";
+import LeaderboardPage from "./pages/LeaderboardPage";
 import StockPage from "./pages/StockPage";
+import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +28,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<LandingPage />} />
+            <Route path="/home" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
@@ -33,7 +36,9 @@ const App = () => (
             <Route path="/trade" element={<TradePage />} />
             <Route path="/history" element={<HistoryPage />} />
             <Route path="/learn" element={<LearnPage />} />
+            <Route path="/leaderboard" element={<LeaderboardPage />} />
             <Route path="/stocks/:symbol" element={<StockPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

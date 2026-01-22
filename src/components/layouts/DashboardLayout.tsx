@@ -8,7 +8,9 @@ import {
   History,
   LogOut,
   Menu,
-  X
+  X,
+  Settings,
+  Trophy
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
@@ -24,6 +26,8 @@ const navItems = [
   { path: '/trade', icon: Briefcase, label: 'Trade' },
   { path: '/history', icon: History, label: 'History' },
   { path: '/learn', icon: BookOpen, label: 'Learn' },
+  { path: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
+  { path: '/settings', icon: Settings, label: 'Settings' },
 ];
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
@@ -39,17 +43,67 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Desktop Sidebar */}
-      <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:block lg:w-64 lg:border-r lg:border-border lg:bg-card">
-        <div className="flex h-full flex-col">
-        {/* Logo */}
-        <Link to="/" className="flex h-16 items-center gap-2 border-b border-border px-6 hover:bg-secondary/50 transition-colors">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <TrendingUp className="w-5 h-5 text-primary-foreground" />
+      {/* Top Navigation Bar - Always visible */}
+      <header className="fixed top-0 left-0 right-0 z-50 h-14 border-b border-border bg-card/95 backdrop-blur-sm">
+        <div className="h-full px-4 flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <Link to="/dashboard" className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-primary-foreground" />
+              </div>
+              <span className="font-bold text-lg hidden sm:inline">TeenVest</span>
+            </Link>
+            
+            {/* Top Nav Links - Desktop */}
+            <nav className="hidden md:flex items-center gap-1">
+              <Link 
+                to="/learn" 
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  location.pathname === '/learn' ? 'bg-secondary text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                }`}
+              >
+                Learn
+              </Link>
+              <Link 
+                to="/screener" 
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  location.pathname === '/screener' ? 'bg-secondary text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                }`}
+              >
+                Screener
+              </Link>
+              <Link 
+                to="/leaderboard" 
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  location.pathname === '/leaderboard' ? 'bg-secondary text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                }`}
+              >
+                Leaderboard
+              </Link>
+            </nav>
           </div>
-          <span className="font-bold text-lg">TeenVest</span>
-        </Link>
+          
+          <div className="flex items-center gap-2">
+            <Link to="/settings">
+              <Button variant="ghost" size="icon" className="text-muted-foreground">
+                <Settings className="w-5 h-5" />
+              </Button>
+            </Link>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </Button>
+          </div>
+        </div>
+      </header>
 
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:fixed lg:top-14 lg:inset-y-0 lg:left-0 lg:z-40 lg:block lg:w-64 lg:border-r lg:border-border lg:bg-card">
+        <div className="flex h-[calc(100vh-3.5rem)] flex-col">
           {/* Navigation */}
           <nav className="flex-1 space-y-1 p-4">
             {navItems.map((item) => {
@@ -85,26 +139,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </div>
       </aside>
 
-      {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 h-16 border-b border-border bg-card flex items-center justify-between px-4">
-        <Link to="/dashboard" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <TrendingUp className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <span className="font-bold">TeenVest</span>
-        </Link>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-        >
-          {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </Button>
-      </header>
-
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 z-40 bg-background pt-16">
+        <div className="lg:hidden fixed inset-0 z-40 bg-background pt-14">
           <nav className="p-4 space-y-1">
             {navItems.map((item) => {
               const isActive = location.pathname === item.path;
@@ -137,7 +174,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       )}
 
       {/* Main Content */}
-      <main className="lg:pl-64 pt-16 lg:pt-0 min-h-screen">
+      <main className="lg:pl-64 pt-14 min-h-screen">
         <div className="p-6">{children}</div>
       </main>
     </div>
