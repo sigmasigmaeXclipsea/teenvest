@@ -79,13 +79,17 @@ export const fetchStockQuote = async (symbol: string): Promise<StockQuote> => {
   const safeSymbol = (symbol || '').trim().toUpperCase();
   if (!safeSymbol) throw new Error('Symbol is required');
 
+  console.log(`[StockAPI] Fetching: ${API_BASE_URL}/${safeSymbol}`);
+  
   const response = await fetch(`${API_BASE_URL}/${safeSymbol}`);
   
   if (!response.ok) {
+    console.error(`[StockAPI] Failed to fetch ${safeSymbol}: ${response.status}`);
     throw new Error(`Failed to fetch stock data for ${safeSymbol}`);
   }
   
   const data: APIResponse = await response.json();
+  console.log(`[StockAPI] Raw response for ${safeSymbol}:`, data);
 
   // Normalize the response shape into our StockQuote.
   const isFinnhubShape = typeof (data as any)?.quote === 'object' || typeof (data as any)?.profile === 'object';
