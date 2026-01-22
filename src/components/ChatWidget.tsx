@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 type Message = {
   role: 'user' | 'assistant';
@@ -60,11 +61,22 @@ const ChatWidget = () => {
     };
 
     try {
+      // Get user session for authenticated request
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setMessages(prev => [
+          ...prev,
+          { role: 'assistant', content: "Please log in to use the chat feature! 🔐" },
+        ]);
+        setIsLoading(false);
+        return;
+      }
+
       const resp = await fetch(CHAT_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ messages: [...messages, userMessage] }),
       });
@@ -126,9 +138,13 @@ const ChatWidget = () => {
       }
     } catch (error: any) {
       console.error('Chat error:', error);
+      // Sanitize error message - don't expose internal details
+      const userFriendlyMessage = error.message?.includes('Authentication') 
+        ? 'Please log in to use the chat feature.'
+        : 'Something went wrong. Please try again!';
       setMessages(prev => [
         ...prev,
-        { role: 'assistant', content: `Oops! ${error.message || 'Something went wrong. Please try again!'} 😅` },
+        { role: 'assistant', content: `Oops! ${userFriendlyMessage} 😅` },
       ]);
     } finally {
       setIsLoading(false);

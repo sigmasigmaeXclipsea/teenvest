@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { getUserFriendlyError } from '@/lib/errorMessages';
 
 interface LearningAIProps {
   quizResults: any[];
@@ -32,7 +33,7 @@ const LearningAI = ({ quizResults, completedModules, allModules }: LearningAIPro
       console.error('Learning AI error:', error);
       toast({
         title: 'AI Recommendations Failed',
-        description: error.message || 'Could not get recommendations. Please try again.',
+        description: getUserFriendlyError(error),
         variant: 'destructive',
       });
     } finally {

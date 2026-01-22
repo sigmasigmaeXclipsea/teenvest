@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { getUserFriendlyError } from '@/lib/errorMessages';
 
 interface PortfolioHealthAIProps {
   holdings: any[];
@@ -33,7 +34,7 @@ const PortfolioHealthAI = ({ holdings, cashBalance, totalValue, startingBalance 
       console.error('Portfolio AI error:', error);
       toast({
         title: 'AI Analysis Failed',
-        description: error.message || 'Could not analyze portfolio. Please try again.',
+        description: getUserFriendlyError(error),
         variant: 'destructive',
       });
     } finally {
