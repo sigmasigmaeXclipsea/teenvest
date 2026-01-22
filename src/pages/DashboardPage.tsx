@@ -7,13 +7,33 @@ import { Link } from 'react-router-dom';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { usePortfolio, useHoldings } from '@/hooks/usePortfolio';
 import { getStockBySymbol } from '@/data/mockStocks';
-
+import PortfolioHealthAI from '@/components/PortfolioHealthAI';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 const COLORS = ['hsl(142, 76%, 36%)', 'hsl(262, 83%, 58%)', 'hsl(200, 98%, 39%)', 'hsl(38, 92%, 50%)', 'hsl(340, 82%, 52%)'];
 
 const DashboardPage = () => {
+  const { user } = useAuth();
   const { data: portfolio, isLoading: portfolioLoading } = usePortfolio();
   const { data: holdings, isLoading: holdingsLoading } = useHoldings();
 
+  // Fetch user's starting balance from profile
+  const { data: profile } = useQuery({
+    queryKey: ['profile', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase
+        .from('profiles')
+        .select('starting_balance')
+        .eq('user_id', user.id)
+        .single();
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const startingBalance = profile?.starting_balance || 10000;
   const portfolioStats = useMemo(() => {
     if (!portfolio || !holdings) return null;
 
@@ -28,7 +48,6 @@ const DashboardPage = () => {
     });
 
     const totalValue = cashBalance + investedValue;
-    const startingBalance = 10000; // Default starting balance
     const totalGain = totalValue - startingBalance;
     const gainPercent = (totalGain / startingBalance) * 100;
 
@@ -266,6 +285,14 @@ const DashboardPage = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* AI Portfolio Health */}
+        <PortfolioHealthAI
+          holdings={holdings || []}
+          cashBalance={portfolioStats?.cashBalance || 0}
+          totalValue={portfolioStats?.totalValue || 0}
+          startingBalance={startingBalance}
+        />
       </div>
     </DashboardLayout>
   );
