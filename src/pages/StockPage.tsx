@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
-import { TrendingUp, TrendingDown, ExternalLink, ArrowLeft, Star, StarOff, Loader2, Globe, Building2, Calendar, DollarSign, BarChart3, Activity } from 'lucide-react';
+import { TrendingUp, TrendingDown, ExternalLink, ArrowLeft, Star, StarOff, Loader2, Globe, Building2, Calendar, DollarSign, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +8,9 @@ import { useStockQuote } from '@/hooks/useStockAPI';
 import { useWatchlist, useAddToWatchlist, useRemoveFromWatchlist } from '@/hooks/useWatchlist';
 import { useToast } from '@/hooks/use-toast';
 import { formatMarketCap, formatVolume } from '@/data/mockStocks';
+import StockLineChart from '@/components/StockLineChart';
+import StockCandlestickChart from '@/components/StockCandlestickChart';
+import StockNews from '@/components/StockNews';
 
 const StockPage = () => {
   const { symbol } = useParams<{ symbol: string }>();
@@ -69,14 +72,9 @@ const StockPage = () => {
             <Link to="/screener">
               <Button variant="ghost" size="icon"><ArrowLeft className="w-5 h-5" /></Button>
             </Link>
-            {stock.logo && (
-              <img 
-                src={stock.logo} 
-                alt={stock.companyName} 
-                className="w-14 h-14 rounded-lg object-contain bg-background border p-1"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-              />
-            )}
+            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center border">
+              <span className="text-lg font-bold text-primary">{stock.symbol.slice(0, 2)}</span>
+            </div>
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-3xl font-bold">{stock.symbol}</h1>
@@ -113,6 +111,29 @@ const StockPage = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Charts Grid */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          <StockLineChart 
+            symbol={stock.symbol}
+            currentPrice={stock.price}
+            previousClose={stock.previousClose}
+            high={stock.high}
+            low={stock.low}
+            open={stock.open}
+          />
+          <StockCandlestickChart 
+            symbol={stock.symbol}
+            currentPrice={stock.price}
+            previousClose={stock.previousClose}
+            high={stock.high}
+            low={stock.low}
+            open={stock.open}
+          />
+        </div>
+
+        {/* News Section */}
+        <StockNews symbol={stock.symbol} companyName={stock.companyName} />
 
         {/* Stats Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -155,7 +176,7 @@ const StockPage = () => {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <BarChart3 className="w-4 h-4" /> Market Cap
+                <Activity className="w-4 h-4" /> Market Cap
               </CardTitle>
             </CardHeader>
             <CardContent>
