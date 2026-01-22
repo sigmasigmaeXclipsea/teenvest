@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
@@ -31,14 +32,14 @@ const App = () => (
             <Route path="/home" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/screener" element={<ScreenerPage />} />
-            <Route path="/trade" element={<TradePage />} />
-            <Route path="/history" element={<HistoryPage />} />
-            <Route path="/learn" element={<LearnPage />} />
-            <Route path="/leaderboard" element={<LeaderboardPage />} />
-            <Route path="/stocks/:symbol" element={<StockPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+            <Route path="/screener" element={<ProtectedRoute><ScreenerPage /></ProtectedRoute>} />
+            <Route path="/trade" element={<ProtectedRoute><TradePage /></ProtectedRoute>} />
+            <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
+            <Route path="/learn" element={<ProtectedRoute><LearnPage /></ProtectedRoute>} />
+            <Route path="/leaderboard" element={<ProtectedRoute><LeaderboardPage /></ProtectedRoute>} />
+            <Route path="/stocks/:symbol" element={<ProtectedRoute><StockPage /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
