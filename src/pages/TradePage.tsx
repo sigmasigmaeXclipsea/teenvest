@@ -75,15 +75,15 @@ const TradePage = () => {
   const selectedStock: Stock | null = liveStockData ? {
     symbol: liveStockData.symbol,
     companyName: liveStockData.companyName,
-    price: liveStockData.price,
-    change: liveStockData.change,
-    changePercent: liveStockData.changePercent,
+    price: liveStockData.price ?? 0,
+    change: liveStockData.change ?? 0,
+    changePercent: liveStockData.changePercent ?? 0,
     volume: liveStockData.volume || 0,
     marketCap: liveStockData.marketCap || 0,
     sector: liveStockData.sector || tickerInfo?.sector || 'Unknown',
     riskLevel: liveStockData.riskLevel || 'medium',
-    high52Week: liveStockData.high,
-    low52Week: liveStockData.low,
+    high52Week: liveStockData.high ?? 0,
+    low52Week: liveStockData.low ?? 0,
   } : null;
   
   const totalCost = selectedStock ? Number(shares) * selectedStock.price : 0;
@@ -193,16 +193,16 @@ const TradePage = () => {
                       )}
                     </div>
                     <div className="text-right">
-                      <p className="text-2xl font-bold">${selectedStock.price.toFixed(2)}</p>
+                      <p className="text-2xl font-bold">${Number(selectedStock.price).toFixed(2)}</p>
                       <p className={`text-sm flex items-center gap-1 ${selectedStock.change >= 0 ? 'text-primary' : 'text-destructive'}`}>
                         {selectedStock.change >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-                        {selectedStock.changePercent.toFixed(2)}%
+                        {Number(selectedStock.changePercent).toFixed(2)}%
                       </p>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div><span className="text-muted-foreground">Day High:</span> ${selectedStock.high52Week.toFixed(2)}</div>
-                    <div><span className="text-muted-foreground">Day Low:</span> ${selectedStock.low52Week.toFixed(2)}</div>
+                    <div><span className="text-muted-foreground">Day High:</span> ${Number(selectedStock.high52Week).toFixed(2)}</div>
+                    <div><span className="text-muted-foreground">Day Low:</span> ${Number(selectedStock.low52Week).toFixed(2)}</div>
                     <div><span className="text-muted-foreground">Sector:</span> {selectedStock.sector}</div>
                     <div><span className="text-muted-foreground">Risk:</span> {selectedStock.riskLevel}</div>
                   </div>
