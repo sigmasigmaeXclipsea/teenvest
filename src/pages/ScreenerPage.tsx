@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
-import { Search, Filter, TrendingUp, TrendingDown, Loader2, Star, StarOff, Eye, RefreshCw } from 'lucide-react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { Search, Filter, TrendingUp, TrendingDown, Loader2, Star, StarOff, Eye, RefreshCw, ChevronUp } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { formatMarketCap, formatVolume, Stock } from '@/data/mockStocks';
 import { russell5000Tickers, searchTickers, getAllSectors, getTotalTickerCount, getTickerInfo, popularTickers } from '@/data/russell5000Tickers';
@@ -25,6 +26,8 @@ const ScreenerPage = () => {
   const [autoFetchedStocks, setAutoFetchedStocks] = useState<StockQuote[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
+  const [visibleCount, setVisibleCount] = useState(100);
+  const scrollRef = useRef<HTMLDivElement>(null);
   
   const fetchedSymbolsRef = useRef<Set<string>>(new Set());
   
@@ -226,8 +229,30 @@ const ScreenerPage = () => {
       }
 
       return matchesSearch && matchesSector && matchesRisk && matchesPrice && matchesMarketCap;
-    }).slice(0, 100);
+    });
   }, [search, selectedSector, selectedRisk, priceRange, marketCapFilter, allStocks, activeTab, watchlist]);
+
+  // Get visible stocks (for infinite scroll)
+  const visibleStocks = useMemo(() => {
+    return filteredStocks.slice(0, visibleCount);
+  }, [filteredStocks, visibleCount]);
+
+  // Reset visible count when filters change
+  useEffect(() => {
+    setVisibleCount(100);
+  }, [search, selectedSector, selectedRisk, priceRange, marketCapFilter, activeTab]);
+
+  // Load more stocks when scrolling near bottom
+  const handleLoadMore = useCallback(() => {
+    if (visibleCount < filteredStocks.length) {
+      setVisibleCount(prev => Math.min(prev + 100, filteredStocks.length));
+    }
+  }, [visibleCount, filteredStocks.length]);
+
+  // Scroll to top function
+  const scrollToTop = () => {
+    scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Auto-fetch live data for the first visible rows so the table shows numbers (not dashes)
   useEffect(() => {
@@ -471,31 +496,60 @@ const ScreenerPage = () => {
           <TabsContent value="all" className="mt-4">
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2">
-                  {filteredStocks.length} stocks shown
-                  {loadingPopular && <Loader2 className="w-4 h-4 animate-spin" />}
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    {filteredStocks.length.toLocaleString()} stocks found
+                    {visibleCount < filteredStocks.length && (
+                      <span className="text-sm font-normal text-muted-foreground">
+                        (showing {visibleCount.toLocaleString()})
+                      </span>
+                    )}
+                    {loadingPopular && <Loader2 className="w-4 h-4 animate-spin" />}
+                  </CardTitle>
+                  {visibleCount > 100 && (
+                    <Button variant="ghost" size="sm" onClick={scrollToTop}>
+                      <ChevronUp className="w-4 h-4 mr-1" />
+                      Top
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="overflow-x-auto">
+                <div 
+                  ref={scrollRef}
+                  className="overflow-auto max-h-[600px]"
+                  onScroll={(e) => {
+                    const target = e.target as HTMLDivElement;
+                    if (target.scrollHeight - target.scrollTop - target.clientHeight < 200) {
+                      handleLoadMore();
+                    }
+                  }}
+                >
                   <table className="w-full text-sm">
-                    <thead className="bg-secondary/30">
+                    <thead className="bg-secondary/30 sticky top-0 z-10">
                       <tr className="border-b text-left text-muted-foreground">
-                        <th className="py-3 px-2 font-medium">Symbol</th>
-                        <th className="py-3 px-2 font-medium">Price</th>
-                        <th className="py-3 px-2 font-medium">Change</th>
-                        <th className="py-3 px-2 font-medium">Mkt Cap</th>
-                        <th className="py-3 px-2 font-medium hidden sm:table-cell">Volume</th>
-                        <th className="py-3 px-2 font-medium">Sector</th>
-                        <th className="py-3 px-2 font-medium">Action</th>
+                        <th className="py-3 px-2 font-medium bg-secondary/30">Symbol</th>
+                        <th className="py-3 px-2 font-medium bg-secondary/30">Price</th>
+                        <th className="py-3 px-2 font-medium bg-secondary/30">Change</th>
+                        <th className="py-3 px-2 font-medium bg-secondary/30">Mkt Cap</th>
+                        <th className="py-3 px-2 font-medium hidden sm:table-cell bg-secondary/30">Volume</th>
+                        <th className="py-3 px-2 font-medium bg-secondary/30">Sector</th>
+                        <th className="py-3 px-2 font-medium bg-secondary/30">Action</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredStocks.map(stock => (
+                      {visibleStocks.map(stock => (
                         <StockRow key={stock.symbol} stock={stock} />
                       ))}
                     </tbody>
                   </table>
+                  {visibleCount < filteredStocks.length && (
+                    <div className="py-4 text-center">
+                      <Button variant="outline" onClick={handleLoadMore}>
+                        Load More ({(filteredStocks.length - visibleCount).toLocaleString()} remaining)
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -511,17 +565,17 @@ const ScreenerPage = () => {
               </CardHeader>
               <CardContent className="p-0">
                 {filteredStocks.length > 0 ? (
-                  <div className="overflow-x-auto">
+                  <div className="overflow-auto max-h-[600px]">
                     <table className="w-full text-sm">
-                      <thead className="bg-secondary/30">
+                      <thead className="bg-secondary/30 sticky top-0 z-10">
                         <tr className="border-b text-left text-muted-foreground">
-                          <th className="py-3 px-2 font-medium">Symbol</th>
-                          <th className="py-3 px-2 font-medium">Price</th>
-                          <th className="py-3 px-2 font-medium">Change</th>
-                          <th className="py-3 px-2 font-medium">Mkt Cap</th>
-                          <th className="py-3 px-2 font-medium hidden sm:table-cell">Volume</th>
-                          <th className="py-3 px-2 font-medium">Sector</th>
-                          <th className="py-3 px-2 font-medium">Action</th>
+                          <th className="py-3 px-2 font-medium bg-secondary/30">Symbol</th>
+                          <th className="py-3 px-2 font-medium bg-secondary/30">Price</th>
+                          <th className="py-3 px-2 font-medium bg-secondary/30">Change</th>
+                          <th className="py-3 px-2 font-medium bg-secondary/30">Mkt Cap</th>
+                          <th className="py-3 px-2 font-medium hidden sm:table-cell bg-secondary/30">Volume</th>
+                          <th className="py-3 px-2 font-medium bg-secondary/30">Sector</th>
+                          <th className="py-3 px-2 font-medium bg-secondary/30">Action</th>
                         </tr>
                       </thead>
                       <tbody>
