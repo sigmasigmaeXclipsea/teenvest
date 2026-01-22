@@ -165,6 +165,7 @@ export const useStockQuote = (symbol: string) => {
     queryFn: () => fetchStockQuote(symbol),
     enabled: !!symbol && symbol.length > 0,
     staleTime: 30000, // Cache for 30 seconds
+    refetchInterval: 30000, // Auto-refresh every 30 seconds
     retry: 2,
   });
 };
@@ -180,6 +181,7 @@ export const useMultipleStockQuotes = (symbols: string[]) => {
   return useQuery({
     queryKey: ['stocks', symbols.join(',')],
     queryFn: async () => {
+      console.log(`[StockAPI] Fetching multiple stocks: ${symbols.join(', ')}`);
       const results = await Promise.allSettled(
         symbols.map(symbol => fetchStockQuote(symbol))
       );
@@ -190,5 +192,6 @@ export const useMultipleStockQuotes = (symbols: string[]) => {
     },
     enabled: symbols.length > 0,
     staleTime: 30000,
+    refetchInterval: 30000, // Auto-refresh every 30 seconds
   });
 };
