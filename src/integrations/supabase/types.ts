@@ -352,6 +352,27 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       watchlist: {
         Row: {
           added_at: string
@@ -381,6 +402,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_admin_by_email: { Args: { _email: string }; Returns: Json }
       execute_trade: {
         Args: {
           p_company_name: string
@@ -394,6 +416,14 @@ export type Database = {
         }
         Returns: Json
       }
+      get_all_admins: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string
+          user_id: string
+        }[]
+      }
       get_leaderboard: {
         Args: never
         Returns: {
@@ -403,9 +433,19 @@ export type Database = {
           total_value: number
         }[]
       }
+      get_user_id_by_email: { Args: { _email: string }; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_owner: { Args: { _user_id: string }; Returns: boolean }
+      remove_admin_by_email: { Args: { _email: string }; Returns: Json }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -532,6 +572,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+    },
   },
 } as const
