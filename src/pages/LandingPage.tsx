@@ -134,9 +134,9 @@ const LandingPage = () => {
             className="mt-12 flex flex-wrap items-center justify-center gap-6 md:gap-12"
           >
             {[
-              { value: '10K+', label: 'Teen Traders' },
-              { value: '$50M+', label: 'Paper Traded' },
-              { value: '100%', label: 'Risk-Free' }
+              { value: '1,500+', label: 'Stocks to Trade' },
+              { value: '$100K', label: 'Virtual Cash' },
+              { value: '0%', label: 'Risk' }
             ].map((stat, i) => (
               <div key={i} className="text-center">
                 <p className="text-2xl md:text-3xl font-bold gradient-text">{stat.value}</p>

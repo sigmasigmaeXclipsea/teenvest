@@ -71,20 +71,21 @@ const TradePage = () => {
     }
   };
 
-  // Use live data if available, otherwise fall back to ticker info
+  // Use live data from either the quote hook or search mutation
   const tickerInfo = getTickerInfo(selectedSymbol);
-  const selectedStock: Stock | null = liveStockData ? {
-    symbol: liveStockData.symbol,
-    companyName: liveStockData.companyName,
-    price: liveStockData.price ?? 0,
-    change: liveStockData.change ?? 0,
-    changePercent: liveStockData.changePercent ?? 0,
-    volume: liveStockData.volume || 0,
-    marketCap: liveStockData.marketCap || 0,
-    sector: liveStockData.sector || tickerInfo?.sector || 'Unknown',
-    riskLevel: liveStockData.riskLevel || 'medium',
-    high52Week: liveStockData.high ?? 0,
-    low52Week: liveStockData.low ?? 0,
+  const currentQuote = liveStockData || liveQuote;
+  const selectedStock: Stock | null = currentQuote ? {
+    symbol: currentQuote.symbol,
+    companyName: currentQuote.companyName,
+    price: currentQuote.price ?? 0,
+    change: currentQuote.change ?? 0,
+    changePercent: currentQuote.changePercent ?? 0,
+    volume: currentQuote.volume || 0,
+    marketCap: currentQuote.marketCap || 0,
+    sector: currentQuote.sector || tickerInfo?.sector || 'Unknown',
+    riskLevel: currentQuote.riskLevel || 'medium',
+    high52Week: currentQuote.high ?? 0,
+    low52Week: currentQuote.low ?? 0,
   } : null;
   
   const totalCost = selectedStock ? Number(shares) * selectedStock.price : 0;
@@ -154,7 +155,7 @@ const TradePage = () => {
               </div>
 
               {/* Search suggestions */}
-              {tickerSearch && (
+              {tickerSearch && !searchStock.isPending && (
                 <div className="border rounded-lg bg-background max-h-48 overflow-y-auto">
                   <p className="text-xs text-muted-foreground p-2 border-b">
                     {getTotalTickerCount()} Russell stocks available - showing matches:
@@ -165,7 +166,6 @@ const TradePage = () => {
                       className="w-full text-left px-3 py-2 hover:bg-secondary text-sm flex justify-between items-center"
                       onClick={() => {
                         setSelectedSymbol(t.symbol);
-                        setLiveStockData(null);
                         setTickerSearch('');
                       }}
                     >
