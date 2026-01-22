@@ -25,33 +25,44 @@ export interface StockQuote {
 }
 
 export const fetchStockQuote = async (symbol: string): Promise<StockQuote> => {
-  const res = await fetch(`${API_BASE_URL}/${symbol.toUpperCase()}`);
+  if (!symbol || typeof symbol !== 'string') {
+    throw new Error("Invalid symbol");
+  }
+  
+  const cleanSymbol = symbol.trim().toUpperCase();
+  if (!cleanSymbol) {
+    throw new Error("Empty symbol");
+  }
+
+  const res = await fetch(`${API_BASE_URL}/${cleanSymbol}`);
   if (!res.ok) throw new Error("Fetch failed");
 
   const data = await res.json();
 
   const price = data?.quote?.c;
-  if (price == null) throw new Error("Missing price");
+  if (price == null || typeof price !== 'number') {
+    throw new Error("Missing price");
+  }
 
   return {
-    symbol: data.profile?.ticker || symbol.toUpperCase(),
-    companyName: data.profile?.name || symbol.toUpperCase(),
+    symbol: data.profile?.ticker || cleanSymbol,
+    companyName: data.profile?.name || cleanSymbol,
     price,
-    change: data.quote?.d ?? 0,
-    changePercent: data.quote?.dp ?? 0,
-    high: data.quote?.h ?? 0,
-    low: data.quote?.l ?? 0,
-    open: data.quote?.o ?? 0,
-    previousClose: data.quote?.pc ?? 0,
-    volume: data.quote?.v ?? 0,
-    marketCap: (data.profile?.marketCapitalization ?? 0) * 1_000_000,
-    logo: data.profile?.logo,
-    sector: data.profile?.finnhubIndustry,
-    exchange: data.profile?.exchange,
-    country: data.profile?.country,
-    ipo: data.profile?.ipo,
-    weburl: data.profile?.weburl,
-    shareOutstanding: data.profile?.shareOutstanding,
+    change: Number(data.quote?.d) || 0,
+    changePercent: Number(data.quote?.dp) || 0,
+    high: Number(data.quote?.h) || 0,
+    low: Number(data.quote?.l) || 0,
+    open: Number(data.quote?.o) || 0,
+    previousClose: Number(data.quote?.pc) || 0,
+    volume: Number(data.quote?.v) || 0,
+    marketCap: (Number(data.profile?.marketCapitalization) || 0) * 1_000_000,
+    logo: data.profile?.logo || undefined,
+    sector: data.profile?.finnhubIndustry || undefined,
+    exchange: data.profile?.exchange || undefined,
+    country: data.profile?.country || undefined,
+    ipo: data.profile?.ipo || undefined,
+    weburl: data.profile?.weburl || undefined,
+    shareOutstanding: Number(data.profile?.shareOutstanding) || undefined,
   };
 };
 
@@ -59,30 +70,41 @@ export const useStockQuote = (symbol: string) =>
   useQuery({
     queryKey: ["stock", symbol],
     queryFn: () => fetchStockQuote(symbol),
-    enabled: !!symbol,
-    staleTime: 0,
-    gcTime: 0,
-    refetchInterval: 10000,
+    enabled: !!symbol && typeof symbol === 'string' && symbol.trim().length > 0,
+    staleTime: 30000,
+    gcTime: 60000,
+    refetchInterval: 30000,
     refetchOnWindowFocus: true,
+    retry: 1,
   });
 
 export const useSearchStock = () =>
   useMutation({
-    mutationFn: (symbol: string) => fetchStockQuote(symbol),
+    mutationFn: (symbol: string) => {
+      if (!symbol || typeof symbol !== 'string') {
+        return Promise.reject(new Error("Invalid symbol"));
+      }
+      return fetchStockQuote(symbol.trim().toUpperCase());
+    },
   });
 
 export const useMultipleStockQuotes = (symbols: string[]) =>
   useQuery({
     queryKey: ["stocks", symbols.join(",")],
     queryFn: async () => {
+      // Filter out invalid symbols first
+      const validSymbols = symbols.filter(s => s && typeof s === 'string' && s.trim().length > 0);
+      if (validSymbols.length === 0) return [];
+      
       const results = await Promise.allSettled(
-        symbols.map((s) => fetchStockQuote(s))
+        validSymbols.map((s) => fetchStockQuote(s))
       );
       return results
         .filter((r): r is PromiseFulfilledResult<StockQuote> => r.status === "fulfilled")
         .map((r) => r.value);
     },
-    enabled: symbols.length > 0,
+    enabled: Array.isArray(symbols) && symbols.length > 0,
     staleTime: 30000,
     gcTime: 60000,
+    retry: 1,
   });
