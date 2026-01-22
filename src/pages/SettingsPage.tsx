@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Moon, Sun, User, Bell, Shield, LogOut } from 'lucide-react';
+import { Moon, Sun, User, Bell, Shield, LogOut, Eye, EyeOff } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -10,11 +10,14 @@ import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const SettingsPage = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -28,6 +31,59 @@ const SettingsPage = () => {
     tradeConfirmations: true,
     weeklyDigest: false,
     achievements: true,
+  });
+
+  // Fetch profile settings
+  const { data: profile, isLoading: loadingProfile } = useQuery({
+    queryKey: ['profile-settings', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('display_name, profile_public')
+        .eq('user_id', user!.id)
+        .single();
+      if (error) throw error;
+      // Cast since types may not have synced yet
+      return data as unknown as { display_name: string | null; profile_public: boolean };
+    },
+    enabled: !!user,
+  });
+
+  const [displayName, setDisplayName] = useState('');
+  const [profilePublic, setProfilePublic] = useState(true);
+
+  useEffect(() => {
+    if (profile) {
+      setDisplayName(profile.display_name || '');
+      setProfilePublic(profile.profile_public ?? true);
+    }
+  }, [profile]);
+
+  const updateProfile = useMutation({
+    mutationFn: async ({ displayName, profilePublic }: { displayName: string; profilePublic: boolean }) => {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          display_name: displayName || null,
+          profile_public: profilePublic 
+        } as any)
+        .eq('user_id', user!.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile-settings'] });
+      toast({
+        title: 'Profile updated',
+        description: 'Your profile settings have been saved.',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to update profile.',
+        variant: 'destructive',
+      });
+    },
   });
 
   useEffect(() => {
@@ -59,6 +115,10 @@ const SettingsPage = () => {
       title: 'Settings saved',
       description: 'Your notification preferences have been updated.',
     });
+  };
+
+  const handleSaveProfile = () => {
+    updateProfile.mutate({ displayName, profilePublic });
   };
 
   return (
@@ -120,8 +180,56 @@ const SettingsPage = () => {
               <Input
                 id="display-name"
                 placeholder="Your display name"
-                defaultValue={user?.user_metadata?.display_name || ''}
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
               />
+              <p className="text-xs text-muted-foreground">
+                This name will be shown on the leaderboard
+              </p>
+            </div>
+            <Button onClick={handleSaveProfile} disabled={updateProfile.isPending}>
+              {updateProfile.isPending ? 'Saving...' : 'Save Profile'}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Privacy & Security */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="w-5 h-5" />
+              Privacy & Security
+            </CardTitle>
+            <CardDescription>Manage your privacy settings</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="flex items-center gap-2">
+                  {profilePublic ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                  Public Profile
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Allow others to view your profile from the leaderboard
+                </p>
+              </div>
+              <Switch 
+                checked={profilePublic} 
+                onCheckedChange={(checked) => {
+                  setProfilePublic(checked);
+                  updateProfile.mutate({ displayName, profilePublic: checked });
+                }}
+              />
+            </div>
+            <Separator />
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Show on Leaderboard</Label>
+                <p className="text-sm text-muted-foreground">
+                  Allow others to see your ranking
+                </p>
+              </div>
+              <Switch defaultChecked />
             </div>
           </CardContent>
         </Card>
@@ -198,28 +306,6 @@ const SettingsPage = () => {
             <Button onClick={handleSaveNotifications} className="mt-4">
               Save Preferences
             </Button>
-          </CardContent>
-        </Card>
-
-        {/* Privacy & Security */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="w-5 h-5" />
-              Privacy & Security
-            </CardTitle>
-            <CardDescription>Manage your privacy settings</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Show on Leaderboard</Label>
-                <p className="text-sm text-muted-foreground">
-                  Allow others to see your ranking
-                </p>
-              </div>
-              <Switch defaultChecked />
-            </div>
           </CardContent>
         </Card>
 

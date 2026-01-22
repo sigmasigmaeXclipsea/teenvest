@@ -349,10 +349,10 @@ const ScreenerPage = () => {
         <td className="py-3 px-2 text-sm">
           {marketCap > 0 ? formatMarketCap(marketCap) : '—'}
         </td>
-        <td className="py-3 px-2 text-sm hidden sm:table-cell">
+        <td className="py-3 px-2 text-sm">
           {volume > 0 ? formatVolume(volume) : '—'}
         </td>
-        <td className="py-3 px-2">
+        <td className="py-3 px-2 hidden sm:table-cell">
           <Badge variant="outline" className="text-xs">{stock.sector || 'Unknown'}</Badge>
         </td>
         <td className="py-3 px-2">
@@ -532,8 +532,8 @@ const ScreenerPage = () => {
                         <th className="py-3 px-2 font-medium bg-secondary/30">Price</th>
                         <th className="py-3 px-2 font-medium bg-secondary/30">Change</th>
                         <th className="py-3 px-2 font-medium bg-secondary/30">Mkt Cap</th>
-                        <th className="py-3 px-2 font-medium hidden sm:table-cell bg-secondary/30">Volume</th>
-                        <th className="py-3 px-2 font-medium bg-secondary/30">Sector</th>
+                        <th className="py-3 px-2 font-medium bg-secondary/30">Volume</th>
+                        <th className="py-3 px-2 font-medium hidden sm:table-cell bg-secondary/30">Sector</th>
                         <th className="py-3 px-2 font-medium bg-secondary/30">Action</th>
                       </tr>
                     </thead>
@@ -573,8 +573,8 @@ const ScreenerPage = () => {
                           <th className="py-3 px-2 font-medium bg-secondary/30">Price</th>
                           <th className="py-3 px-2 font-medium bg-secondary/30">Change</th>
                           <th className="py-3 px-2 font-medium bg-secondary/30">Mkt Cap</th>
-                          <th className="py-3 px-2 font-medium hidden sm:table-cell bg-secondary/30">Volume</th>
-                          <th className="py-3 px-2 font-medium bg-secondary/30">Sector</th>
+                          <th className="py-3 px-2 font-medium bg-secondary/30">Volume</th>
+                          <th className="py-3 px-2 font-medium hidden sm:table-cell bg-secondary/30">Sector</th>
                           <th className="py-3 px-2 font-medium bg-secondary/30">Action</th>
                         </tr>
                       </thead>

@@ -448,8 +448,10 @@ export type Database = {
         Returns: {
           display_name: string
           gain_percent: number
+          profile_public: boolean
           rank: number
           total_value: number
+          user_id: string
         }[]
       }
       get_platform_stats: { Args: never; Returns: Json }
