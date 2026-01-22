@@ -13,6 +13,7 @@ import { russell5000Tickers, searchTickers, getTickerInfo, getTotalTickerCount }
 import { usePortfolio, useHoldings, useExecuteTrade } from '@/hooks/usePortfolio';
 import { useToast } from '@/hooks/use-toast';
 import { useStockQuote, useSearchStock, StockQuote } from '@/hooks/useStockAPI';
+import { getUserFriendlyError } from '@/lib/errorMessages';
 
 const TradePage = () => {
   const [searchParams] = useSearchParams();
@@ -108,7 +109,7 @@ const TradePage = () => {
       toast({ title: 'Trade executed!', description: `${tradeType === 'buy' ? 'Bought' : 'Sold'} ${shares} shares of ${selectedStock.symbol}` });
       setShares('');
     } catch (error: any) {
-      toast({ title: 'Trade failed', description: error.message, variant: 'destructive' });
+      toast({ title: 'Trade failed', description: getUserFriendlyError(error), variant: 'destructive' });
     }
   };
 

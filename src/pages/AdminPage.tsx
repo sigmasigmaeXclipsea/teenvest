@@ -10,7 +10,19 @@ import { usePortfolio } from '@/hooks/usePortfolio';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Lock, DollarSign, ArrowLeft, AlertTriangle } from 'lucide-react';
+import { getUserFriendlyError } from '@/lib/errorMessages';
 
+/**
+ * ⚠️ SECURITY WARNING ⚠️
+ * This admin panel uses a client-side hardcoded password which is NOT secure.
+ * The password is visible in the source code and can be bypassed via browser dev tools.
+ * This implementation was explicitly requested by the user for development/testing purposes.
+ * 
+ * For production use, implement proper role-based access control:
+ * 1. Store admin roles in a separate database table
+ * 2. Validate admin status server-side via RLS policies or edge functions
+ * 3. Never use hardcoded passwords in client-side code
+ */
 const ADMIN_PASSWORD = 'ie_!so1o!2011';
 
 const AdminPage = () => {
@@ -65,7 +77,8 @@ const AdminPage = () => {
       toast.success(`Cash balance updated to $${cashValue.toLocaleString()}`);
       setNewCashBalance('');
     } catch (error: any) {
-      toast.error(error.message || 'Failed to update cash balance');
+      // Sanitize error message
+      toast.error(getUserFriendlyError(error));
     } finally {
       setIsUpdating(false);
     }

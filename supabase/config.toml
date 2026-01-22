@@ -1,1 +1,10 @@
 project_id = "qhnxaehwrntkioyioxtk"
+
+[functions.chat]
+verify_jwt = false
+
+[functions.learning-ai]
+verify_jwt = false
+
+[functions.portfolio-health-ai]
+verify_jwt = false

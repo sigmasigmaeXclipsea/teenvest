@@ -24,18 +24,28 @@ export interface StockQuote {
   shareOutstanding?: number;
 }
 
+// Validate stock symbol format: 1-5 uppercase letters only
+const isValidSymbol = (symbol: string): boolean => {
+  return /^[A-Z]{1,5}$/.test(symbol);
+};
+
 export const fetchStockQuote = async (symbol: string): Promise<StockQuote> => {
   if (!symbol || typeof symbol !== 'string') {
-    throw new Error("Invalid symbol");
+    throw new Error("Please enter a valid stock symbol");
   }
   
   const cleanSymbol = symbol.trim().toUpperCase();
   if (!cleanSymbol) {
-    throw new Error("Empty symbol");
+    throw new Error("Please enter a stock symbol");
   }
 
-  const res = await fetch(`${API_BASE_URL}/${cleanSymbol}`);
-  if (!res.ok) throw new Error("Fetch failed");
+  // Strict regex validation to prevent injection attacks
+  if (!isValidSymbol(cleanSymbol)) {
+    throw new Error("Invalid symbol format. Use 1-5 letters (e.g., AAPL, TSLA)");
+  }
+
+  const res = await fetch(`${API_BASE_URL}/${encodeURIComponent(cleanSymbol)}`);
+  if (!res.ok) throw new Error("Unable to fetch stock data");
 
   const data = await res.json();
 
