@@ -4,12 +4,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { usePortfolio } from '@/hooks/usePortfolio';
 import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Lock, DollarSign, ArrowLeft, Shield, UserPlus, Trash2, Crown, Loader2 } from 'lucide-react';
+import { 
+  Lock, DollarSign, ArrowLeft, Shield, UserPlus, Trash2, Crown, Loader2,
+  Users, TrendingUp, BarChart3, RefreshCw, Search, Award, Activity,
+  BookOpen, Briefcase, ArrowUpRight, ArrowDownRight
+} from 'lucide-react';
 import { getUserFriendlyError } from '@/lib/errorMessages';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 
@@ -24,55 +31,95 @@ const AdminPage = () => {
   const [newCashBalance, setNewCashBalance] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [newAdminEmail, setNewAdminEmail] = useState('');
+  const [lookupEmail, setLookupEmail] = useState('');
+  const [resetEmail, setResetEmail] = useState('');
+  const [achievementEmail, setAchievementEmail] = useState('');
+  const [selectedAchievement, setSelectedAchievement] = useState('');
+  const [startingBalanceEmail, setStartingBalanceEmail] = useState('');
+  const [newStartingBalance, setNewStartingBalance] = useState('');
 
-  // Check if current user is owner
   const isOwner = user?.email === OWNER_EMAIL;
 
-  // Check if user has admin role (owner is always admin)
+  // Check if user has admin role
   const { data: hasAdminRole, isLoading: checkingRole } = useQuery({
     queryKey: ['admin-role', user?.id],
     queryFn: async () => {
       if (!user) return false;
-      
-      // Owner always has access
       if (isOwner) return true;
       
-      // Check user_roles table via RPC
       const { data, error } = await supabase.rpc('has_role', {
         _user_id: user.id,
         _role: 'admin'
       });
       
-      if (error) {
-        console.error('Error checking role:', error);
-        return false;
-      }
-      
+      if (error) return false;
       return data === true;
     },
     enabled: !!user,
   });
 
-  // Fetch all admins (only owner can see this)
+  // Platform statistics
+  const { data: stats, isLoading: loadingStats, refetch: refetchStats } = useQuery({
+    queryKey: ['platform-stats'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_platform_stats');
+      if (error) throw error;
+      return data as {
+        total_users: number;
+        total_trades: number;
+        total_trades_today: number;
+        total_buy_orders: number;
+        total_sell_orders: number;
+        total_volume: number;
+        active_holdings: number;
+        unique_stocks_traded: number;
+        avg_portfolio_value: number;
+        completed_lessons: number;
+      };
+    },
+    enabled: hasAdminRole === true,
+  });
+
+  // Recent platform trades
+  const { data: recentTrades, isLoading: loadingTrades, refetch: refetchTrades } = useQuery({
+    queryKey: ['recent-platform-trades'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_recent_platform_trades', { _limit: 15 });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: hasAdminRole === true,
+  });
+
+  // All achievements for dropdown
+  const { data: achievements } = useQuery({
+    queryKey: ['all-achievements'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_all_achievements');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: hasAdminRole === true,
+  });
+
+  // Admins list (owner only)
   const { data: admins, isLoading: loadingAdmins } = useQuery({
     queryKey: ['all-admins'],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_all_admins');
-      if (error) {
-        console.error('Error fetching admins:', error);
-        return [];
-      }
+      if (error) return [];
       return data || [];
     },
     enabled: isOwner,
   });
 
-  // Add admin mutation
+  // User lookup state
+  const [lookedUpUser, setLookedUpUser] = useState<any>(null);
+
+  // Mutations
   const addAdminMutation = useMutation({
     mutationFn: async (email: string) => {
-      const { data, error } = await supabase.rpc('add_admin_by_email', {
-        _email: email
-      });
+      const { data, error } = await supabase.rpc('add_admin_by_email', { _email: email });
       if (error) throw error;
       return data;
     },
@@ -85,17 +132,12 @@ const AdminPage = () => {
         toast.error(data?.error || 'Failed to add admin');
       }
     },
-    onError: (error: any) => {
-      toast.error(getUserFriendlyError(error));
-    },
+    onError: (error: any) => toast.error(getUserFriendlyError(error)),
   });
 
-  // Remove admin mutation
   const removeAdminMutation = useMutation({
     mutationFn: async (email: string) => {
-      const { data, error } = await supabase.rpc('remove_admin_by_email', {
-        _email: email
-      });
+      const { data, error } = await supabase.rpc('remove_admin_by_email', { _email: email });
       if (error) throw error;
       return data;
     },
@@ -103,18 +145,73 @@ const AdminPage = () => {
       toast.success('Admin removed');
       queryClient.invalidateQueries({ queryKey: ['all-admins'] });
     },
-    onError: (error: any) => {
-      toast.error(getUserFriendlyError(error));
+    onError: (error: any) => toast.error(getUserFriendlyError(error)),
+  });
+
+  const resetPortfolioMutation = useMutation({
+    mutationFn: async (email: string) => {
+      const { data, error } = await supabase.rpc('admin_reset_portfolio', { _target_email: email });
+      if (error) throw error;
+      return data;
     },
+    onSuccess: (data: any) => {
+      if (data?.success) {
+        toast.success(`Portfolio reset to $${data.reset_balance.toLocaleString()}`);
+        setResetEmail('');
+        queryClient.invalidateQueries({ queryKey: ['portfolio'] });
+        refetchStats();
+      } else {
+        toast.error(data?.error || 'Failed to reset portfolio');
+      }
+    },
+    onError: (error: any) => toast.error(getUserFriendlyError(error)),
+  });
+
+  const grantAchievementMutation = useMutation({
+    mutationFn: async ({ email, achievement }: { email: string; achievement: string }) => {
+      const { data, error } = await supabase.rpc('admin_grant_achievement', { 
+        _email: email, 
+        _achievement_name: achievement 
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data: any) => {
+      if (data?.success) {
+        toast.success(`Achievement "${data.achievement}" granted!`);
+        setAchievementEmail('');
+        setSelectedAchievement('');
+      } else {
+        toast.error(data?.error || 'Failed to grant achievement');
+      }
+    },
+    onError: (error: any) => toast.error(getUserFriendlyError(error)),
+  });
+
+  const setStartingBalanceMutation = useMutation({
+    mutationFn: async ({ email, balance }: { email: string; balance: number }) => {
+      const { data, error } = await supabase.rpc('admin_set_starting_balance', { 
+        _email: email, 
+        _new_balance: balance 
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data: any) => {
+      if (data?.success) {
+        toast.success(`Starting balance set to $${data.new_balance.toLocaleString()}`);
+        setStartingBalanceEmail('');
+        setNewStartingBalance('');
+      } else {
+        toast.error(data?.error || 'Failed to update starting balance');
+      }
+    },
+    onError: (error: any) => toast.error(getUserFriendlyError(error)),
   });
 
   const handleUpdateCash = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!user) {
-      toast.error('You must be logged in');
-      return;
-    }
+    if (!user) return;
 
     const cashValue = parseFloat(newCashBalance);
     if (isNaN(cashValue) || cashValue < 0) {
@@ -132,8 +229,6 @@ const AdminPage = () => {
       if (error) throw error;
 
       queryClient.invalidateQueries({ queryKey: ['portfolio'] });
-      queryClient.invalidateQueries({ queryKey: ['holdings'] });
-      
       toast.success(`Cash balance updated to $${cashValue.toLocaleString()}`);
       setNewCashBalance('');
     } catch (error: any) {
@@ -143,10 +238,21 @@ const AdminPage = () => {
     }
   };
 
-  const handleAddAdmin = (e: React.FormEvent) => {
+  const handleLookupUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newAdminEmail.trim()) return;
-    addAdminMutation.mutate(newAdminEmail.trim().toLowerCase());
+    if (!lookupEmail.trim()) return;
+
+    try {
+      const { data, error } = await supabase.rpc('admin_lookup_user', { _email: lookupEmail.trim() });
+      if (error) throw error;
+      const userData = data as { found: boolean; [key: string]: any } | null;
+      setLookedUpUser(userData);
+      if (!userData?.found) {
+        toast.error('User not found');
+      }
+    } catch (error: any) {
+      toast.error(getUserFriendlyError(error));
+    }
   };
 
   // Loading state
@@ -173,15 +279,10 @@ const AdminPage = () => {
               <CardTitle>Access Denied</CardTitle>
               <CardDescription>
                 You don't have permission to access the admin panel.
-                Contact the owner to request admin access.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button
-                variant="ghost"
-                className="w-full"
-                onClick={() => navigate('/dashboard')}
-              >
+              <Button variant="ghost" className="w-full" onClick={() => navigate('/dashboard')}>
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Dashboard
               </Button>
@@ -194,7 +295,8 @@ const AdminPage = () => {
 
   return (
     <DashboardLayout>
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="space-y-6">
+        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -202,131 +304,432 @@ const AdminPage = () => {
               Admin Panel
             </h1>
             <p className="text-muted-foreground">
-            {isOwner ? (
-              <span className="flex items-center gap-1">
-                <Crown className="w-4 h-4 text-primary" />
-                Owner Access
-              </span>
-            ) : (
+              {isOwner ? (
+                <span className="flex items-center gap-1">
+                  <Crown className="w-4 h-4 text-primary" />
+                  Owner Access
+                </span>
+              ) : (
                 'Admin Access'
               )}
             </p>
           </div>
+          <Button variant="outline" size="sm" onClick={() => { refetchStats(); refetchTrades(); }}>
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Refresh
+          </Button>
         </div>
 
-        {/* Cash Balance Management */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Cash Balance</CardTitle>
-            <CardDescription>
-              Manage your account cash balance
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="p-4 rounded-lg bg-secondary/50">
-              <p className="text-sm text-muted-foreground">Current Cash Balance</p>
-              <p className="text-2xl font-bold text-primary">
-                ${portfolio?.cash_balance?.toLocaleString() ?? '0'}
-              </p>
-            </div>
-
-            <form onSubmit={handleUpdateCash} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="newCash">New Cash Balance</Label>
-                <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="newCash"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={newCashBalance}
-                    onChange={(e) => setNewCashBalance(e.target.value)}
-                    placeholder="10000.00"
-                    className="pl-9"
-                  />
-                </div>
-              </div>
-              <Button type="submit" disabled={isUpdating || !newCashBalance}>
-                {isUpdating ? 'Updating...' : 'Update Cash Balance'}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        {/* Admin Management - Owner Only */}
-        {isOwner && (
+        {/* Stats Cards */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
-            <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Crown className="w-5 h-5 text-primary" />
-              Admin Management
-            </CardTitle>
-              <CardDescription>
-                Add or remove admin access for other users
-              </CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Users</CardTitle>
+              <Users className="w-4 h-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Add Admin Form */}
-              <form onSubmit={handleAddAdmin} className="flex gap-2">
-                <div className="flex-1">
-                  <Input
-                    type="email"
-                    value={newAdminEmail}
-                    onChange={(e) => setNewAdminEmail(e.target.value)}
-                    placeholder="user@example.com"
-                  />
-                </div>
-                <Button 
-                  type="submit" 
-                  disabled={addAdminMutation.isPending || !newAdminEmail.trim()}
-                >
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Add Admin
-                </Button>
-              </form>
+            <CardContent>
+              <div className="text-2xl font-bold">{loadingStats ? '...' : stats?.total_users || 0}</div>
+            </CardContent>
+          </Card>
 
-              {/* Current Admins List */}
-              <div className="space-y-2">
-                <Label>Current Admins</Label>
-                {loadingAdmins ? (
-                  <div className="flex items-center justify-center py-4">
-                    <Loader2 className="w-5 h-5 animate-spin" />
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Trades</CardTitle>
+              <Activity className="w-4 h-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{loadingStats ? '...' : stats?.total_trades || 0}</div>
+              <p className="text-xs text-muted-foreground">{stats?.total_trades_today || 0} today</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Trading Volume</CardTitle>
+              <TrendingUp className="w-4 h-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                ${loadingStats ? '...' : Number(stats?.total_volume || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Lessons Completed</CardTitle>
+              <BookOpen className="w-4 h-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{loadingStats ? '...' : stats?.completed_lessons || 0}</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Tabbed Content */}
+        <Tabs defaultValue="activity" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+            <TabsTrigger value="activity">Activity</TabsTrigger>
+            <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="tools">Tools</TabsTrigger>
+            {isOwner && <TabsTrigger value="admins">Admins</TabsTrigger>}
+          </TabsList>
+
+          {/* Activity Tab */}
+          <TabsContent value="activity" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Platform Trades</CardTitle>
+                <CardDescription>Last 15 trades across all users</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loadingTrades ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin" />
                   </div>
-                ) : admins && admins.length > 0 ? (
-                  <div className="space-y-2">
-                    {admins.map((admin: any) => (
-                      <div
-                        key={admin.user_id}
-                        className="flex items-center justify-between p-3 rounded-lg bg-secondary/50"
-                      >
-                        <div>
-                          <p className="font-medium">{admin.email}</p>
+                ) : recentTrades && recentTrades.length > 0 ? (
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {recentTrades.map((trade: any) => (
+                      <div key={trade.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
+                        <div className="flex items-center gap-3">
+                          <div className={`p-1.5 rounded ${trade.trade_type === 'buy' ? 'bg-primary/20' : 'bg-destructive/20'}`}>
+                            {trade.trade_type === 'buy' ? (
+                              <ArrowUpRight className="w-4 h-4 text-primary" />
+                            ) : (
+                              <ArrowDownRight className="w-4 h-4 text-destructive" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-medium">{trade.symbol}</p>
+                            <p className="text-xs text-muted-foreground">{trade.user_email}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium">{Number(trade.shares).toFixed(2)} @ ${Number(trade.price).toFixed(2)}</p>
                           <p className="text-xs text-muted-foreground">
-                            Added {new Date(admin.created_at).toLocaleDateString()}
+                            {new Date(trade.created_at).toLocaleString()}
                           </p>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => removeAdminMutation.mutate(admin.email)}
-                          disabled={removeAdminMutation.isPending}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground py-4 text-center">
-                    No admins added yet. You (the owner) always have access.
-                  </p>
+                  <p className="text-center text-muted-foreground py-8">No trades yet</p>
                 )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+              </CardContent>
+            </Card>
+
+            {/* More Stats */}
+            <div className="grid gap-4 md:grid-cols-3">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Buy Orders</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-xl font-bold text-primary">{stats?.total_buy_orders || 0}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Sell Orders</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-xl font-bold text-destructive">{stats?.total_sell_orders || 0}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Unique Stocks</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-xl font-bold">{stats?.unique_stocks_traded || 0}</div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Users Tab */}
+          <TabsContent value="users" className="space-y-4">
+            {/* User Lookup */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Search className="w-5 h-5" />
+                  User Lookup
+                </CardTitle>
+                <CardDescription>Search for a user by email to view their details</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <form onSubmit={handleLookupUser} className="flex gap-2">
+                  <Input
+                    type="email"
+                    value={lookupEmail}
+                    onChange={(e) => setLookupEmail(e.target.value)}
+                    placeholder="user@example.com"
+                    className="flex-1"
+                  />
+                  <Button type="submit">Lookup</Button>
+                </form>
+
+                {lookedUpUser?.found && (
+                  <div className="p-4 rounded-lg bg-secondary/50 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-semibold">{lookedUpUser.display_name}</p>
+                        <p className="text-sm text-muted-foreground">{lookedUpUser.email}</p>
+                      </div>
+                      <Badge variant="outline">
+                        Joined {new Date(lookedUpUser.created_at).toLocaleDateString()}
+                      </Badge>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Cash Balance</p>
+                        <p className="font-semibold">${Number(lookedUpUser.cash_balance).toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Starting Balance</p>
+                        <p className="font-semibold">${Number(lookedUpUser.starting_balance).toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Holdings</p>
+                        <p className="font-semibold">{lookedUpUser.holdings_count}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Trades</p>
+                        <p className="font-semibold">{lookedUpUser.trades_count}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Invested</p>
+                        <p className="font-semibold">${Number(lookedUpUser.total_invested).toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Lessons Done</p>
+                        <p className="font-semibold">{lookedUpUser.lessons_completed}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Achievements</p>
+                        <p className="font-semibold">{lookedUpUser.achievements_earned}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Tools Tab */}
+          <TabsContent value="tools" className="space-y-4">
+            <div className="grid gap-4 lg:grid-cols-2">
+              {/* My Cash Balance */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <DollarSign className="w-5 h-5" />
+                    My Cash Balance
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="p-3 rounded-lg bg-secondary/50">
+                    <p className="text-sm text-muted-foreground">Current Balance</p>
+                    <p className="text-xl font-bold text-primary">
+                      ${portfolio?.cash_balance?.toLocaleString() ?? '0'}
+                    </p>
+                  </div>
+                  <form onSubmit={handleUpdateCash} className="flex gap-2">
+                    <div className="relative flex-1">
+                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={newCashBalance}
+                        onChange={(e) => setNewCashBalance(e.target.value)}
+                        placeholder="10000.00"
+                        className="pl-9"
+                      />
+                    </div>
+                    <Button type="submit" disabled={isUpdating || !newCashBalance}>
+                      {isUpdating ? 'Updating...' : 'Update'}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+
+              {/* Reset Portfolio */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <RefreshCw className="w-5 h-5" />
+                    Reset User Portfolio
+                  </CardTitle>
+                  <CardDescription>Delete all trades & holdings, reset to starting balance</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={(e) => { e.preventDefault(); resetPortfolioMutation.mutate(resetEmail); }} className="flex gap-2">
+                    <Input
+                      type="email"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      placeholder="user@example.com"
+                      className="flex-1"
+                    />
+                    <Button 
+                      type="submit" 
+                      variant="destructive"
+                      disabled={resetPortfolioMutation.isPending || !resetEmail.trim()}
+                    >
+                      Reset
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+
+              {/* Grant Achievement */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Award className="w-5 h-5" />
+                    Grant Achievement
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Input
+                    type="email"
+                    value={achievementEmail}
+                    onChange={(e) => setAchievementEmail(e.target.value)}
+                    placeholder="user@example.com"
+                  />
+                  <Select value={selectedAchievement} onValueChange={setSelectedAchievement}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select achievement" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {achievements?.map((a: any) => (
+                        <SelectItem key={a.id} value={a.name}>
+                          {a.icon} {a.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    onClick={() => grantAchievementMutation.mutate({ email: achievementEmail, achievement: selectedAchievement })}
+                    disabled={grantAchievementMutation.isPending || !achievementEmail || !selectedAchievement}
+                    className="w-full"
+                  >
+                    Grant Achievement
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Set Starting Balance */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Briefcase className="w-5 h-5" />
+                    Set Starting Balance
+                  </CardTitle>
+                  <CardDescription>Change a user's baseline for gain/loss calculation</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Input
+                    type="email"
+                    value={startingBalanceEmail}
+                    onChange={(e) => setStartingBalanceEmail(e.target.value)}
+                    placeholder="user@example.com"
+                  />
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={newStartingBalance}
+                      onChange={(e) => setNewStartingBalance(e.target.value)}
+                      placeholder="10000.00"
+                      className="pl-9"
+                    />
+                  </div>
+                  <Button
+                    onClick={() => setStartingBalanceMutation.mutate({ 
+                      email: startingBalanceEmail, 
+                      balance: parseFloat(newStartingBalance) 
+                    })}
+                    disabled={setStartingBalanceMutation.isPending || !startingBalanceEmail || !newStartingBalance}
+                    className="w-full"
+                  >
+                    Update Starting Balance
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Admins Tab - Owner Only */}
+          {isOwner && (
+            <TabsContent value="admins">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Crown className="w-5 h-5 text-primary" />
+                    Admin Management
+                  </CardTitle>
+                  <CardDescription>Add or remove admin access for other users</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <form onSubmit={(e) => { e.preventDefault(); addAdminMutation.mutate(newAdminEmail.trim().toLowerCase()); }} className="flex gap-2">
+                    <Input
+                      type="email"
+                      value={newAdminEmail}
+                      onChange={(e) => setNewAdminEmail(e.target.value)}
+                      placeholder="user@example.com"
+                      className="flex-1"
+                    />
+                    <Button type="submit" disabled={addAdminMutation.isPending || !newAdminEmail.trim()}>
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Add Admin
+                    </Button>
+                  </form>
+
+                  <div className="space-y-2">
+                    <Label>Current Admins</Label>
+                    {loadingAdmins ? (
+                      <div className="flex justify-center py-4">
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      </div>
+                    ) : admins && admins.length > 0 ? (
+                      <div className="space-y-2">
+                        {admins.map((admin: any) => (
+                          <div key={admin.user_id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
+                            <div>
+                              <p className="font-medium">{admin.email}</p>
+                              <p className="text-xs text-muted-foreground">
+                                Added {new Date(admin.created_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => removeAdminMutation.mutate(admin.email)}
+                              disabled={removeAdminMutation.isPending}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground py-4 text-center">
+                        No admins added yet. You (the owner) always have access.
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+        </Tabs>
       </div>
     </DashboardLayout>
   );
