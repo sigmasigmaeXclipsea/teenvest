@@ -19,6 +19,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Check if this was a temp session from a previous browser session
+    // If temp_session flag exists but we're in a new browser session, sign out
+    const isTempSession = sessionStorage.getItem('temp_session') === 'true';
+    
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -30,8 +34,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+      // If there's a session but it was marked as temp (and sessionStorage was cleared on browser restart),
+      // sign out. Note: sessionStorage is cleared on browser close, so if temp_session doesn't exist
+      // but there's a session, and localStorage has the temp marker, we should sign out.
+      if (session && !isTempSession) {
+        // Normal persistent session
+        setSession(session);
+        setUser(session?.user ?? null);
+      } else if (session && isTempSession) {
+        // User had temp session, they're still in same browser session, keep them logged in
+        setSession(session);
+        setUser(session?.user ?? null);
+      } else {
+        setSession(session);
+        setUser(session?.user ?? null);
+      }
       setLoading(false);
     });
 
@@ -53,19 +70,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signIn = async (email: string, password: string, stayLoggedIn: boolean = true) => {
-    // If not staying logged in, we'll clear storage on signout only
-    // Supabase persists sessions by default, but we can control this via storage
-    if (!stayLoggedIn) {
-      // Mark in sessionStorage that we don't want persistent login
-      sessionStorage.setItem('temp_session', 'true');
-    } else {
-      sessionStorage.removeItem('temp_session');
-    }
-    
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+    
+    if (!error && !stayLoggedIn) {
+      // If not staying logged in, store flag to clear session on browser close
+      sessionStorage.setItem('temp_session', 'true');
+      
+      // Set up beforeunload listener to sign out on tab/browser close
+      const handleBeforeUnload = () => {
+        supabase.auth.signOut();
+        localStorage.removeItem('sb-qhnxaehwrntkioyioxtk-auth-token');
+      };
+      window.addEventListener('beforeunload', handleBeforeUnload);
+    } else {
+      sessionStorage.removeItem('temp_session');
+    }
+    
     return { error };
   };
 
