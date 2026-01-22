@@ -16,6 +16,12 @@ export interface StockQuote {
   marketCap?: number;
   sector?: string;
   riskLevel?: 'low' | 'medium' | 'high';
+  logo?: string;
+  country?: string;
+  exchange?: string;
+  ipo?: string;
+  weburl?: string;
+  shareOutstanding?: number;
 }
 
 // The backend may return either a flat payload OR the Finnhub-style shape:
@@ -46,6 +52,7 @@ type APIResponse =
         o?: number;
         pc?: number;
         v?: number;
+        t?: number;
       };
       profile?: {
         name?: string;
@@ -53,8 +60,14 @@ type APIResponse =
         marketCapitalization?: number; // typically in millions
         shareOutstanding?: number;
         finnhubIndustry?: string;
+        logo?: string;
+        country?: string;
+        exchange?: string;
+        ipo?: string;
+        weburl?: string;
       };
       symbol?: string;
+      cached?: boolean;
     };
 
 const toNumber = (value: unknown, fallback = 0) => {
@@ -91,6 +104,12 @@ export const fetchStockQuote = async (symbol: string): Promise<StockQuote> => {
         // Finnhub returns marketCapitalization in millions.
         marketCap: toNumber((data as any)?.profile?.marketCapitalization, 0) * 1_000_000,
         sector: (data as any)?.profile?.finnhubIndustry,
+        logo: (data as any)?.profile?.logo,
+        country: (data as any)?.profile?.country,
+        exchange: (data as any)?.profile?.exchange,
+        ipo: (data as any)?.profile?.ipo,
+        weburl: (data as any)?.profile?.weburl,
+        shareOutstanding: toNumber((data as any)?.profile?.shareOutstanding, 0),
       }
     : {
         symbol: (data as any)?.symbol || safeSymbol,
@@ -127,6 +146,12 @@ export const fetchStockQuote = async (symbol: string): Promise<StockQuote> => {
     marketCap: normalized.marketCap,
     sector: normalized.sector,
     riskLevel,
+    logo: normalized.logo,
+    country: normalized.country,
+    exchange: normalized.exchange,
+    ipo: normalized.ipo,
+    weburl: normalized.weburl,
+    shareOutstanding: normalized.shareOutstanding,
   };
 };
 
