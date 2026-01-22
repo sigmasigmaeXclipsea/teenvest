@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { TrendingUp, BookOpen, Trophy, Shield, ArrowRight, BarChart3, Briefcase, Target } from 'lucide-react';
+import { TrendingUp, BookOpen, Trophy, Shield, ArrowRight, BarChart3, Briefcase, Target, Bot, MessageCircle, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -64,6 +64,51 @@ const LandingPage = () => {
                 Explore Lessons
               </Button>
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* AI Assistant Banner - NEW PROMINENT SECTION */}
+      <section className="border-y border-border bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5 py-16">
+        <div className="container mx-auto px-4">
+          <div className="max-w-5xl mx-auto">
+            <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
+              {/* AI Bot Illustration */}
+              <div className="relative">
+                <div className="w-32 h-32 lg:w-40 lg:h-40 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-2xl">
+                  <Bot className="w-16 h-16 lg:w-20 lg:h-20 text-white" />
+                </div>
+                <div className="absolute -top-2 -right-2 w-12 h-12 rounded-full bg-background border-2 border-primary flex items-center justify-center">
+                  <Sparkles className="w-6 h-6 text-primary" />
+                </div>
+              </div>
+              
+              {/* Content */}
+              <div className="flex-1 text-center lg:text-left">
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                  Meet Your AI Investing Buddy
+                </h2>
+                <p className="text-lg text-muted-foreground mb-6 max-w-xl">
+                  Got questions? Our friendly AI tutor is available 24/7 to explain concepts, 
+                  analyze your portfolio, and help you become a smarter investor — all in 
+                  teen-friendly language!
+                </p>
+                <div className="flex flex-wrap gap-3 justify-center lg:justify-start">
+                  <div className="flex items-center gap-2 bg-background/80 px-4 py-2 rounded-full text-sm">
+                    <MessageCircle className="w-4 h-4 text-primary" />
+                    Instant answers
+                  </div>
+                  <div className="flex items-center gap-2 bg-background/80 px-4 py-2 rounded-full text-sm">
+                    <BookOpen className="w-4 h-4 text-primary" />
+                    Personalized lessons
+                  </div>
+                  <div className="flex items-center gap-2 bg-background/80 px-4 py-2 rounded-full text-sm">
+                    <TrendingUp className="w-4 h-4 text-primary" />
+                    Portfolio advice
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>

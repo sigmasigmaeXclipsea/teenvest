@@ -8,6 +8,7 @@ import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { usePortfolio, useHoldings } from '@/hooks/usePortfolio';
 import { getStockBySymbol } from '@/data/mockStocks';
 import PortfolioHealthAI from '@/components/PortfolioHealthAI';
+import AIAssistantCard from '@/components/AIAssistantCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
@@ -286,13 +287,27 @@ const DashboardPage = () => {
           </Card>
         </div>
 
-        {/* AI Portfolio Health */}
-        <PortfolioHealthAI
-          holdings={holdings || []}
-          cashBalance={portfolioStats?.cashBalance || 0}
-          totalValue={portfolioStats?.totalValue || 0}
-          startingBalance={startingBalance}
-        />
+        {/* AI Section - Side by Side */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* AI Portfolio Health */}
+          <PortfolioHealthAI
+            holdings={holdings || []}
+            cashBalance={portfolioStats?.cashBalance || 0}
+            totalValue={portfolioStats?.totalValue || 0}
+            startingBalance={startingBalance}
+          />
+
+          {/* AI Assistant - Prominent */}
+          <AIAssistantCard 
+            title="Ask AI About Your Portfolio"
+            description="Get personalized investing advice"
+            suggestedQuestions={[
+              "How can I improve my portfolio?",
+              "Should I buy more stocks or diversify?",
+              "What stocks should beginners avoid?"
+            ]}
+          />
+        </div>
       </div>
     </DashboardLayout>
   );

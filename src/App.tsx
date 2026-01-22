@@ -15,6 +15,7 @@ import ScreenerPage from "./pages/ScreenerPage";
 import TradePage from "./pages/TradePage";
 import HistoryPage from "./pages/HistoryPage";
 import LearnPage from "./pages/LearnPage";
+import LessonPage from "./pages/LessonPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import StockPage from "./pages/StockPage";
 import SettingsPage from "./pages/SettingsPage";
@@ -47,6 +48,7 @@ const App = () => (
               <Route path="/trade" element={<ProtectedRoute><ErrorBoundary><TradePage /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/history" element={<ProtectedRoute><ErrorBoundary><HistoryPage /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/learn" element={<ProtectedRoute><ErrorBoundary><LearnPage /></ErrorBoundary></ProtectedRoute>} />
+              <Route path="/learn/:moduleId" element={<ProtectedRoute><ErrorBoundary><LessonPage /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/leaderboard" element={<ProtectedRoute><ErrorBoundary><LeaderboardPage /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/stocks/:symbol" element={<ProtectedRoute><ErrorBoundary><StockPage /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><ErrorBoundary><SettingsPage /></ErrorBoundary></ProtectedRoute>} />
