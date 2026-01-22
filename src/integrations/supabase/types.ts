@@ -403,6 +403,16 @@ export type Database = {
     }
     Functions: {
       add_admin_by_email: { Args: { _email: string }; Returns: Json }
+      admin_grant_achievement: {
+        Args: { _achievement_name: string; _email: string }
+        Returns: Json
+      }
+      admin_lookup_user: { Args: { _email: string }; Returns: Json }
+      admin_reset_portfolio: { Args: { _target_email: string }; Returns: Json }
+      admin_set_starting_balance: {
+        Args: { _email: string; _new_balance: number }
+        Returns: Json
+      }
       execute_trade: {
         Args: {
           p_company_name: string
@@ -415,6 +425,15 @@ export type Database = {
           p_user_id: string
         }
         Returns: Json
+      }
+      get_all_achievements: {
+        Args: never
+        Returns: {
+          description: string
+          icon: string
+          id: string
+          name: string
+        }[]
       }
       get_all_admins: {
         Args: never
@@ -431,6 +450,20 @@ export type Database = {
           gain_percent: number
           rank: number
           total_value: number
+        }[]
+      }
+      get_platform_stats: { Args: never; Returns: Json }
+      get_recent_platform_trades: {
+        Args: { _limit?: number }
+        Returns: {
+          created_at: string
+          id: string
+          price: number
+          shares: number
+          symbol: string
+          total_amount: number
+          trade_type: string
+          user_email: string
         }[]
       }
       get_user_id_by_email: { Args: { _email: string }; Returns: string }
