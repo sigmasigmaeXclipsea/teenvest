@@ -269,10 +269,10 @@ const ScreenerPage = () => {
                 <StarOff className="w-4 h-4" />
               )}
             </button>
-            <div>
+            <Link to={`/stocks/${stock.symbol}`} className="hover:text-primary transition-colors">
               <p className="font-semibold text-sm">{stock.symbol}</p>
               <p className="text-xs text-muted-foreground truncate max-w-[100px]">{stock.companyName}</p>
-            </div>
+            </Link>
           </div>
         </td>
         <td className="py-3 px-2 font-medium text-sm">

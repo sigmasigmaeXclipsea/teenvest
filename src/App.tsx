@@ -12,6 +12,7 @@ import ScreenerPage from "./pages/ScreenerPage";
 import TradePage from "./pages/TradePage";
 import HistoryPage from "./pages/HistoryPage";
 import LearnPage from "./pages/LearnPage";
+import StockPage from "./pages/StockPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/trade" element={<TradePage />} />
             <Route path="/history" element={<HistoryPage />} />
             <Route path="/learn" element={<LearnPage />} />
+            <Route path="/stocks/:symbol" element={<StockPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
