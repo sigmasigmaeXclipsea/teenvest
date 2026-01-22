@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { usePortfolio, useHoldings } from '@/hooks/usePortfolio';
-import { getStockBySymbol } from '@/data/mockStocks';
+import { useMultipleStockQuotes } from '@/hooks/useStockAPI';
+import { getTickerInfo } from '@/data/russell5000Tickers';
 import PortfolioHealthAI from '@/components/PortfolioHealthAI';
 import AIAssistantCard from '@/components/AIAssistantCard';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,6 +19,30 @@ const DashboardPage = () => {
   const { user } = useAuth();
   const { data: portfolio, isLoading: portfolioLoading } = usePortfolio();
   const { data: holdings, isLoading: holdingsLoading } = useHoldings();
+
+  // Get all holding symbols to fetch real-time prices
+  const holdingSymbols = useMemo(() => {
+    return holdings?.map(h => h.symbol).filter(Boolean) || [];
+  }, [holdings]);
+
+  // Fetch real-time stock prices for all holdings
+  const { data: stockQuotes, isLoading: quotesLoading } = useMultipleStockQuotes(holdingSymbols);
+
+  // Create a map of symbol -> current price for easy lookup
+  const priceMap = useMemo(() => {
+    const map = new Map<string, { price: number; sector: string }>();
+    if (stockQuotes) {
+      stockQuotes.forEach(quote => {
+        if (quote && quote.symbol && quote.price > 0) {
+          map.set(quote.symbol, { 
+            price: quote.price,
+            sector: quote.sector || getTickerInfo(quote.symbol)?.sector || 'Other'
+          });
+        }
+      });
+    }
+    return map;
+  }, [stockQuotes]);
 
   // Fetch user's starting balance from profile
   const { data: profile } = useQuery({
@@ -42,9 +67,12 @@ const DashboardPage = () => {
     let investedValue = 0;
     
     holdings.forEach(holding => {
-      const stock = getStockBySymbol(holding.symbol);
-      if (stock) {
-        investedValue += Number(holding.shares) * stock.price;
+      const stockData = priceMap.get(holding.symbol);
+      if (stockData && stockData.price > 0) {
+        investedValue += Number(holding.shares) * stockData.price;
+      } else {
+        // Fallback to average cost if real-time price not available yet
+        investedValue += Number(holding.shares) * Number(holding.average_cost);
       }
     });
 
@@ -59,7 +87,7 @@ const DashboardPage = () => {
       totalGain,
       gainPercent,
     };
-  }, [portfolio, holdings]);
+  }, [portfolio, holdings, priceMap, startingBalance]);
 
   const sectorData = useMemo(() => {
     if (!holdings) return [];
@@ -67,11 +95,12 @@ const DashboardPage = () => {
     const sectorMap = new Map<string, number>();
     
     holdings.forEach(holding => {
-      const stock = getStockBySymbol(holding.symbol);
-      if (stock) {
-        const value = Number(holding.shares) * stock.price;
-        const current = sectorMap.get(stock.sector) || 0;
-        sectorMap.set(stock.sector, current + value);
+      const stockData = priceMap.get(holding.symbol);
+      if (stockData) {
+        const value = Number(holding.shares) * stockData.price;
+        const sector = stockData.sector || 'Other';
+        const current = sectorMap.get(sector) || 0;
+        sectorMap.set(sector, current + value);
       }
     });
 
@@ -79,9 +108,9 @@ const DashboardPage = () => {
       name,
       value,
     }));
-  }, [holdings]);
+  }, [holdings, priceMap]);
 
-  if (portfolioLoading || holdingsLoading) {
+  if (portfolioLoading || holdingsLoading || quotesLoading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
@@ -195,11 +224,12 @@ const DashboardPage = () => {
               {holdings && holdings.length > 0 ? (
                 <div className="space-y-4">
                     {holdings.map((holding) => {
-                    const stock = getStockBySymbol(holding.symbol);
-                    const currentValue = stock ? Number(holding.shares) * stock.price : 0;
+                    const stockData = priceMap.get(holding.symbol);
+                    const currentPrice = stockData?.price || Number(holding.average_cost);
+                    const currentValue = Number(holding.shares) * currentPrice;
                     const costBasis = Number(holding.shares) * Number(holding.average_cost);
                     const gain = currentValue - costBasis;
-                      const gainPercent = costBasis > 0 ? (gain / costBasis) * 100 : 0;
+                    const gainPercent = costBasis > 0 ? (gain / costBasis) * 100 : 0;
 
                     return (
                       <div key={holding.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
