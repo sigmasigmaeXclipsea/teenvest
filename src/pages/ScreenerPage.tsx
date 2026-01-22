@@ -140,51 +140,63 @@ const ScreenerPage = () => {
 
   // Convert Russell 5000 tickers to Stock format, merging with live data
   const allStocks = useMemo(() => {
-    const stocksMap = new Map<string, Stock>();
-    
-    // Add all Russell stocks as base
-    russell5000Tickers.forEach(t => {
-      stocksMap.set(t.symbol, {
-        symbol: t.symbol,
-        companyName: t.name,
-        price: 0,
-        change: 0,
-        changePercent: 0,
-        volume: 0,
-        marketCap: 0,
-        sector: t.sector,
-        riskLevel: 'medium' as const,
-        high52Week: 0,
-        low52Week: 0,
-      });
-    });
-    
-    // Overlay live data
-    allLiveData.forEach(liveStock => {
-      if (!liveStock?.symbol) return; // Skip if no symbol
+    try {
+      const stocksMap = new Map<string, Stock>();
       
-      const tickerInfo = getTickerInfo(liveStock.symbol);
-      stocksMap.set(liveStock.symbol, {
-        symbol: liveStock.symbol,
-        companyName: liveStock.companyName || liveStock.symbol,
-        price: liveStock.price || 0,
-        change: liveStock.change || 0,
-        changePercent: liveStock.changePercent || 0,
-        volume: liveStock.volume || 0,
-        marketCap: liveStock.marketCap || 0,
-        sector: liveStock.sector || tickerInfo?.sector || 'Unknown',
-        riskLevel: liveStock.riskLevel || 'medium',
-        high52Week: liveStock.high || 0,
-        low52Week: liveStock.low || 0,
+      // Add all Russell stocks as base
+      if (Array.isArray(russell5000Tickers)) {
+        russell5000Tickers.forEach(t => {
+          if (!t || !t.symbol) return;
+          stocksMap.set(t.symbol, {
+            symbol: t.symbol,
+            companyName: t.name || t.symbol,
+            price: 0,
+            change: 0,
+            changePercent: 0,
+            volume: 0,
+            marketCap: 0,
+            sector: t.sector || 'Unknown',
+            riskLevel: 'medium' as const,
+            high52Week: 0,
+            low52Week: 0,
+          });
+        });
+      }
+      
+      // Overlay live data
+      if (Array.isArray(allLiveData)) {
+        allLiveData.forEach(liveStock => {
+          if (!liveStock || !liveStock.symbol) return; // Skip if no symbol
+          
+          const tickerInfo = getTickerInfo(liveStock.symbol);
+          stocksMap.set(liveStock.symbol, {
+            symbol: liveStock.symbol,
+            companyName: liveStock.companyName || liveStock.symbol,
+            price: Number(liveStock.price) || 0,
+            change: Number(liveStock.change) || 0,
+            changePercent: Number(liveStock.changePercent) || 0,
+            volume: Number(liveStock.volume) || 0,
+            marketCap: Number(liveStock.marketCap) || 0,
+            sector: liveStock.sector || tickerInfo?.sector || 'Unknown',
+            riskLevel: liveStock.riskLevel || 'medium',
+            high52Week: Number(liveStock.high) || 0,
+            low52Week: Number(liveStock.low) || 0,
+          });
+        });
+      }
+      
+      // Sort: stocks with live data first
+      return Array.from(stocksMap.values()).sort((a, b) => {
+        const aPrice = Number(a.price) || 0;
+        const bPrice = Number(b.price) || 0;
+        if (aPrice > 0 && bPrice === 0) return -1;
+        if (aPrice === 0 && bPrice > 0) return 1;
+        return 0;
       });
-    });
-    
-    // Sort: stocks with live data first
-    return Array.from(stocksMap.values()).sort((a, b) => {
-      if (a.price > 0 && b.price === 0) return -1;
-      if (a.price === 0 && b.price > 0) return 1;
-      return 0;
-    });
+    } catch (error) {
+      console.error('Error building stocks list:', error);
+      return [];
+    }
   }, [allLiveData]);
 
   // Filter stocks based on active tab and filters
@@ -219,47 +231,64 @@ const ScreenerPage = () => {
 
   // Auto-fetch live data for the first visible rows so the table shows numbers (not dashes)
   useEffect(() => {
-    const symbolsToFetch = filteredStocks
-      .filter(s => s.price === 0)
-      .slice(0, 20)
-      .map(s => s.symbol)
-      .filter(Boolean)
-      .filter(sym => !fetchedSymbolsRef.current.has(sym));
+    try {
+      const symbolsToFetch = filteredStocks
+        .filter(s => s && s.symbol && s.price === 0)
+        .slice(0, 20)
+        .map(s => s.symbol)
+        .filter((sym): sym is string => Boolean(sym) && typeof sym === 'string' && sym.trim().length > 0)
+        .filter(sym => !fetchedSymbolsRef.current.has(sym));
 
-    if (symbolsToFetch.length === 0) return;
+      if (symbolsToFetch.length === 0) return;
 
-    symbolsToFetch.forEach(sym => fetchedSymbolsRef.current.add(sym));
+      symbolsToFetch.forEach(sym => fetchedSymbolsRef.current.add(sym));
 
-    (async () => {
-      const results = await Promise.allSettled(symbolsToFetch.map(sym => fetchStockQuote(sym)));
-      const ok = results
-        .filter((r): r is PromiseFulfilledResult<StockQuote> => r.status === 'fulfilled')
-        .map(r => r.value);
+      (async () => {
+        try {
+          const results = await Promise.allSettled(symbolsToFetch.map(sym => fetchStockQuote(sym)));
+          const ok = results
+            .filter((r): r is PromiseFulfilledResult<StockQuote> => r.status === 'fulfilled')
+            .map(r => r.value)
+            .filter(s => s && s.symbol); // Extra validation
 
-      if (ok.length > 0) {
-        setAutoFetchedStocks(prev => {
-          const merged = [...prev];
-          ok.forEach(s => {
-            const idx = merged.findIndex(p => p.symbol === s.symbol);
-            if (idx >= 0) merged[idx] = s;
-            else merged.push(s);
-          });
-          return merged;
-        });
-      }
-    })();
+          if (ok.length > 0) {
+            setAutoFetchedStocks(prev => {
+              const merged = [...prev];
+              ok.forEach(s => {
+                if (!s || !s.symbol) return;
+                const idx = merged.findIndex(p => p.symbol === s.symbol);
+                if (idx >= 0) merged[idx] = s;
+                else merged.push(s);
+              });
+              return merged;
+            });
+          }
+        } catch (error) {
+          console.error('Auto-fetch error:', error);
+        }
+      })();
+    } catch (error) {
+      console.error('Auto-fetch setup error:', error);
+    }
   }, [filteredStocks]);
 
   const StockRow = ({ stock }: { stock: Stock }) => {
+    if (!stock || !stock.symbol) return null;
+    
     const inWatchlist = isInWatchlist(stock.symbol);
-    const hasLiveData = stock.price > 0;
+    const price = Number(stock.price) || 0;
+    const change = Number(stock.change) || 0;
+    const changePercent = Number(stock.changePercent) || 0;
+    const marketCap = Number(stock.marketCap) || 0;
+    const volume = Number(stock.volume) || 0;
+    const hasLiveData = price > 0;
     
     return (
       <tr className="border-b last:border-0 hover:bg-secondary/30 transition-colors">
         <td className="py-3 px-2">
           <div className="flex items-center gap-2">
             <button
-              onClick={() => handleToggleWatchlist(stock.symbol, stock.companyName)}
+              onClick={() => handleToggleWatchlist(stock.symbol, stock.companyName || stock.symbol)}
               className="text-muted-foreground hover:text-primary transition-colors"
               title={inWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}
             >
@@ -271,21 +300,21 @@ const ScreenerPage = () => {
             </button>
             <Link to={`/stocks/${stock.symbol}`} className="hover:text-primary transition-colors">
               <p className="font-semibold text-sm">{stock.symbol}</p>
-              <p className="text-xs text-muted-foreground truncate max-w-[100px]">{stock.companyName}</p>
+              <p className="text-xs text-muted-foreground truncate max-w-[100px]">{stock.companyName || stock.symbol}</p>
             </Link>
           </div>
         </td>
         <td className="py-3 px-2 font-medium text-sm">
-          {hasLiveData ? `$${stock.price.toFixed(2)}` : (
+          {hasLiveData ? `$${price.toFixed(2)}` : (
             <span className="text-muted-foreground">—</span>
           )}
         </td>
-        <td className={`py-3 px-2 text-sm ${stock.change >= 0 ? 'text-primary' : 'text-destructive'}`}>
+        <td className={`py-3 px-2 text-sm ${change >= 0 ? 'text-primary' : 'text-destructive'}`}>
           {hasLiveData ? (
             <div className="flex items-center gap-1">
-              {stock.change >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+              {change >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
               <span className="whitespace-nowrap">
-                {stock.changePercent >= 0 ? '+' : ''}{stock.changePercent.toFixed(2)}%
+                {changePercent >= 0 ? '+' : ''}{changePercent.toFixed(2)}%
               </span>
             </div>
           ) : (
@@ -293,13 +322,13 @@ const ScreenerPage = () => {
           )}
         </td>
         <td className="py-3 px-2 text-sm">
-          {stock.marketCap > 0 ? formatMarketCap(stock.marketCap) : '—'}
+          {marketCap > 0 ? formatMarketCap(marketCap) : '—'}
         </td>
         <td className="py-3 px-2 text-sm hidden sm:table-cell">
-          {stock.volume > 0 ? formatVolume(stock.volume) : '—'}
+          {volume > 0 ? formatVolume(volume) : '—'}
         </td>
         <td className="py-3 px-2">
-          <Badge variant="outline" className="text-xs">{stock.sector}</Badge>
+          <Badge variant="outline" className="text-xs">{stock.sector || 'Unknown'}</Badge>
         </td>
         <td className="py-3 px-2">
           <Link to={`/trade?symbol=${stock.symbol}`}>
