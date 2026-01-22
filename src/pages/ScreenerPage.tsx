@@ -141,6 +141,14 @@ const ScreenerPage = () => {
     }
   };
 
+  // Compute risk level based on volatility (changePercent)
+  const computeRiskLevel = (changePercent: number): 'low' | 'medium' | 'high' => {
+    const absChange = Math.abs(changePercent);
+    if (absChange < 1.5) return 'low';
+    if (absChange < 4) return 'medium';
+    return 'high';
+  };
+
   // Convert Russell 5000 tickers to Stock format, merging with live data
   const allStocks = useMemo(() => {
     try {
@@ -172,16 +180,17 @@ const ScreenerPage = () => {
           if (!liveStock || !liveStock.symbol) return; // Skip if no symbol
           
           const tickerInfo = getTickerInfo(liveStock.symbol);
+          const changePercent = Number(liveStock.changePercent) || 0;
           stocksMap.set(liveStock.symbol, {
             symbol: liveStock.symbol,
             companyName: liveStock.companyName || liveStock.symbol,
             price: Number(liveStock.price) || 0,
             change: Number(liveStock.change) || 0,
-            changePercent: Number(liveStock.changePercent) || 0,
+            changePercent: changePercent,
             volume: Number(liveStock.volume) || 0,
             marketCap: Number(liveStock.marketCap) || 0,
             sector: liveStock.sector || tickerInfo?.sector || 'Unknown',
-            riskLevel: liveStock.riskLevel || 'medium',
+            riskLevel: computeRiskLevel(changePercent),
             high52Week: Number(liveStock.high) || 0,
             low52Week: Number(liveStock.low) || 0,
           });
@@ -259,27 +268,33 @@ const ScreenerPage = () => {
     scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Auto-fetch live data for the first visible rows so the table shows numbers (not dashes)
+  // Auto-fetch live data for visible rows so the table shows real numbers
+  const [isFetchingBatch, setIsFetchingBatch] = useState(false);
+  
   useEffect(() => {
-    try {
-      const symbolsToFetch = filteredStocks
-        .filter(s => s && s.symbol && s.price === 0)
-        .slice(0, 20)
-        .map(s => s.symbol)
-        .filter((sym): sym is string => Boolean(sym) && typeof sym === 'string' && sym.trim().length > 0)
-        .filter(sym => !fetchedSymbolsRef.current.has(sym));
+    const fetchBatch = async () => {
+      try {
+        const symbolsToFetch = filteredStocks
+          .filter(s => s && s.symbol && s.price === 0)
+          .slice(0, 50) // Increased batch size
+          .map(s => s.symbol)
+          .filter((sym): sym is string => Boolean(sym) && typeof sym === 'string' && sym.trim().length > 0)
+          .filter(sym => !fetchedSymbolsRef.current.has(sym));
 
-      if (symbolsToFetch.length === 0) return;
+        if (symbolsToFetch.length === 0) return;
 
-      symbolsToFetch.forEach(sym => fetchedSymbolsRef.current.add(sym));
+        setIsFetchingBatch(true);
+        symbolsToFetch.forEach(sym => fetchedSymbolsRef.current.add(sym));
 
-      (async () => {
-        try {
-          const results = await Promise.allSettled(symbolsToFetch.map(sym => fetchStockQuote(sym)));
+        // Fetch in smaller parallel batches to avoid rate limits
+        const batchSize = 10;
+        for (let i = 0; i < symbolsToFetch.length; i += batchSize) {
+          const batch = symbolsToFetch.slice(i, i + batchSize);
+          const results = await Promise.allSettled(batch.map(sym => fetchStockQuote(sym)));
           const ok = results
             .filter((r): r is PromiseFulfilledResult<StockQuote> => r.status === 'fulfilled')
             .map(r => r.value)
-            .filter(s => s && s.symbol); // Extra validation
+            .filter(s => s && s.symbol);
 
           if (ok.length > 0) {
             setAutoFetchedStocks(prev => {
@@ -293,14 +308,21 @@ const ScreenerPage = () => {
               return merged;
             });
           }
-        } catch (error) {
-          console.error('Auto-fetch error:', error);
+          
+          // Small delay between batches to avoid rate limiting
+          if (i + batchSize < symbolsToFetch.length) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
         }
-      })();
-    } catch (error) {
-      console.error('Auto-fetch setup error:', error);
-    }
-  }, [filteredStocks]);
+      } catch (error) {
+        console.error('Auto-fetch error:', error);
+      } finally {
+        setIsFetchingBatch(false);
+      }
+    };
+    
+    fetchBatch();
+  }, [filteredStocks, selectedSector, selectedRisk, marketCapFilter]);
 
   const StockRow = ({ stock }: { stock: Stock }) => {
     if (!stock || !stock.symbol) return null;
@@ -356,6 +378,22 @@ const ScreenerPage = () => {
         </td>
         <td className="py-3 px-2 text-sm">
           {volume > 0 ? formatVolume(volume) : '—'}
+        </td>
+        <td className="py-3 px-2 hidden md:table-cell">
+          <Badge 
+            variant="outline" 
+            className={`text-xs ${
+              hasLiveData 
+                ? stock.riskLevel === 'low' 
+                  ? 'border-primary/50 text-primary' 
+                  : stock.riskLevel === 'high' 
+                    ? 'border-destructive/50 text-destructive' 
+                    : ''
+                : ''
+            }`}
+          >
+            {hasLiveData ? stock.riskLevel : '—'}
+          </Badge>
         </td>
         <td className="py-3 px-2 hidden sm:table-cell">
           <Badge variant="outline" className="text-xs">{stock.sector || 'Unknown'}</Badge>
@@ -509,7 +547,8 @@ const ScreenerPage = () => {
                         (showing {visibleCount.toLocaleString()})
                       </span>
                     )}
-                    {loadingPopular && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {(loadingPopular || isFetchingBatch) && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {isFetchingBatch && <span className="text-sm font-normal text-muted-foreground">Fetching live data...</span>}
                   </CardTitle>
                   {visibleCount > 100 && (
                     <Button variant="ghost" size="sm" onClick={scrollToTop}>
@@ -538,6 +577,7 @@ const ScreenerPage = () => {
                         <th className="py-3 px-2 font-medium bg-secondary/30">Change</th>
                         <th className="py-3 px-2 font-medium bg-secondary/30">Mkt Cap</th>
                         <th className="py-3 px-2 font-medium bg-secondary/30">Volume</th>
+                        <th className="py-3 px-2 font-medium hidden md:table-cell bg-secondary/30">Risk</th>
                         <th className="py-3 px-2 font-medium hidden sm:table-cell bg-secondary/30">Sector</th>
                         <th className="py-3 px-2 font-medium bg-secondary/30">Action</th>
                       </tr>
@@ -579,6 +619,7 @@ const ScreenerPage = () => {
                           <th className="py-3 px-2 font-medium bg-secondary/30">Change</th>
                           <th className="py-3 px-2 font-medium bg-secondary/30">Mkt Cap</th>
                           <th className="py-3 px-2 font-medium bg-secondary/30">Volume</th>
+                          <th className="py-3 px-2 font-medium hidden md:table-cell bg-secondary/30">Risk</th>
                           <th className="py-3 px-2 font-medium hidden sm:table-cell bg-secondary/30">Sector</th>
                           <th className="py-3 px-2 font-medium bg-secondary/30">Action</th>
                         </tr>
