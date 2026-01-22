@@ -107,7 +107,7 @@ const DashboardPage = () => {
                 ) : (
                   <ArrowDownRight className="w-4 h-4 mr-1" />
                 )}
-                {portfolioStats?.gainPercent.toFixed(2)}% all time
+                {portfolioStats ? `${portfolioStats.gainPercent.toFixed(2)}% all time` : '—'}
               </div>
             </CardContent>
           </Card>
@@ -174,12 +174,12 @@ const DashboardPage = () => {
             <CardContent>
               {holdings && holdings.length > 0 ? (
                 <div className="space-y-4">
-                  {holdings.map((holding) => {
+                    {holdings.map((holding) => {
                     const stock = getStockBySymbol(holding.symbol);
                     const currentValue = stock ? Number(holding.shares) * stock.price : 0;
                     const costBasis = Number(holding.shares) * Number(holding.average_cost);
                     const gain = currentValue - costBasis;
-                    const gainPercent = (gain / costBasis) * 100;
+                      const gainPercent = costBasis > 0 ? (gain / costBasis) * 100 : 0;
 
                     return (
                       <div key={holding.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
@@ -190,7 +190,7 @@ const DashboardPage = () => {
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold">${currentValue.toFixed(2)}</p>
+                          <p className="font-semibold">${Number.isFinite(currentValue) ? currentValue.toFixed(2) : '0.00'}</p>
                           <p className={`text-sm ${gain >= 0 ? 'text-primary' : 'text-destructive'}`}>
                             {gain >= 0 ? '+' : ''}{gainPercent.toFixed(2)}%
                           </p>
