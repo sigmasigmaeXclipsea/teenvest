@@ -81,11 +81,15 @@ const AdminPage = () => {
   });
 
   // Recent platform trades
-  const { data: recentTrades, isLoading: loadingTrades, refetch: refetchTrades } = useQuery({
+  const { data: recentTrades, isLoading: loadingTrades, error: tradesError, refetch: refetchTrades } = useQuery({
     queryKey: ['recent-platform-trades'],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_recent_platform_trades', { _limit: 15 });
-      if (error) throw error;
+      if (error) {
+        console.error('Recent trades error:', error);
+        throw error;
+      }
+      console.log('Recent trades data:', data);
       return data || [];
     },
     enabled: hasAdminRole === true,
@@ -386,6 +390,14 @@ const AdminPage = () => {
                 {loadingTrades ? (
                   <div className="flex justify-center py-8">
                     <Loader2 className="w-6 h-6 animate-spin" />
+                  </div>
+                ) : tradesError ? (
+                  <div className="text-center text-destructive py-8">
+                    <p className="font-medium">Error loading trades</p>
+                    <p className="text-sm text-muted-foreground">{(tradesError as Error)?.message || 'Unknown error'}</p>
+                    <Button variant="outline" size="sm" className="mt-4" onClick={() => refetchTrades()}>
+                      Retry
+                    </Button>
                   </div>
                 ) : recentTrades && recentTrades.length > 0 ? (
                   <div className="space-y-2 max-h-96 overflow-y-auto">
