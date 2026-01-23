@@ -78,7 +78,6 @@ export default defineConfig(({ mode }) => ({
           vendor: ["react", "react-dom", "react-router-dom"],
           ui: ["@radix-ui/react-dialog", "@radix-ui/react-dropdown-menu", "@radix-ui/react-tabs"],
           charts: ["recharts"],
-          lightweightCharts: ["lightweight-charts"],
           framerMotion: ["framer-motion"],
         },
       },
@@ -93,7 +92,6 @@ export default defineConfig(({ mode }) => ({
     chunkSizeWarningLimit: 1000,
   },
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom', 'framer-motion'],
-    exclude: ['lightweight-charts'],
+    include: ['react', 'react-dom', 'react-router-dom', 'framer-motion', 'lightweight-charts'],
   },
 }));
