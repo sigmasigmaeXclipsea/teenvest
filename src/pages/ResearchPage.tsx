@@ -20,6 +20,7 @@ import ResearchAIAssistant from '@/components/research/ResearchAIAssistant';
 import ResearchComparison from '@/components/research/ResearchComparison';
 import StockCandlestickChart from '@/components/StockCandlestickChart';
 import StockLineChart from '@/components/StockLineChart';
+import ProfessionalCandlestickChart from '@/components/ProfessionalCandlestickChart';
 
 const ResearchPage = () => {
   const navigate = useNavigate();
@@ -375,52 +376,76 @@ const ResearchPage = () => {
               </TabsList>
 
               <TabsContent value="charts">
-                <div className="grid gap-6 lg:grid-cols-2">
+                <div className="space-y-6">
+                  {/* Top: Line and Candlestick Charts */}
+                  <div className="grid gap-6 lg:grid-cols-2">
+                    {liveStockData ? (
+                      <>
+                        <StockLineChart
+                          symbol={liveStockData.symbol}
+                          currentPrice={liveStockData.price}
+                          previousClose={liveStockData.previousClose}
+                          high={liveStockData.high}
+                          low={liveStockData.low}
+                          open={liveStockData.open}
+                        />
+                        <StockCandlestickChart
+                          symbol={liveStockData.symbol}
+                          currentPrice={liveStockData.price}
+                          previousClose={liveStockData.previousClose}
+                          high={liveStockData.high}
+                          low={liveStockData.low}
+                          open={liveStockData.open}
+                        />
+                      </>
+                    ) : selectedStockData ? (
+                      <>
+                        <StockLineChart
+                          symbol={selectedStock}
+                          currentPrice={selectedStockData.price}
+                          previousClose={selectedStockData.price - selectedStockData.change}
+                          high={selectedStockData.high || selectedStockData.price * 1.02}
+                          low={selectedStockData.low || selectedStockData.price * 0.98}
+                          open={selectedStockData.price - selectedStockData.change}
+                        />
+                        <StockCandlestickChart
+                          symbol={selectedStock}
+                          currentPrice={selectedStockData.price}
+                          previousClose={selectedStockData.price - selectedStockData.change}
+                          high={selectedStockData.high || selectedStockData.price * 1.02}
+                          low={selectedStockData.low || selectedStockData.price * 0.98}
+                          open={selectedStockData.price - selectedStockData.change}
+                        />
+                      </>
+                    ) : (
+                      <Card>
+                        <CardContent className="pt-6">
+                          <p className="text-muted-foreground">Loading chart data...</p>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
+
+                  {/* Bottom: Professional Full-Width Candlestick Chart with Volume */}
                   {liveStockData ? (
-                    <>
-                      <StockLineChart
-                        symbol={liveStockData.symbol}
-                        currentPrice={liveStockData.price}
-                        previousClose={liveStockData.previousClose}
-                        high={liveStockData.high}
-                        low={liveStockData.low}
-                        open={liveStockData.open}
-                      />
-                      <StockCandlestickChart
-                        symbol={liveStockData.symbol}
-                        currentPrice={liveStockData.price}
-                        previousClose={liveStockData.previousClose}
-                        high={liveStockData.high}
-                        low={liveStockData.low}
-                        open={liveStockData.open}
-                      />
-                    </>
+                    <ProfessionalCandlestickChart
+                      symbol={liveStockData.symbol}
+                      currentPrice={liveStockData.price}
+                      previousClose={liveStockData.previousClose}
+                      high={liveStockData.high}
+                      low={liveStockData.low}
+                      open={liveStockData.open}
+                    />
                   ) : selectedStockData ? (
-                    <>
-                      <StockLineChart
-                        symbol={selectedStock}
-                        currentPrice={selectedStockData.price}
-                        previousClose={selectedStockData.price - selectedStockData.change}
-                        high={selectedStockData.high || selectedStockData.price * 1.02}
-                        low={selectedStockData.low || selectedStockData.price * 0.98}
-                        open={selectedStockData.price - selectedStockData.change}
-                      />
-                      <StockCandlestickChart
-                        symbol={selectedStock}
-                        currentPrice={selectedStockData.price}
-                        previousClose={selectedStockData.price - selectedStockData.change}
-                        high={selectedStockData.high || selectedStockData.price * 1.02}
-                        low={selectedStockData.low || selectedStockData.price * 0.98}
-                        open={selectedStockData.price - selectedStockData.change}
-                      />
-                    </>
-                  ) : (
-                    <Card>
-                      <CardContent className="pt-6">
-                        <p className="text-muted-foreground">Loading chart data...</p>
-                      </CardContent>
-                    </Card>
-                  )}
+                    <ProfessionalCandlestickChart
+                      symbol={selectedStock}
+                      currentPrice={selectedStockData.price}
+                      previousClose={selectedStockData.price - selectedStockData.change}
+                      high={selectedStockData.high || selectedStockData.price * 1.02}
+                      low={selectedStockData.low || selectedStockData.price * 0.98}
+                      open={selectedStockData.price - selectedStockData.change}
+                    />
+                  ) : null}
                 </div>
               </TabsContent>
 

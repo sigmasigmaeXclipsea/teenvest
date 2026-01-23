@@ -84,7 +84,7 @@ const CandlestickChartRenderer = ({
         },
       },
       width: chartContainerRef.current.clientWidth,
-      height: 400, // Taller for better visibility
+      height: 500, // Taller for better visibility
       timeScale: {
         borderColor: "rgba(148, 163, 184, 0.3)",
         timeVisible: true,
@@ -174,7 +174,7 @@ const CandlestickChartRenderer = ({
     };
   }, [candleData, minPrice, maxPrice, timePeriod]);
 
-  return <div ref={chartContainerRef} className="w-full h-[400px]" style={{ minHeight: '400px' }} />;
+  return <div ref={chartContainerRef} className="w-full h-[500px]" style={{ minHeight: '500px' }} />;
 };
 
 const StockCandlestickChart = ({ symbol, currentPrice, previousClose, high, low, open }: StockCandlestickChartProps) => {
