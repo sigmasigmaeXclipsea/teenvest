@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef, useEffect } from 'react';
+import { useMemo, useState, useRef, useEffect, memo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart3 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -63,40 +63,100 @@ const CandlestickChartRenderer = ({
       };
     });
 
-    // Create chart
+    // Create chart with TradingView-style professional look
     const chart = createChart(chartContainerRef.current, {
       layout: {
-        background: { type: ColorType.Solid, color: "transparent" },
-        textColor: "hsl(var(--muted-foreground))",
-        fontSize: 11,
+        background: { type: ColorType.Solid, color: "hsl(var(--background))" },
+        textColor: "hsl(var(--foreground))",
+        fontSize: 12,
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
       },
       grid: {
-        vertLines: { color: "rgba(148, 163, 184, 0.05)" },
-        horzLines: { color: "rgba(148, 163, 184, 0.05)" },
+        vertLines: { 
+          color: "rgba(148, 163, 184, 0.1)",
+          style: 1, // Solid lines
+          visible: true,
+        },
+        horzLines: { 
+          color: "rgba(148, 163, 184, 0.1)",
+          style: 1, // Solid lines
+          visible: true,
+        },
       },
       width: chartContainerRef.current.clientWidth,
-      height: 256,
+      height: 400, // Taller for better visibility
       timeScale: {
-        borderColor: "rgba(148, 163, 184, 0.2)",
+        borderColor: "rgba(148, 163, 184, 0.3)",
         timeVisible: true,
         secondsVisible: false,
+        rightOffset: 12,
+        barSpacing: 6,
+        minBarSpacing: 2,
+        fixLeftEdge: false,
+        fixRightEdge: false,
       },
       rightPriceScale: {
-        borderColor: "rgba(148, 163, 184, 0.2)",
+        borderColor: "rgba(148, 163, 184, 0.3)",
+        scaleMargins: {
+          top: 0.1,
+          bottom: 0.1,
+        },
+        entireTextOnly: false,
+      },
+      leftPriceScale: {
+        visible: false,
+      },
+      crosshair: {
+        mode: 1, // Normal crosshair
+        vertLine: {
+          color: "rgba(148, 163, 184, 0.5)",
+          width: 1,
+          style: 2, // Dashed
+          labelBackgroundColor: "hsl(var(--background))",
+        },
+        horzLine: {
+          color: "rgba(148, 163, 184, 0.5)",
+          width: 1,
+          style: 2, // Dashed
+          labelBackgroundColor: "hsl(var(--background))",
+        },
+      },
+      handleScroll: {
+        mouseWheel: true,
+        pressedMouseMove: true,
+        horzTouchDrag: true,
+        vertTouchDrag: true,
+      },
+      handleScale: {
+        axisPressedMouseMove: true,
+        mouseWheel: true,
+        pinch: true,
       },
     });
 
-    // Add candlestick series
+    // Add candlestick series with TradingView colors (green/red)
     const candlestickSeries = chart.addCandlestickSeries({
-      upColor: "hsl(var(--primary))",
-      downColor: "hsl(var(--destructive))",
-      borderVisible: false,
-      wickUpColor: "hsl(var(--primary))",
-      wickDownColor: "hsl(var(--destructive))",
+      upColor: "#26a69a", // TradingView green
+      downColor: "#ef5350", // TradingView red
+      borderUpColor: "#26a69a",
+      borderDownColor: "#ef5350",
+      wickUpColor: "#26a69a",
+      wickDownColor: "#ef5350",
+      borderVisible: true,
     });
 
     candlestickSeries.setData(formattedData);
     chart.timeScale().fitContent();
+
+    // Add price line at previous close for reference (TradingView style)
+    const priceLine = candlestickSeries.createPriceLine({
+      price: previousClose,
+      color: 'rgba(148, 163, 184, 0.4)',
+      lineWidth: 1,
+      lineStyle: 2, // Dashed
+      axisLabelVisible: true,
+      title: 'Prev Close',
+    });
 
     // Handle resize
     const handleResize = () => {
@@ -114,7 +174,7 @@ const CandlestickChartRenderer = ({
     };
   }, [candleData, minPrice, maxPrice, timePeriod]);
 
-  return <div ref={chartContainerRef} className="w-full h-64" />;
+  return <div ref={chartContainerRef} className="w-full h-[400px]" style={{ minHeight: '400px' }} />;
 };
 
 const StockCandlestickChart = ({ symbol, currentPrice, previousClose, high, low, open }: StockCandlestickChartProps) => {
@@ -292,19 +352,29 @@ const StockCandlestickChart = ({ symbol, currentPrice, previousClose, high, low,
         </div>
       </CardHeader>
       <CardContent>
-        <CandlestickChartRenderer 
-          candleData={candleData}
-          minPrice={minPrice}
-          maxPrice={maxPrice}
-          previousClose={previousClose}
-          timePeriod={timePeriod}
-        />
-        <p className="text-xs text-muted-foreground text-center mt-2">
-          Green = price went up • Red = price went down
-        </p>
+        <div className="relative">
+          <CandlestickChartRenderer 
+            candleData={candleData}
+            minPrice={minPrice}
+            maxPrice={maxPrice}
+            previousClose={previousClose}
+            timePeriod={timePeriod}
+          />
+          {/* TradingView-style legend */}
+          <div className="absolute top-2 left-2 flex items-center gap-3 text-xs bg-background/90 backdrop-blur-sm px-2 py-1 rounded border border-border/50">
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-sm bg-[#26a69a]"></div>
+              <span className="text-muted-foreground">Bullish</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-sm bg-[#ef5350]"></div>
+              <span className="text-muted-foreground">Bearish</span>
+            </div>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
 };
 
-export default StockCandlestickChart;
+export default memo(StockCandlestickChart);
