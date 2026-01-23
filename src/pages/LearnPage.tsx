@@ -28,18 +28,47 @@ const item = {
 };
 
 // Difficulty levels for modules
-const getDifficulty = (index: number): { label: string; color: string } => {
-  if (index < 3) return { label: 'Beginner', color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' };
-  if (index < 6) return { label: 'Intermediate', color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400' };
+const getDifficulty = (index: number, totalModules: number): { label: string; color: string } => {
+  const foundationsEnd = Math.floor(totalModules * 0.3); // First 30%
+  const strategyEnd = Math.floor(totalModules * 0.6); // Next 30%
+  
+  if (index < foundationsEnd) return { label: 'Beginner', color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' };
+  if (index < strategyEnd) return { label: 'Intermediate', color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400' };
   return { label: 'Advanced', color: 'bg-red-500/10 text-red-600 dark:text-red-400' };
 };
 
-// Categories for learning paths
-const categories = [
-  { name: 'Foundations', icon: BookOpen, lessons: [0, 1, 2], color: 'from-emerald-500 to-teal-500' },
-  { name: 'Strategy', icon: Target, lessons: [3, 4, 5], color: 'from-amber-500 to-orange-500' },
-  { name: 'Advanced', icon: Trophy, lessons: [6, 7, 8], color: 'from-purple-500 to-pink-500' },
-];
+// Dynamic categories based on total modules
+const getCategories = (totalModules: number) => {
+  const foundationsEnd = Math.floor(totalModules * 0.3);
+  const strategyEnd = Math.floor(totalModules * 0.6);
+  
+  return [
+    { 
+      name: 'Foundations', 
+      icon: BookOpen, 
+      startIndex: 0, 
+      endIndex: foundationsEnd, 
+      color: 'from-emerald-500 to-teal-500',
+      description: 'Master the basics of investing'
+    },
+    { 
+      name: 'Strategy', 
+      icon: Target, 
+      startIndex: foundationsEnd, 
+      endIndex: strategyEnd, 
+      color: 'from-amber-500 to-orange-500',
+      description: 'Build your investment toolkit'
+    },
+    { 
+      name: 'Advanced', 
+      icon: Trophy, 
+      startIndex: strategyEnd, 
+      endIndex: totalModules, 
+      color: 'from-purple-500 to-pink-500',
+      description: 'Professional-level strategies'
+    },
+  ];
+};
 
 const LearnPage = () => {
   const { data: modules, isLoading: modulesLoading } = useLearningModules();
@@ -57,6 +86,9 @@ const LearnPage = () => {
   const completedCount = progress?.filter(p => p.completed).length || 0;
   const totalModules = modules?.length || 0;
   const progressPercent = totalModules > 0 ? (completedCount / totalModules) * 100 : 0;
+  
+  // Get dynamic categories based on total modules
+  const categories = getCategories(totalModules);
   
   // Calculate streak & XP from completed modules
   const totalXP = completedCount * 100 + (quizResults?.reduce((acc, r) => acc + (r.score * 20), 0) || 0);
@@ -168,7 +200,7 @@ const LearnPage = () => {
           <div className="lg:col-span-2 space-y-8">
             {/* Learning Path Categories */}
             {categories.map((category, catIndex) => {
-              const categoryModules = modules?.filter((_, idx) => category.lessons.includes(idx)) || [];
+              const categoryModules = modules?.slice(category.startIndex, category.endIndex) || [];
               const categoryCompleted = categoryModules.filter(m => isCompleted(m.id)).length;
               
               if (categoryModules.length === 0) return null;
@@ -182,18 +214,18 @@ const LearnPage = () => {
                     <div>
                       <h2 className="text-xl font-bold">{category.name}</h2>
                       <p className="text-sm text-muted-foreground">
-                        {categoryCompleted}/{categoryModules.length} lessons completed
+                        {categoryCompleted}/{categoryModules.length} lessons completed • {category.description}
                       </p>
                     </div>
                   </div>
 
                   <div className="space-y-3">
                     {categoryModules.map((module, localIndex) => {
-                      const globalIndex = category.lessons[localIndex];
+                      const globalIndex = category.startIndex + localIndex;
                       const completed = isCompleted(module.id);
                       const quizScore = getQuizScore(module.id);
                       const locked = isLocked(globalIndex);
-                      const difficulty = getDifficulty(globalIndex);
+                      const difficulty = getDifficulty(globalIndex, totalModules);
                       const isPerfectScore = quizScore && quizScore.score === quizScore.total_questions;
                       
                       return (
@@ -290,57 +322,6 @@ const LearnPage = () => {
               );
             })}
 
-            {/* Any remaining modules not in categories */}
-            {modules && modules.length > 9 && (
-              <motion.div variants={item}>
-                <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-primary" />
-                  More Lessons
-                </h2>
-                <div className="space-y-3">
-                  {modules.slice(9).map((module, idx) => {
-                    const globalIndex = idx + 9;
-                    const completed = isCompleted(module.id);
-                    const quizScore = getQuizScore(module.id);
-                    const difficulty = getDifficulty(globalIndex);
-                    
-                    return (
-                      <Link key={module.id} to={`/learn/${module.id}`}>
-                        <Card className={`cursor-pointer transition-all hover:shadow-lg ${
-                          completed ? 'border-primary/50 bg-primary/5' : 'hover:border-primary/30'
-                        }`}>
-                          <CardContent className="p-5">
-                            <div className="flex items-center gap-4">
-                              <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold ${
-                                completed ? 'bg-primary text-primary-foreground' : 'bg-secondary'
-                              }`}>
-                                {completed ? <CheckCircle className="w-6 h-6" /> : globalIndex + 1}
-                              </div>
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <Badge className={`text-xs ${difficulty.color} border-0`}>{difficulty.label}</Badge>
-                                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                    <Clock className="w-3 h-3" />{module.duration_minutes} min
-                                  </span>
-                                  {quizScore && (
-                                    <Badge variant="secondary" className="text-xs gap-1">
-                                      <Award className="w-3 h-3" />{quizScore.score}/{quizScore.total_questions}
-                                    </Badge>
-                                  )}
-                                </div>
-                                <h3 className="font-semibold">{module.title}</h3>
-                                <p className="text-sm text-muted-foreground line-clamp-1">{module.description}</p>
-                              </div>
-                              <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </motion.div>
-            )}
 
             {(!modules || modules.length === 0) && (
               <Card>
