@@ -300,7 +300,7 @@ const LearningAI = ({ quizResults, completedModules, allModules }: LearningAIPro
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
             >
-              <ScrollArea className="max-h-[350px] pr-3">
+              <ScrollArea className="h-[350px] pr-3" type="always">
                 <div className="space-y-1">
                   {renderFormattedRecommendations(recommendations)}
                 </div>
