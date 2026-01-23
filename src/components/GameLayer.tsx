@@ -12,16 +12,19 @@ import {
   TrendingUp,
   BookOpen,
   Briefcase,
-  Clock
+  Clock,
+  Calendar
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Separator } from '@/components/ui/separator';
 import { useTrades } from '@/hooks/useTrades';
 import { usePortfolio, useHoldings } from '@/hooks/usePortfolio';
 import { useUserProgress } from '@/hooks/useLearning';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSettings } from '@/contexts/SettingsContext';
 import { Link } from 'react-router-dom';
 
 interface Challenge {
@@ -43,6 +46,7 @@ const GameLayer = () => {
   const { data: portfolio } = usePortfolio();
   const { data: holdings } = useHoldings();
   const { data: userProgress } = useUserProgress();
+  const { streak } = useSettings();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   // Calculate challenges based on user data
@@ -161,6 +165,30 @@ const GameLayer = () => {
 
       // Streak/consistency challenges
       {
+        id: 'first-streak',
+        title: 'Getting Started',
+        description: 'Log in for 3 days in a row',
+        icon: <Flame className="w-5 h-5" />,
+        category: 'streak',
+        progress: Math.min(streak.currentStreak, 3),
+        target: 3,
+        xp: 75,
+        completed: streak.currentStreak >= 3,
+        difficulty: 'easy',
+      },
+      {
+        id: 'weekly-warrior',
+        title: 'Weekly Warrior',
+        description: 'Maintain a 7-day login streak',
+        icon: <Calendar className="w-5 h-5" />,
+        category: 'streak',
+        progress: Math.min(streak.currentStreak, 7),
+        target: 7,
+        xp: 200,
+        completed: streak.longestStreak >= 7,
+        difficulty: 'medium',
+      },
+      {
         id: 'cash-manager',
         title: 'Cash Manager',
         description: 'Keep at least 20% in cash',
@@ -171,6 +199,18 @@ const GameLayer = () => {
         xp: 100,
         completed: cashBalance >= 2000,
         difficulty: 'easy',
+      },
+      {
+        id: 'monthly-master',
+        title: 'Monthly Master',
+        description: 'Achieve a 30-day streak',
+        icon: <Trophy className="w-5 h-5" />,
+        category: 'streak',
+        progress: Math.min(streak.longestStreak, 30),
+        target: 30,
+        xp: 1000,
+        completed: streak.longestStreak >= 30,
+        difficulty: 'hard',
       },
     ];
   }, [trades, holdings, portfolio, userProgress]);
@@ -205,6 +245,56 @@ const GameLayer = () => {
 
   return (
     <div className="space-y-6">
+      {/* Daily Streak Card */}
+      <Card className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-500/20">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2">
+            <Flame className="w-5 h-5 text-amber-500" />
+            Daily Streak
+          </CardTitle>
+          <CardDescription>Keep logging in daily to build your streak!</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-6">
+              <div className="text-center">
+                <div className="text-4xl font-bold text-amber-500">{streak.currentStreak}</div>
+                <div className="text-xs text-muted-foreground">Current</div>
+              </div>
+              <Separator orientation="vertical" className="h-12" />
+              <div className="text-center">
+                <div className="text-2xl font-semibold">{streak.longestStreak}</div>
+                <div className="text-xs text-muted-foreground">Best</div>
+              </div>
+              <Separator orientation="vertical" className="h-12" />
+              <div className="text-center">
+                <div className="text-2xl font-semibold">{streak.totalActiveDays}</div>
+                <div className="text-xs text-muted-foreground">Total Days</div>
+              </div>
+            </div>
+            <div className="flex gap-1">
+              {[...Array(7)].map((_, i) => (
+                <div
+                  key={i}
+                  className={`w-8 h-8 rounded-md flex items-center justify-center text-xs font-medium ${
+                    i < (streak.currentStreak % 7 || (streak.currentStreak >= 7 ? 7 : 0))
+                      ? 'bg-amber-500 text-white'
+                      : 'bg-muted text-muted-foreground'
+                  }`}
+                >
+                  {i + 1}
+                </div>
+              ))}
+            </div>
+          </div>
+          {streak.currentStreak >= 7 && (
+            <div className="mt-4 p-3 rounded-lg bg-amber-500/20 text-amber-700 dark:text-amber-300 text-sm text-center">
+              🔥 You're on fire! Keep the streak going for bonus XP!
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Level & Progress Card */}
       <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
         <CardContent className="pt-6">

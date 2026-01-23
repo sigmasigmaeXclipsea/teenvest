@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { SettingsProvider } from "@/contexts/SettingsContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ChatWidget from "@/components/ChatWidget";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -36,35 +37,37 @@ const queryClient = new QueryClient({
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <ErrorBoundary>
-            <Routes>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/home" element={<LandingPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/signup" element={<SignupPage />} />
-              <Route path="/dashboard" element={<ProtectedRoute><ErrorBoundary><DashboardPage /></ErrorBoundary></ProtectedRoute>} />
-              <Route path="/screener" element={<ProtectedRoute><ErrorBoundary><ScreenerPage /></ErrorBoundary></ProtectedRoute>} />
-              <Route path="/trade" element={<ProtectedRoute><ErrorBoundary><TradePage /></ErrorBoundary></ProtectedRoute>} />
-              <Route path="/history" element={<ProtectedRoute><ErrorBoundary><HistoryPage /></ErrorBoundary></ProtectedRoute>} />
-              <Route path="/learn" element={<ProtectedRoute><ErrorBoundary><LearnPage /></ErrorBoundary></ProtectedRoute>} />
-              <Route path="/learn/:moduleId" element={<ProtectedRoute><ErrorBoundary><LessonPage /></ErrorBoundary></ProtectedRoute>} />
-              <Route path="/insights" element={<ProtectedRoute><ErrorBoundary><InsightsPage /></ErrorBoundary></ProtectedRoute>} />
-              <Route path="/leaderboard" element={<ProtectedRoute><ErrorBoundary><LeaderboardPage /></ErrorBoundary></ProtectedRoute>} />
-              <Route path="/profile" element={<ProtectedRoute><ErrorBoundary><ProfilePage /></ErrorBoundary></ProtectedRoute>} />
-              <Route path="/profile/:userId" element={<ProtectedRoute><ErrorBoundary><ProfilePage /></ErrorBoundary></ProtectedRoute>} />
-              <Route path="/stocks/:symbol" element={<ProtectedRoute><ErrorBoundary><StockPage /></ErrorBoundary></ProtectedRoute>} />
-              <Route path="/settings" element={<ProtectedRoute><ErrorBoundary><SettingsPage /></ErrorBoundary></ProtectedRoute>} />
-              <Route path="/admin" element={<ProtectedRoute><ErrorBoundary><AdminPage /></ErrorBoundary></ProtectedRoute>} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </ErrorBoundary>
-          <ChatWidget />
-        </BrowserRouter>
-      </TooltipProvider>
+      <SettingsProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <ErrorBoundary>
+              <Routes>
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/home" element={<LandingPage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/signup" element={<SignupPage />} />
+                <Route path="/dashboard" element={<ProtectedRoute><ErrorBoundary><DashboardPage /></ErrorBoundary></ProtectedRoute>} />
+                <Route path="/screener" element={<ProtectedRoute><ErrorBoundary><ScreenerPage /></ErrorBoundary></ProtectedRoute>} />
+                <Route path="/trade" element={<ProtectedRoute><ErrorBoundary><TradePage /></ErrorBoundary></ProtectedRoute>} />
+                <Route path="/history" element={<ProtectedRoute><ErrorBoundary><HistoryPage /></ErrorBoundary></ProtectedRoute>} />
+                <Route path="/learn" element={<ProtectedRoute><ErrorBoundary><LearnPage /></ErrorBoundary></ProtectedRoute>} />
+                <Route path="/learn/:moduleId" element={<ProtectedRoute><ErrorBoundary><LessonPage /></ErrorBoundary></ProtectedRoute>} />
+                <Route path="/insights" element={<ProtectedRoute><ErrorBoundary><InsightsPage /></ErrorBoundary></ProtectedRoute>} />
+                <Route path="/leaderboard" element={<ProtectedRoute><ErrorBoundary><LeaderboardPage /></ErrorBoundary></ProtectedRoute>} />
+                <Route path="/profile" element={<ProtectedRoute><ErrorBoundary><ProfilePage /></ErrorBoundary></ProtectedRoute>} />
+                <Route path="/profile/:userId" element={<ProtectedRoute><ErrorBoundary><ProfilePage /></ErrorBoundary></ProtectedRoute>} />
+                <Route path="/stocks/:symbol" element={<ProtectedRoute><ErrorBoundary><StockPage /></ErrorBoundary></ProtectedRoute>} />
+                <Route path="/settings" element={<ProtectedRoute><ErrorBoundary><SettingsPage /></ErrorBoundary></ProtectedRoute>} />
+                <Route path="/admin" element={<ProtectedRoute><ErrorBoundary><AdminPage /></ErrorBoundary></ProtectedRoute>} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </ErrorBoundary>
+            <ChatWidget />
+          </BrowserRouter>
+        </TooltipProvider>
+      </SettingsProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

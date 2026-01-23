@@ -44,6 +44,39 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_streaks: {
+        Row: {
+          created_at: string
+          current_streak: number
+          id: string
+          last_activity_date: string | null
+          longest_streak: number
+          total_active_days: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_streak?: number
+          id?: string
+          last_activity_date?: string | null
+          longest_streak?: number
+          total_active_days?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_streak?: number
+          id?: string
+          last_activity_date?: string | null
+          longest_streak?: number
+          total_active_days?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       holdings: {
         Row: {
           average_cost: number
@@ -373,6 +406,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_settings: {
+        Row: {
+          advanced_mode: boolean
+          created_at: string
+          dark_mode: boolean
+          id: string
+          notifications_achievements: boolean
+          notifications_price_alerts: boolean
+          notifications_trade_confirmations: boolean
+          notifications_weekly_digest: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          advanced_mode?: boolean
+          created_at?: string
+          dark_mode?: boolean
+          id?: string
+          notifications_achievements?: boolean
+          notifications_price_alerts?: boolean
+          notifications_trade_confirmations?: boolean
+          notifications_weekly_digest?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          advanced_mode?: boolean
+          created_at?: string
+          dark_mode?: boolean
+          id?: string
+          notifications_achievements?: boolean
+          notifications_price_alerts?: boolean
+          notifications_trade_confirmations?: boolean
+          notifications_weekly_digest?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       watchlist: {
         Row: {
           added_at: string
@@ -478,6 +550,7 @@ export type Database = {
       }
       is_owner: { Args: { _user_id: string }; Returns: boolean }
       remove_admin_by_email: { Args: { _email: string }; Returns: Json }
+      update_daily_streak: { Args: { p_user_id: string }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "user"

@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Moon, Sun, User, Bell, Shield, LogOut, Eye, EyeOff } from 'lucide-react';
+import { Moon, Sun, User, Bell, Shield, LogOut, Eye, EyeOff, Zap, Flame, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSettings } from '@/contexts/SettingsContext';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,23 +17,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const SettingsPage = () => {
   const { user, signOut } = useAuth();
+  const { settings, streak, updateSettings, toggleAdvancedMode } = useSettings();
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
-  const [darkMode, setDarkMode] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return document.documentElement.classList.contains('dark');
-    }
-    return false;
-  });
-  
-  const [notifications, setNotifications] = useState({
-    priceAlerts: true,
-    tradeConfirmations: true,
-    weeklyDigest: false,
-    achievements: true,
-  });
 
   // Fetch profile settings
   const { data: profile, isLoading: loadingProfile } = useQuery({
@@ -43,7 +32,6 @@ const SettingsPage = () => {
         .eq('user_id', user!.id)
         .single();
       if (error) throw error;
-      // Cast since types may not have synced yet
       return data as unknown as { display_name: string | null; profile_public: boolean };
     },
     enabled: !!user,
@@ -86,31 +74,12 @@ const SettingsPage = () => {
     },
   });
 
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-  }, [darkMode]);
-
-  // Load theme on mount
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark') {
-      setDarkMode(true);
-      document.documentElement.classList.add('dark');
-    }
-  }, []);
-
   const handleLogout = async () => {
     await signOut();
     navigate('/');
   };
 
-  const handleSaveNotifications = () => {
+  const handleSaveNotifications = async () => {
     toast({
       title: 'Settings saved',
       description: 'Your notification preferences have been updated.',
@@ -121,6 +90,19 @@ const SettingsPage = () => {
     updateProfile.mutate({ displayName, profilePublic });
   };
 
+  const handleToggleDarkMode = () => {
+    updateSettings({ darkMode: !settings.darkMode });
+  };
+
+  const handleNotificationChange = (key: keyof typeof settings.notifications, value: boolean) => {
+    updateSettings({
+      notifications: {
+        ...settings.notifications,
+        [key]: value,
+      },
+    });
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6 max-w-3xl">
@@ -129,11 +111,115 @@ const SettingsPage = () => {
           <p className="text-muted-foreground">Manage your account preferences</p>
         </div>
 
+        {/* Daily Streak Card */}
+        <Card className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-500/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Flame className="w-5 h-5 text-amber-500" />
+              Your Daily Streak
+            </CardTitle>
+            <CardDescription>Stay consistent to build your streak!</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-6">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-amber-500">{streak.currentStreak}</div>
+                  <div className="text-xs text-muted-foreground">Current Streak</div>
+                </div>
+                <Separator orientation="vertical" className="h-12" />
+                <div className="text-center">
+                  <div className="text-2xl font-semibold">{streak.longestStreak}</div>
+                  <div className="text-xs text-muted-foreground">Longest Streak</div>
+                </div>
+                <Separator orientation="vertical" className="h-12" />
+                <div className="text-center">
+                  <div className="text-2xl font-semibold">{streak.totalActiveDays}</div>
+                  <div className="text-xs text-muted-foreground">Total Days</div>
+                </div>
+              </div>
+              <div className="flex">
+                {[...Array(7)].map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-6 h-6 rounded-sm mx-0.5 ${
+                      i < streak.currentStreak % 7
+                        ? 'bg-amber-500'
+                        : 'bg-muted'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Advanced Mode */}
+        <Card className="border-primary/30 bg-primary/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Zap className="w-5 h-5 text-primary" />
+              Advanced Mode
+              {settings.advancedMode && (
+                <Badge className="bg-primary text-primary-foreground">ENABLED</Badge>
+              )}
+            </CardTitle>
+            <CardDescription>
+              Unlock advanced trading features for experienced users
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label htmlFor="advanced-mode" className="text-base font-medium">
+                  Enable Advanced Mode
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Adds candlestick charts, options trading concepts, advanced order types, and technical indicators
+                </p>
+              </div>
+              <Switch
+                id="advanced-mode"
+                checked={settings.advancedMode}
+                onCheckedChange={toggleAdvancedMode}
+              />
+            </div>
+            
+            {settings.advancedMode && (
+              <div className="pt-4 border-t space-y-2">
+                <h4 className="font-medium text-sm">Features Unlocked:</h4>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li className="flex items-center gap-2">
+                    <ChevronRight className="w-3 h-3 text-primary" />
+                    Candlestick & OHLC charts
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <ChevronRight className="w-3 h-3 text-primary" />
+                    Technical indicators (RSI, MACD, Moving Averages)
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <ChevronRight className="w-3 h-3 text-primary" />
+                    Advanced order types (Limit, Stop-Loss)
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <ChevronRight className="w-3 h-3 text-primary" />
+                    Options trading education
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <ChevronRight className="w-3 h-3 text-primary" />
+                    Detailed market analysis tools
+                  </li>
+                </ul>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Appearance */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              {darkMode ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+              {settings.darkMode ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
               Appearance
             </CardTitle>
             <CardDescription>Customize how TeenVest looks</CardDescription>
@@ -148,8 +234,8 @@ const SettingsPage = () => {
               </div>
               <Switch
                 id="dark-mode"
-                checked={darkMode}
-                onCheckedChange={setDarkMode}
+                checked={settings.darkMode}
+                onCheckedChange={handleToggleDarkMode}
               />
             </div>
           </CardContent>
@@ -252,10 +338,8 @@ const SettingsPage = () => {
                 </p>
               </div>
               <Switch
-                checked={notifications.priceAlerts}
-                onCheckedChange={(checked) =>
-                  setNotifications({ ...notifications, priceAlerts: checked })
-                }
+                checked={settings.notifications.priceAlerts}
+                onCheckedChange={(checked) => handleNotificationChange('priceAlerts', checked)}
               />
             </div>
             <Separator />
@@ -267,10 +351,8 @@ const SettingsPage = () => {
                 </p>
               </div>
               <Switch
-                checked={notifications.tradeConfirmations}
-                onCheckedChange={(checked) =>
-                  setNotifications({ ...notifications, tradeConfirmations: checked })
-                }
+                checked={settings.notifications.tradeConfirmations}
+                onCheckedChange={(checked) => handleNotificationChange('tradeConfirmations', checked)}
               />
             </div>
             <Separator />
@@ -282,10 +364,8 @@ const SettingsPage = () => {
                 </p>
               </div>
               <Switch
-                checked={notifications.weeklyDigest}
-                onCheckedChange={(checked) =>
-                  setNotifications({ ...notifications, weeklyDigest: checked })
-                }
+                checked={settings.notifications.weeklyDigest}
+                onCheckedChange={(checked) => handleNotificationChange('weeklyDigest', checked)}
               />
             </div>
             <Separator />
@@ -297,15 +377,10 @@ const SettingsPage = () => {
                 </p>
               </div>
               <Switch
-                checked={notifications.achievements}
-                onCheckedChange={(checked) =>
-                  setNotifications({ ...notifications, achievements: checked })
-                }
+                checked={settings.notifications.achievements}
+                onCheckedChange={(checked) => handleNotificationChange('achievements', checked)}
               />
             </div>
-            <Button onClick={handleSaveNotifications} className="mt-4">
-              Save Preferences
-            </Button>
           </CardContent>
         </Card>
 
