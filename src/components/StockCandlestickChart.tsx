@@ -41,7 +41,22 @@ const CandlestickChartRenderer = ({
   const chartRef = useRef<any>(null);
 
   useEffect(() => {
-    if (!chartContainerRef.current || !candleData || candleData.length === 0) return;
+    const el = chartContainerRef.current;
+    if (!el || !candleData || candleData.length === 0) return;
+
+    // Guard against hidden tabs (width=0) which can cause lightweight-charts to throw.
+    const width = el.clientWidth;
+    if (!width || width <= 0) return;
+
+    // Clear any previous instance if effect re-runs.
+    if (chartRef.current) {
+      try {
+        chartRef.current.remove();
+      } catch {
+        // ignore
+      }
+      chartRef.current = null;
+    }
 
     // Format data for lightweight-charts - need proper time format
     const formattedData = candleData.map((candle, index) => {
@@ -64,7 +79,9 @@ const CandlestickChartRenderer = ({
     });
 
     // Create chart with TradingView-style professional look
-    const chart = createChart(chartContainerRef.current, {
+    let chart: any;
+    try {
+      chart = createChart(el, {
       layout: {
         background: { type: ColorType.Solid, color: "hsl(var(--background))" },
         textColor: "hsl(var(--foreground))",
@@ -83,7 +100,7 @@ const CandlestickChartRenderer = ({
           visible: true,
         },
       },
-      width: chartContainerRef.current.clientWidth,
+      width,
       height: 500, // Taller for better visibility
       timeScale: {
         borderColor: "rgba(148, 163, 184, 0.3)",
@@ -132,7 +149,10 @@ const CandlestickChartRenderer = ({
         mouseWheel: true,
         pinch: true,
       },
-    });
+      });
+    } catch {
+      return;
+    }
 
     // Add candlestick series with TradingView colors (green/red)
     const candlestickSeries = chart.addCandlestickSeries({
@@ -160,8 +180,13 @@ const CandlestickChartRenderer = ({
 
     // Handle resize
     const handleResize = () => {
-      if (chartContainerRef.current) {
-        chart.applyOptions({ width: chartContainerRef.current.clientWidth });
+      const w = chartContainerRef.current?.clientWidth;
+      if (w && w > 0) {
+        try {
+          chart.applyOptions({ width: w });
+        } catch {
+          // ignore
+        }
       }
     };
 
@@ -170,7 +195,11 @@ const CandlestickChartRenderer = ({
 
     return () => {
       window.removeEventListener("resize", handleResize);
-      chart.remove();
+      try {
+        chart.remove();
+      } catch {
+        // ignore
+      }
     };
   }, [candleData, minPrice, maxPrice, timePeriod]);
 

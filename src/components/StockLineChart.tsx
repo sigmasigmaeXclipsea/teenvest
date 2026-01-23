@@ -41,9 +41,27 @@ const StockLineChart = ({ symbol, currentPrice, previousClose, high, low, open }
   }, [currentPrice, previousClose, high, low]);
 
   useEffect(() => {
-    if (!chartContainerRef.current || !chartData || chartData.length === 0) return;
+    const el = chartContainerRef.current;
+    if (!el || !chartData || chartData.length === 0) return;
 
-    const chart = createChart(chartContainerRef.current, {
+    // lightweight-charts can throw if the container is hidden (width=0) or gets detached.
+    // Trade/Research tabs may mount charts while hidden; guard and fail-soft.
+    const width = el.clientWidth;
+    if (!width || width <= 0) return;
+
+    // Ensure we don't leak previous instances if the effect re-runs.
+    if (chartRef.current) {
+      try {
+        chartRef.current.remove();
+      } catch {
+        // ignore
+      }
+      chartRef.current = null;
+    }
+
+    let chart: any;
+    try {
+      chart = createChart(el, {
       layout: {
         background: { type: ColorType.Solid, color: "hsl(var(--background))" },
         textColor: "hsl(var(--foreground))",
@@ -62,7 +80,7 @@ const StockLineChart = ({ symbol, currentPrice, previousClose, high, low, open }
           visible: true,
         },
       },
-      width: chartContainerRef.current.clientWidth,
+      width,
       height: 500,
       timeScale: {
         borderColor: "rgba(148, 163, 184, 0.3)",
@@ -92,7 +110,10 @@ const StockLineChart = ({ symbol, currentPrice, previousClose, high, low, open }
           labelBackgroundColor: "hsl(var(--background))",
         },
       },
-    });
+      });
+    } catch {
+      return;
+    }
 
     // Add area series for line chart
     const areaSeries = chart.addAreaSeries({
@@ -116,8 +137,13 @@ const StockLineChart = ({ symbol, currentPrice, previousClose, high, low, open }
     });
 
     const handleResize = () => {
-      if (chartContainerRef.current) {
-        chart.applyOptions({ width: chartContainerRef.current.clientWidth });
+      const w = chartContainerRef.current?.clientWidth;
+      if (w && w > 0) {
+        try {
+          chart.applyOptions({ width: w });
+        } catch {
+          // ignore
+        }
       }
     };
 
@@ -126,7 +152,11 @@ const StockLineChart = ({ symbol, currentPrice, previousClose, high, low, open }
 
     return () => {
       window.removeEventListener("resize", handleResize);
-      chart.remove();
+      try {
+        chart.remove();
+      } catch {
+        // ignore
+      }
     };
   }, [chartData, currentPrice]);
 
