@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Slider } from '@/components/ui/slider';
+
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -23,7 +23,7 @@ const ScreenerPage = () => {
   const [search, setSearch] = useState('');
   const [selectedSector, setSelectedSector] = useState<string>('all');
   const [selectedRisk, setSelectedRisk] = useState<string>('all');
-  const [priceRange, setPriceRange] = useState([0, 1000]);
+  
   const [marketCapFilter, setMarketCapFilter] = useState<string>('all');
   const [searchedStocks, setSearchedStocks] = useState<StockQuote[]>([]);
   const [autoFetchedStocks, setAutoFetchedStocks] = useState<StockQuote[]>([]);
@@ -258,7 +258,6 @@ const ScreenerPage = () => {
       const matchesRisk = selectedRisk === 'all' || stock.riskLevel === selectedRisk;
       
       const hasLiveData = stock.price > 0;
-      const matchesPrice = !hasLiveData || (stock.price >= priceRange[0] && stock.price <= priceRange[1]);
       
       let matchesMarketCap = true;
       if (hasLiveData && marketCapFilter !== 'all') {
@@ -267,7 +266,7 @@ const ScreenerPage = () => {
         else if (marketCapFilter === 'small') matchesMarketCap = stock.marketCap < 10e9;
       }
 
-      return matchesSearch && matchesSector && matchesRisk && matchesPrice && matchesMarketCap;
+      return matchesSearch && matchesSector && matchesRisk && matchesMarketCap;
     });
 
     // Apply sorting
@@ -304,7 +303,7 @@ const ScreenerPage = () => {
       
       return sortDirection === 'asc' ? comparison : -comparison;
     });
-  }, [search, selectedSector, selectedRisk, priceRange, marketCapFilter, allStocks, activeTab, watchlist, sortColumn, sortDirection]);
+  }, [search, selectedSector, selectedRisk, marketCapFilter, allStocks, activeTab, watchlist, sortColumn, sortDirection]);
 
   // Get visible stocks (for infinite scroll)
   const visibleStocks = useMemo(() => {
@@ -314,7 +313,7 @@ const ScreenerPage = () => {
   // Reset visible count when filters change
   useEffect(() => {
     setVisibleCount(100);
-  }, [search, selectedSector, selectedRisk, priceRange, marketCapFilter, activeTab]);
+  }, [search, selectedSector, selectedRisk, marketCapFilter, activeTab]);
 
   // Load more stocks when scrolling near bottom
   const handleLoadMore = useCallback(() => {
@@ -656,10 +655,6 @@ const ScreenerPage = () => {
                     <SelectItem value="small">Small (&lt;$10B)</SelectItem>
                   </SelectContent>
                 </Select>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-2">Price: ${priceRange[0]} - ${priceRange[1]}</p>
-                  <Slider value={priceRange} onValueChange={setPriceRange} min={0} max={1000} step={10} />
-                </div>
               </div>
             </CardContent>
           </Card>
