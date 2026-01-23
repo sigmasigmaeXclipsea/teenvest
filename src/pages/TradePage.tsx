@@ -44,7 +44,7 @@ const TradePage = () => {
   const isAdvancedMode = settings.advancedMode;
   
   // Fetch live data for selected symbol - only when symbol changes
-  const { data: liveQuote, isLoading: isLoadingQuote } = useStockQuote(selectedSymbol);
+  const { data: liveQuote, isLoading: isLoadingQuote, error: quoteError } = useStockQuote(selectedSymbol);
   
   // Update live stock data when quote changes - memoized to prevent unnecessary updates
   useEffect(() => {
@@ -202,6 +202,25 @@ const TradePage = () => {
                 <div className="p-4 rounded-lg bg-secondary/50 flex items-center justify-center">
                   <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                   <span className="ml-2 text-muted-foreground">Loading live data...</span>
+                </div>
+              )}
+
+              {quoteError && selectedSymbol && !isLoadingQuote && !selectedStock && (
+                <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20 flex flex-col items-center justify-center text-center">
+                  <AlertTriangle className="w-8 h-8 text-destructive mb-2" />
+                  <p className="font-semibold text-destructive mb-1">Stock Not Found</p>
+                  <p className="text-sm text-muted-foreground">Could not find data for "{selectedSymbol}"</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-3"
+                    onClick={() => {
+                      setSelectedSymbol('');
+                      setLiveStockData(null);
+                    }}
+                  >
+                    Clear Selection
+                  </Button>
                 </div>
               )}
 

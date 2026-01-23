@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, TrendingUp, TrendingDown, Building2, BarChart3, Calendar, Brain, GitCompare, ChevronRight, ArrowLeft } from 'lucide-react';
+import { Search, TrendingUp, TrendingDown, Building2, BarChart3, Calendar, Brain, GitCompare, ChevronRight, ArrowLeft, AlertTriangle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -41,7 +41,7 @@ const ResearchPage = () => {
   }, [symbolFromUrl]);
   
   // Fetch live stock data for candlestick chart
-  const { data: liveStockData } = useStockQuote(selectedStock || '');
+  const { data: liveStockData, isLoading: isLoadingLiveData, error: liveDataError } = useStockQuote(selectedStock || '');
 
   // Filter stocks based on search
   const filteredStocks = cachedStocks?.filter(stock => 
@@ -59,6 +59,9 @@ const ResearchPage = () => {
   };
 
   const selectedStockData = cachedStocks?.find(s => s.symbol === selectedStock);
+  
+  // Check if we have any valid stock data
+  const hasValidStockData = liveStockData || selectedStockData;
 
   // If no stock selected, show search interface
   if (!selectedStock) {
@@ -324,46 +327,80 @@ const ResearchPage = () => {
         {selectedStock && (
           /* Stock Research View */
           <div className="space-y-6">
-            {/* Stock Header */}
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                      <Building2 className="w-6 h-6 text-primary" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h2 className="text-2xl font-bold">{selectedStock}</h2>
-                        {selectedStockData?.sector && (
-                          <Badge variant="secondary">{selectedStockData.sector}</Badge>
-                        )}
-                      </div>
-                      <p className="text-muted-foreground">{selectedStockData?.company_name || liveStockData?.companyName || selectedStock || 'Loading...'}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-6">
-                    <div className="text-right">
-                      <p className="text-3xl font-bold">
-                        ${(selectedStockData?.price ?? liveStockData?.price ?? 0).toFixed(2)}
-                      </p>
-                      <p className={`text-sm font-medium ${((selectedStockData?.change_percent ?? liveStockData?.changePercent ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500')}`}>
-                        {((selectedStockData?.change_percent ?? liveStockData?.changePercent ?? 0) >= 0 ? '+' : '')}
-                        ${(selectedStockData?.change ?? liveStockData?.change ?? 0).toFixed(2)} ({(selectedStockData?.change_percent ?? liveStockData?.changePercent ?? 0).toFixed(2)}%)
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" onClick={() => navigate(`/trade?symbol=${selectedStock}`)}>
-                        Trade
+            {/* Error State - Show if stock not found and no cached data */}
+            {!isLoadingLiveData && liveDataError && !selectedStockData && (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-center py-8">
+                    <AlertTriangle className="w-12 h-12 mx-auto text-destructive mb-4" />
+                    <h3 className="text-xl font-bold mb-2">Stock Not Found</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Could not find data for stock symbol "{selectedStock}". Please check the symbol and try again.
+                    </p>
+                    <div className="flex gap-2 justify-center">
+                      <Button variant="outline" onClick={() => {
+                        setSelectedStock(null);
+                        setSearchParams({});
+                      }}>
+                        Search Different Stock
+                      </Button>
+                      <Button onClick={() => navigate('/screener')}>
+                        Browse Stocks
                       </Button>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
+            
+            {/* Stock Header - Only show if we have data or are loading */}
+            {(hasValidStockData || isLoadingLiveData) && (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                        <Building2 className="w-6 h-6 text-primary" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h2 className="text-2xl font-bold">{selectedStock}</h2>
+                          {(selectedStockData?.sector || liveStockData?.sector) && (
+                            <Badge variant="secondary">{selectedStockData?.sector || liveStockData?.sector}</Badge>
+                          )}
+                        </div>
+                        <p className="text-muted-foreground">
+                          {selectedStockData?.company_name || liveStockData?.companyName || selectedStock || 'Loading...'}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-6">
+                      <div className="text-right">
+                        <p className="text-3xl font-bold">
+                          ${(selectedStockData?.price ?? liveStockData?.price ?? 0).toFixed(2)}
+                        </p>
+                        <p className={`text-sm font-medium ${((selectedStockData?.change_percent ?? liveStockData?.changePercent ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500')}`}>
+                          {((selectedStockData?.change_percent ?? liveStockData?.changePercent ?? 0) >= 0 ? '+' : '')}
+                          ${(selectedStockData?.change ?? liveStockData?.change ?? 0).toFixed(2)} ({(selectedStockData?.change_percent ?? liveStockData?.changePercent ?? 0).toFixed(2)}%)
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="outline" onClick={() => navigate(`/trade?symbol=${selectedStock}`)}>
+                          Trade
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
-            {/* Research Tabs */}
+            {/* Research Tabs - Only show if we have valid data */}
+            {hasValidStockData && (
+
+            {/* Research Tabs - Only show if we have valid data */}
+            {hasValidStockData && (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
               <TabsList className="grid grid-cols-4 lg:grid-cols-9 w-full">
                 <TabsTrigger value="charts">Charts</TabsTrigger>
