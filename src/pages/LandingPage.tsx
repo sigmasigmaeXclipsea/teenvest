@@ -459,10 +459,10 @@ const AnimatedDashboard = () => {
   }, []);
   
   const stocks = [
-    { symbol: 'AAPL', name: 'Apple Inc.', price: 178.25, change: '+2.4%', color: 'from-blue-500 to-blue-600' },
-    { symbol: 'TSLA', name: 'Tesla Inc.', price: 245.50, change: '+5.1%', color: 'from-red-500 to-red-600' },
-    { symbol: 'GOOGL', name: 'Alphabet', price: 140.80, change: '+1.2%', color: 'from-green-500 to-green-600' },
-    { symbol: 'MSFT', name: 'Microsoft', price: 378.90, change: '+0.8%', color: 'from-cyan-500 to-cyan-600' },
+    { symbol: 'AAPL', name: 'Apple Inc.', price: 189.84, change: '+1.2%', color: 'from-blue-500 to-blue-600' },
+    { symbol: 'TSLA', name: 'Tesla Inc.', price: 248.50, change: '+3.4%', color: 'from-red-500 to-red-600' },
+    { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 875.35, change: '+2.1%', color: 'from-green-500 to-green-600' },
+    { symbol: 'MSFT', name: 'Microsoft', price: 425.22, change: '+0.9%', color: 'from-cyan-500 to-cyan-600' },
   ];
   
   return (
@@ -509,7 +509,7 @@ const AnimatedDashboard = () => {
                 animate={{ opacity: [0.7, 1, 0.7] }}
                 transition={{ duration: 2, repeat: Infinity }}
               >
-                🔒 teenvest.app/dashboard
+                🔒 teenvests.com/dashboard
               </motion.span>
             </motion.div>
           </div>
@@ -520,9 +520,9 @@ const AnimatedDashboard = () => {
           {/* Stats with enhanced interactions */}
           <div className="grid grid-cols-3 gap-4">
             {[
-              { label: 'Portfolio Value', value: 12450, prefix: '$', change: '+12.4%', icon: '💰' },
-              { label: "Today's Gain", value: 245, prefix: '+$', change: '+1.9%', icon: '📈' },
-              { label: 'Win Streak', value: 7, suffix: ' days', change: '🔥', icon: '⚡' },
+              { label: 'Portfolio Value', value: 10824, prefix: '$', change: '+8.2%', icon: '💰' },
+              { label: "Today's Gain", value: 127, prefix: '+$', change: '+1.2%', icon: '📈' },
+              { label: 'Login Streak', value: 7, suffix: ' days', change: '🔥', icon: '⚡' },
             ].map((stat, i) => (
               <motion.div
                 key={i}
@@ -648,7 +648,7 @@ const AnimatedDashboard = () => {
               animate={{ y: [0, -5, 0] }}
               transition={{ duration: 2, repeat: Infinity }}
             >
-              <span className="text-success">+24.5%</span> this month
+              <span className="text-success">+8.2%</span> this month
             </motion.div>
           </motion.div>
           
