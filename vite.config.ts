@@ -78,7 +78,7 @@ export default defineConfig(({ mode }) => ({
           vendor: ["react", "react-dom", "react-router-dom"],
           ui: ["@radix-ui/react-dialog", "@radix-ui/react-dropdown-menu", "@radix-ui/react-tabs"],
           charts: ["recharts"],
-          lightweightCharts: ["https://esm.sh/lightweight-charts@4.1.1"],
+          lightweightCharts: ["lightweight-charts"],
           framerMotion: ["framer-motion"],
         },
       },
