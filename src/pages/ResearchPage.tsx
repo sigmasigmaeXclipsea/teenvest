@@ -28,14 +28,14 @@ const ResearchPage = () => {
   
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStock, setSelectedStock] = useState<string | null>(symbolFromUrl || null);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('charts'); // Default to charts tab
   const { data: cachedStocks, isLoading } = useCachedStocks();
   
   // Update selectedStock when URL param changes
   useEffect(() => {
     if (symbolFromUrl && symbolFromUrl !== selectedStock) {
       setSelectedStock(symbolFromUrl);
-      setActiveTab('overview');
+      setActiveTab('charts'); // Default to charts
     }
   }, [symbolFromUrl]);
   
@@ -52,7 +52,7 @@ const ResearchPage = () => {
   const handleStockSelect = (symbol: string) => {
     setSelectedStock(symbol);
     setSearchQuery('');
-    setActiveTab('overview'); // Reset to overview when selecting a new stock
+    setActiveTab('charts'); // Default to charts tab
     // Update URL with symbol
     setSearchParams({ symbol });
   };
@@ -143,6 +143,107 @@ const ResearchPage = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* Quick Access Tools */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card 
+              className="cursor-pointer hover:border-primary/50 transition-colors" 
+              onClick={() => navigate('/screener')}
+            >
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                      <BarChart3 className="w-5 h-5 text-blue-500" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold">Stock Screener</h3>
+                      <p className="text-sm text-muted-foreground">Filter by criteria</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="cursor-pointer hover:border-primary/50 transition-colors"
+              onClick={() => {
+                const firstStock = cachedStocks?.[0];
+                if (firstStock) {
+                  handleStockSelect(firstStock.symbol);
+                  setActiveTab('compare');
+                }
+              }}
+            >
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                      <GitCompare className="w-5 h-5 text-purple-500" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold">Compare Stocks</h3>
+                      <p className="text-sm text-muted-foreground">Side-by-side analysis</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="cursor-pointer hover:border-primary/50 transition-colors"
+              onClick={() => {
+                const firstStock = cachedStocks?.[0];
+                if (firstStock) {
+                  handleStockSelect(firstStock.symbol);
+                  setActiveTab('earnings');
+                }
+              }}
+            >
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                      <Calendar className="w-5 h-5 text-amber-500" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold">Earnings Calendar</h3>
+                      <p className="text-sm text-muted-foreground">Upcoming reports</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="cursor-pointer hover:border-primary/50 transition-colors"
+              onClick={() => {
+                const firstStock = cachedStocks?.[0];
+                if (firstStock) {
+                  handleStockSelect(firstStock.symbol);
+                  setActiveTab('ai');
+                }
+              }}
+            >
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                      <Brain className="w-5 h-5 text-emerald-500" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold">AI Research Assistant</h3>
+                      <p className="text-sm text-muted-foreground">Ask anything</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </DashboardLayout>
     );
@@ -243,11 +344,59 @@ const ResearchPage = () => {
               </CardContent>
             </Card>
 
+            {/* Charts - Show immediately */}
+            <div className="grid gap-6 lg:grid-cols-2">
+              {liveStockData ? (
+                <>
+                  <StockLineChart
+                    symbol={liveStockData.symbol}
+                    currentPrice={liveStockData.price}
+                    previousClose={liveStockData.previousClose}
+                    high={liveStockData.high}
+                    low={liveStockData.low}
+                    open={liveStockData.open}
+                  />
+                  <StockCandlestickChart
+                    symbol={liveStockData.symbol}
+                    currentPrice={liveStockData.price}
+                    previousClose={liveStockData.previousClose}
+                    high={liveStockData.high}
+                    low={liveStockData.low}
+                    open={liveStockData.open}
+                  />
+                </>
+              ) : selectedStockData ? (
+                <>
+                  <StockLineChart
+                    symbol={selectedStock}
+                    currentPrice={selectedStockData.price}
+                    previousClose={selectedStockData.price - selectedStockData.change}
+                    high={selectedStockData.high || selectedStockData.price * 1.02}
+                    low={selectedStockData.low || selectedStockData.price * 0.98}
+                    open={selectedStockData.price - selectedStockData.change}
+                  />
+                  <StockCandlestickChart
+                    symbol={selectedStock}
+                    currentPrice={selectedStockData.price}
+                    previousClose={selectedStockData.price - selectedStockData.change}
+                    high={selectedStockData.high || selectedStockData.price * 1.02}
+                    low={selectedStockData.low || selectedStockData.price * 0.98}
+                    open={selectedStockData.price - selectedStockData.change}
+                  />
+                </>
+              ) : (
+                <Card>
+                  <CardContent className="pt-6">
+                    <p className="text-muted-foreground">Loading chart data...</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
             {/* Research Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className="grid grid-cols-4 lg:grid-cols-9 w-full">
+              <TabsList className="grid grid-cols-4 lg:grid-cols-8 w-full">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="charts">Charts</TabsTrigger>
                 <TabsTrigger value="financials">Financials</TabsTrigger>
                 <TabsTrigger value="statistics">Statistics</TabsTrigger>
                 <TabsTrigger value="analysts">Analysts</TabsTrigger>
@@ -261,53 +410,9 @@ const ResearchPage = () => {
                 <ResearchCompanyProfile symbol={selectedStock} />
               </TabsContent>
 
-              <TabsContent value="charts" className="space-y-6">
-                <div className="grid gap-6 lg:grid-cols-2">
-                  {liveStockData ? (
-                    <>
-                      <StockLineChart
-                        symbol={liveStockData.symbol}
-                        currentPrice={liveStockData.price}
-                        previousClose={liveStockData.previousClose}
-                        high={liveStockData.high}
-                        low={liveStockData.low}
-                        open={liveStockData.open}
-                      />
-                      <StockCandlestickChart
-                        symbol={liveStockData.symbol}
-                        currentPrice={liveStockData.price}
-                        previousClose={liveStockData.previousClose}
-                        high={liveStockData.high}
-                        low={liveStockData.low}
-                        open={liveStockData.open}
-                      />
-                    </>
-                  ) : selectedStockData ? (
-                    <>
-                      <StockLineChart
-                        symbol={selectedStock}
-                        currentPrice={selectedStockData.price}
-                        previousClose={selectedStockData.price - selectedStockData.change}
-                        high={selectedStockData.high || selectedStockData.price * 1.02}
-                        low={selectedStockData.low || selectedStockData.price * 0.98}
-                        open={selectedStockData.price - selectedStockData.change}
-                      />
-                      <StockCandlestickChart
-                        symbol={selectedStock}
-                        currentPrice={selectedStockData.price}
-                        previousClose={selectedStockData.price - selectedStockData.change}
-                        high={selectedStockData.high || selectedStockData.price * 1.02}
-                        low={selectedStockData.low || selectedStockData.price * 0.98}
-                        open={selectedStockData.price - selectedStockData.change}
-                      />
-                    </>
-                  ) : (
-                    <Card>
-                      <CardContent className="pt-6">
-                        <p className="text-muted-foreground">Loading chart data...</p>
-                      </CardContent>
-                    </Card>
-                  )}
+              <TabsContent value="charts">
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>Charts are displayed above. Use the tabs below to explore other research data.</p>
                 </div>
               </TabsContent>
 
