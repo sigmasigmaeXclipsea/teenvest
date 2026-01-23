@@ -8,3 +8,15 @@ verify_jwt = false
 
 [functions.portfolio-health-ai]
 verify_jwt = false
+
+[functions.stock-news]
+verify_jwt = false
+
+[functions.portfolio-timeline-ai]
+verify_jwt = false
+
+[functions.mistake-analysis-ai]
+verify_jwt = false
+
+[functions.market-news-explained]
+verify_jwt = false

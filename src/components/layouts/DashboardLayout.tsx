@@ -13,7 +13,8 @@ import {
   Trophy,
   Shield,
   Award,
-  User
+  User,
+  Lightbulb
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
@@ -29,6 +30,7 @@ const navItems = [
   { path: '/screener', icon: BarChart3, label: 'Screener & Watchlist' },
   { path: '/trade', icon: Briefcase, label: 'Trade' },
   { path: '/history', icon: History, label: 'History' },
+  { path: '/insights', icon: Lightbulb, label: 'Insights & Challenges' },
   { path: '/learn', icon: BookOpen, label: 'Learn' },
   { path: '/profile', icon: User, label: 'Profile & Achievements' },
   { path: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
