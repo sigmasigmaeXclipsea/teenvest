@@ -1477,7 +1477,7 @@ const LandingPage = () => {
                   <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-warning drop-shadow-lg" />
                 </motion.span>
               </motion.span>
-            </h1>
+            </motion.h1>
             
             {/* Subheadline */}
             <motion.p 

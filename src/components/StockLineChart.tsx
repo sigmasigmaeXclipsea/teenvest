@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart } from 'lucide-react';
-import { createChart, ColorType } from "https://esm.sh/lightweight-charts@4.1.1";
+import { createChart, ColorType } from "lightweight-charts";
 
 interface StockLineChartProps {
   symbol: string;
