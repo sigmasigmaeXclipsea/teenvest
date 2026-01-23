@@ -127,31 +127,14 @@ const StockPage = () => {
             open={stock.open}
           />
           
-          {isAdvancedMode ? (
-            <StockCandlestickChart 
-              symbol={stock.symbol}
-              currentPrice={stock.price}
-              previousClose={stock.previousClose}
-              high={stock.high}
-              low={stock.low}
-              open={stock.open}
-            />
-          ) : (
-            <Card className="flex items-center justify-center bg-secondary/30 border-dashed">
-              <CardContent className="text-center py-12">
-                <Lock className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="font-semibold mb-2">Candlestick Chart</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Enable Advanced Mode in Settings to unlock candlestick charts and technical analysis tools.
-                </p>
-                <Link to="/settings">
-                  <Button variant="outline" size="sm">
-                    Go to Settings
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          )}
+          <StockCandlestickChart 
+            symbol={stock.symbol}
+            currentPrice={stock.price}
+            previousClose={stock.previousClose}
+            high={stock.high}
+            low={stock.low}
+            open={stock.open}
+          />
         </div>
 
         {/* News Section */}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowUpDown, TrendingUp, TrendingDown, Search, Loader2, ExternalLink, BarChart3 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -17,7 +17,11 @@ import { getUserFriendlyError } from '@/lib/errorMessages';
 import StockLineChart from '@/components/StockLineChart';
 import StockCandlestickChart from '@/components/StockCandlestickChart';
 import { useSettings } from '@/contexts/SettingsContext';
-import { Lock } from 'lucide-react';
+import { Lock, Loader2 } from 'lucide-react';
+
+// Lazy load charts for better performance
+const LazyStockLineChart = lazy(() => import('@/components/StockLineChart').then(m => ({ default: m.default })));
+const LazyStockCandlestickChart = lazy(() => import('@/components/StockCandlestickChart').then(m => ({ default: m.default })));
 
 const TradePage = () => {
   const [searchParams] = useSearchParams();
@@ -40,15 +44,15 @@ const TradePage = () => {
   
   const isAdvancedMode = settings.advancedMode;
   
-  // Fetch live data for selected symbol
+  // Fetch live data for selected symbol - only when symbol changes
   const { data: liveQuote, isLoading: isLoadingQuote } = useStockQuote(selectedSymbol);
   
-  // Update live stock data when quote changes
+  // Update live stock data when quote changes - memoized to prevent unnecessary updates
   useEffect(() => {
-    if (liveQuote) {
+    if (liveQuote && liveQuote.symbol === selectedSymbol) {
       setLiveStockData(liveQuote);
     }
-  }, [liveQuote]);
+  }, [liveQuote, selectedSymbol]);
 
   const handleTickerSearch = async () => {
     if (!tickerSearch.trim()) return;
@@ -79,25 +83,33 @@ const TradePage = () => {
     }
   };
 
-  // Use live data from either the quote hook or search mutation
-  const tickerInfo = getTickerInfo(selectedSymbol);
+  // Use live data from either the quote hook or search mutation - memoized
+  const tickerInfo = useMemo(() => getTickerInfo(selectedSymbol), [selectedSymbol]);
   const currentQuote = liveStockData || liveQuote;
-  const selectedStock: Stock | null = currentQuote ? {
-    symbol: currentQuote.symbol,
-    companyName: currentQuote.companyName,
-    price: currentQuote.price ?? 0,
-    change: currentQuote.change ?? 0,
-    changePercent: currentQuote.changePercent ?? 0,
-    volume: currentQuote.volume || 0,
-    marketCap: currentQuote.marketCap || 0,
-    sector: currentQuote.sector || tickerInfo?.sector || 'Unknown',
-    riskLevel: currentQuote.riskLevel || 'medium',
-    high52Week: currentQuote.high ?? 0,
-    low52Week: currentQuote.low ?? 0,
-  } : null;
+  const selectedStock: Stock | null = useMemo(() => {
+    if (!currentQuote) return null;
+    return {
+      symbol: currentQuote.symbol,
+      companyName: currentQuote.companyName,
+      price: currentQuote.price ?? 0,
+      change: currentQuote.change ?? 0,
+      changePercent: currentQuote.changePercent ?? 0,
+      volume: currentQuote.volume || 0,
+      marketCap: currentQuote.marketCap || 0,
+      sector: currentQuote.sector || tickerInfo?.sector || 'Unknown',
+      riskLevel: currentQuote.riskLevel || 'medium',
+      high52Week: currentQuote.high ?? 0,
+      low52Week: currentQuote.low ?? 0,
+    };
+  }, [currentQuote, tickerInfo]);
   
-  const totalCost = selectedStock ? Number(shares) * selectedStock.price : 0;
-  const currentHolding = holdings?.find(h => h.symbol === selectedSymbol);
+  const totalCost = useMemo(() => {
+    return selectedStock ? Number(shares) * selectedStock.price : 0;
+  }, [selectedStock, shares]);
+  
+  const currentHolding = useMemo(() => {
+    return holdings?.find(h => h.symbol === selectedSymbol);
+  }, [holdings, selectedSymbol]);
 
   const handleTrade = async () => {
     if (!selectedStock || !shares || Number(shares) <= 0) {
@@ -163,25 +175,29 @@ const TradePage = () => {
               </div>
 
               {/* Search suggestions */}
-              {tickerSearch && !searchStock.isPending && (
-                <div className="border rounded-lg bg-background max-h-48 overflow-y-auto">
-                  <p className="text-xs text-muted-foreground p-2 border-b">
-                    {getTotalTickerCount()} Russell stocks available - showing matches:
-                  </p>
-                  {searchTickers(tickerSearch, 10).map(t => (
-                    <button
-                      key={t.symbol}
-                      className="w-full text-left px-3 py-2 hover:bg-secondary text-sm flex justify-between items-center"
-                      onClick={() => {
-                        navigate(`/stocks/${t.symbol}`);
-                      }}
-                    >
-                      <span><strong>{t.symbol}</strong> - {t.name}</span>
-                      <span className="text-xs text-muted-foreground">{t.sector}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
+              {(() => {
+                if (!tickerSearch || searchStock.isPending) return null;
+                const matches = searchTickers(tickerSearch, 10);
+                return (
+                  <div className="border rounded-lg bg-background max-h-48 overflow-y-auto">
+                    <p className="text-xs text-muted-foreground p-2 border-b">
+                      {getTotalTickerCount()} Russell stocks available - showing matches:
+                    </p>
+                    {matches.map(t => (
+                      <button
+                        key={t.symbol}
+                        className="w-full text-left px-3 py-2 hover:bg-secondary text-sm flex justify-between items-center transition-colors"
+                        onClick={() => {
+                          navigate(`/stocks/${t.symbol}`);
+                        }}
+                      >
+                        <span><strong>{t.symbol}</strong> - {t.name}</span>
+                        <span className="text-xs text-muted-foreground">{t.sector}</span>
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
 
               {isLoadingQuote && selectedSymbol && (
                 <div className="p-4 rounded-lg bg-secondary/50 flex items-center justify-center">
@@ -284,19 +300,24 @@ const TradePage = () => {
           </Card>
         </div>
 
-        {/* Stock Charts - Shown when stock is selected */}
+        {/* Stock Charts - Shown when stock is selected - Lazy loaded for performance */}
         {selectedStock && liveQuote && (
-          <div className="grid gap-6 lg:grid-cols-2">
-            <StockLineChart 
-              symbol={selectedStock.symbol}
-              currentPrice={selectedStock.price}
-              previousClose={liveQuote.previousClose}
-              high={liveQuote.high}
-              low={liveQuote.low}
-              open={liveQuote.open}
-            />
-            {isAdvancedMode ? (
-              <StockCandlestickChart
+          <Suspense fallback={
+            <div className="grid gap-6 lg:grid-cols-2">
+              <Card>
+                <CardContent className="flex items-center justify-center h-64">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="flex items-center justify-center h-64">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                </CardContent>
+              </Card>
+            </div>
+          }>
+            <div className="grid gap-6 lg:grid-cols-2">
+              <LazyStockLineChart 
                 symbol={selectedStock.symbol}
                 currentPrice={selectedStock.price}
                 previousClose={liveQuote.previousClose}
@@ -304,23 +325,33 @@ const TradePage = () => {
                 low={liveQuote.low}
                 open={liveQuote.open}
               />
-            ) : (
-              <Card className="flex items-center justify-center bg-secondary/30 border-dashed">
-                <CardContent className="text-center py-12">
-                  <Lock className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="font-semibold mb-2">Candlestick Chart</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Enable Advanced Mode in Settings to unlock candlestick charts and technical analysis tools.
-                  </p>
-                  <Link to="/settings">
-                    <Button variant="outline" size="sm">
-                      Go to Settings
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+              {isAdvancedMode ? (
+                <LazyStockCandlestickChart
+                  symbol={selectedStock.symbol}
+                  currentPrice={selectedStock.price}
+                  previousClose={liveQuote.previousClose}
+                  high={liveQuote.high}
+                  low={liveQuote.low}
+                  open={liveQuote.open}
+                />
+              ) : (
+                <Card className="flex items-center justify-center bg-secondary/30 border-dashed">
+                  <CardContent className="text-center py-12">
+                    <Lock className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="font-semibold mb-2">Candlestick Chart</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Enable Advanced Mode in Settings to unlock candlestick charts and technical analysis tools.
+                    </p>
+                    <Link to="/settings">
+                      <Button variant="outline" size="sm">
+                        Go to Settings
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </Suspense>
         )}
       </div>
     </DashboardLayout>

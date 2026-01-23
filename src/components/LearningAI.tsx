@@ -192,26 +192,61 @@ const LearningAI = ({ quizResults, completedModules, allModules }: LearningAIPro
   };
 
   return (
-    <Card className="border-primary/20 bg-gradient-to-br from-card via-card to-primary/5 overflow-hidden">
-      <CardHeader className="pb-3">
+    <Card className="border-primary/30 bg-gradient-to-br from-primary/10 via-card to-accent/5 shadow-xl shadow-primary/10 overflow-hidden relative">
+      {/* Animated background glow */}
+      <motion.div
+        className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-accent/10"
+        animate={{ opacity: [0.3, 0.6, 0.3] }}
+        transition={{ duration: 3, repeat: Infinity }}
+      />
+      
+      <CardHeader className="pb-3 relative z-10">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-primary/10 rounded-lg">
-              <Brain className="w-4 h-4 text-primary" />
-            </div>
-            <CardTitle className="text-base">Your Study Plan</CardTitle>
-          </div>
-          {recommendations && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={getRecommendations}
-              disabled={isLoading}
-              className="gap-1 h-8 px-2"
+          <div className="flex items-center gap-3">
+            <motion.div 
+              className="p-2 bg-gradient-to-br from-primary via-primary/80 to-accent rounded-xl shadow-lg"
+              animate={{ 
+                scale: [1, 1.05, 1],
+                rotate: [0, 5, -5, 0]
+              }}
+              transition={{ duration: 4, repeat: Infinity }}
             >
-              <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
-            </Button>
-          )}
+              <Brain className="w-6 h-6 text-primary-foreground" />
+            </motion.div>
+            <div>
+              <CardTitle className="text-xl font-bold flex items-center gap-2">
+                Your Study Plan
+                <motion.span
+                  animate={{ rotate: [0, 360] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+                >
+                  <Sparkles className="w-4 h-4 text-primary" />
+                </motion.span>
+              </CardTitle>
+              <CardDescription className="text-sm">AI-powered personalized learning</CardDescription>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <motion.div
+              className="px-3 py-1 rounded-full bg-primary/20 text-primary text-xs font-semibold flex items-center gap-1"
+              animate={{ scale: [1, 1.05, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              Gemini AI
+            </motion.div>
+            {recommendations && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={getRecommendations}
+                disabled={isLoading}
+                className="gap-1 h-8 px-2"
+              >
+                <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
+              </Button>
+            )}
+          </div>
         </div>
         
         {/* Progress Overview */}

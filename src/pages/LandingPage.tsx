@@ -1032,17 +1032,65 @@ const LandingPage = () => {
         </div>
       </motion.header>
 
-      {/* Hero Section - ENHANCED */}
+      {/* Hero Section - ULTRA ENHANCED */}
       <motion.section 
         style={{ y: heroY, scale: heroScale, opacity: heroOpacity, rotateX: heroRotate }}
-        className="container mx-auto px-4 pt-12 pb-20 md:pt-16 md:pb-28 relative min-h-[90vh] flex items-center"
+        className="container mx-auto px-4 pt-12 pb-20 md:pt-16 md:pb-28 relative min-h-[90vh] flex items-center overflow-hidden"
       >
-        {/* Glowing rings behind hero */}
+        {/* Animated gradient mesh background */}
+        <div className="absolute inset-0 pointer-events-none">
+          <motion.div
+            className="absolute top-0 left-0 w-full h-full"
+            style={{
+              background: `
+                radial-gradient(circle at 20% 30%, hsl(var(--primary) / 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, hsl(var(--accent) / 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, hsl(var(--primary) / 0.1) 0%, transparent 70%)
+              `,
+            }}
+            animate={{
+              backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'],
+            }}
+            transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+          />
+        </div>
+        
+        {/* Glowing rings behind hero - enhanced */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
           <GlowingRing size={400} delay={0} />
           <GlowingRing size={600} delay={1} />
           <GlowingRing size={800} delay={2} />
+          <motion.div
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] rounded-full border border-primary/20"
+            animate={{
+              scale: [1, 1.1, 1],
+              opacity: [0.3, 0.6, 0.3],
+              rotate: [0, 360],
+            }}
+            transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
+          />
         </div>
+        
+        {/* Floating light beams */}
+        {[...Array(3)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-1 h-full bg-gradient-to-b from-primary/30 via-transparent to-transparent"
+            style={{
+              left: `${20 + i * 30}%`,
+              top: 0,
+            }}
+            animate={{
+              opacity: [0, 0.5, 0],
+              scaleY: [0.5, 1, 0.5],
+            }}
+            transition={{
+              duration: 4 + i,
+              repeat: Infinity,
+              delay: i * 1.5,
+            }}
+          />
+        ))}
         
         <div className="grid lg:grid-cols-[1fr_1.3fr] gap-8 lg:gap-12 items-center max-w-[90rem] mx-auto w-full">
           {/* Left Content */}
@@ -1075,34 +1123,77 @@ const LandingPage = () => {
               </motion.span>
             </motion.div>
             
-            {/* Main Headline */}
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tighter mb-6 leading-[0.95]">
+            {/* Main Headline - ULTRA ENHANCED */}
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black tracking-tighter mb-6 leading-[0.95] relative">
               <motion.span 
-                className="block text-foreground"
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
+                className="block text-foreground relative z-10"
+                initial={{ opacity: 0, y: 30, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ delay: 0.3, type: 'spring', stiffness: 100 }}
               >
                 Build Your
+                {/* Glow effect behind text */}
+                <motion.span
+                  className="absolute inset-0 blur-2xl text-primary/30 -z-10"
+                  animate={{ opacity: [0.3, 0.6, 0.3] }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                >
+                  Build Your
+                </motion.span>
               </motion.span>
               <motion.span 
-                className="block gradient-text relative"
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
+                className="block gradient-text relative z-10"
+                initial={{ opacity: 0, y: 30, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ delay: 0.4, type: 'spring', stiffness: 100 }}
               >
-                <RevealText text="Financial Empire" className="inline" />
+                <RevealText text="Financial Empire" className="inline relative z-10" />
+                {/* Animated gradient overlay */}
+                <motion.span
+                  className="absolute inset-0 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent opacity-0"
+                  animate={{ opacity: [0, 0.5, 0] }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                  style={{ backgroundSize: '200% 100%' }}
+                >
+                  Financial Empire
+                </motion.span>
+                {/* Sparkle effects */}
+                {[...Array(5)].map((_, i) => (
+                  <motion.span 
+                    key={i}
+                    className="absolute"
+                    style={{
+                      left: `${20 + i * 15}%`,
+                      top: '-10%',
+                    }}
+                    animate={{ 
+                      rotate: [0, 360],
+                      scale: [0, 1, 0],
+                      opacity: [0, 1, 0],
+                      y: [0, -20, 0],
+                    }}
+                    transition={{ 
+                      duration: 2, 
+                      repeat: Infinity, 
+                      delay: i * 0.3,
+                      ease: 'easeInOut'
+                    }}
+                    aria-hidden="true"
+                  >
+                    <Sparkles className="w-4 h-4 sm:w-6 sm:h-6 text-warning" />
+                  </motion.span>
+                ))}
                 <motion.span 
-                  className="absolute -right-2 sm:-right-4 -top-2 sm:-top-4"
+                  className="absolute -right-2 sm:-right-4 -top-2 sm:-top-4 z-20"
                   animate={{ 
-                    rotate: [0, 20, 0],
-                    scale: [1, 1.2, 1],
-                    y: [0, -5, 0],
+                    rotate: [0, 20, -20, 0],
+                    scale: [1, 1.3, 1],
+                    y: [0, -10, 0],
                   }}
                   transition={{ duration: 2, repeat: Infinity }}
                   aria-hidden="true"
                 >
-                  <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-warning" />
+                  <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-warning drop-shadow-lg" />
                 </motion.span>
               </motion.span>
             </h1>
@@ -1122,32 +1213,66 @@ const LandingPage = () => {
               Trade stocks, crush the leaderboard, and build skills that'll set you apart.
             </motion.p>
             
-            {/* CTA Buttons */}
+            {/* CTA Buttons - ULTRA ENHANCED */}
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.7 }}
-              className="flex flex-col sm:flex-row items-start gap-4 mb-10"
+              className="flex flex-col sm:flex-row items-start gap-4 mb-10 relative z-10"
             >
               <Link to={user ? "/dashboard" : "/signup"}>
-                <MagneticButton 
-                  size="lg" 
-                  className="gap-3 bg-gradient-to-r from-primary via-primary-glow to-accent hover:shadow-2xl transition-all duration-500 shadow-xl glow-primary font-bold px-8 py-6 rounded-2xl text-lg group"
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="relative"
                 >
-                  <motion.span
-                    animate={{ scale: [1, 1.2, 1] }}
-                    transition={{ duration: 1, repeat: Infinity }}
+                  {/* Glow effect behind button */}
+                  <motion.div
+                    className="absolute -inset-2 bg-gradient-to-r from-primary via-accent to-primary rounded-2xl blur-xl opacity-50"
+                    animate={{
+                      opacity: [0.3, 0.6, 0.3],
+                      scale: [1, 1.1, 1],
+                    }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  />
+                  <MagneticButton 
+                    size="lg" 
+                    className="gap-3 bg-gradient-to-r from-primary via-primary-glow to-accent hover:shadow-2xl transition-all duration-500 shadow-xl glow-primary font-bold px-8 py-6 rounded-2xl text-lg group relative z-10 overflow-hidden"
                   >
-                    <Play className="w-5 h-5 fill-current" />
-                  </motion.span>
-                  {user ? "Go to Dashboard" : "Start Free Today"}
-                  <motion.span
-                    animate={{ x: [0, 8, 0] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                  >
-                    <ArrowRight className="w-5 h-5" />
-                  </motion.span>
-                </MagneticButton>
+                    {/* Animated background gradient */}
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-to-r from-accent via-primary to-accent"
+                      animate={{
+                        backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+                      }}
+                      transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+                      style={{ backgroundSize: '200% 100%' }}
+                    />
+                    {/* Shimmer effect */}
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+                      animate={{ x: ['-100%', '200%'] }}
+                      transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
+                    />
+                    <motion.span
+                      className="relative z-10 flex items-center"
+                      animate={{ scale: [1, 1.2, 1] }}
+                      transition={{ duration: 1, repeat: Infinity }}
+                    >
+                      <Play className="w-5 h-5 fill-current mr-2" />
+                    </motion.span>
+                    <span className="relative z-10">
+                      {user ? "Go to Dashboard" : "Start Free Today"}
+                    </span>
+                    <motion.span
+                      className="relative z-10"
+                      animate={{ x: [0, 8, 0] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                    >
+                      <ArrowRight className="w-5 h-5" />
+                    </motion.span>
+                  </MagneticButton>
+                </motion.div>
               </Link>
               <Link to={user ? "/learn" : "/login"}>
                 <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
@@ -1203,14 +1328,14 @@ const LandingPage = () => {
             </motion.div>
           </motion.div>
           
-          {/* Right - Dashboard Preview - BIGGER AND MORE PROMINENT */}
+          {/* Right - Dashboard Preview - ULTRA ENHANCED */}
           <motion.div
             initial={{ opacity: 0, x: 80, rotateY: -15, scale: 0.9 }}
             animate={{ opacity: 1, x: 0, rotateY: 0, scale: 1 }}
             transition={{ duration: 1.2, delay: 0.2, type: 'spring', stiffness: 100 }}
             className="relative lg:col-span-1"
           >
-            {/* Multiple glow layers behind dashboard */}
+            {/* Multiple glow layers behind dashboard - enhanced */}
             <motion.div 
               className="absolute -inset-20 bg-gradient-radial from-primary/40 via-primary/15 to-transparent blur-3xl"
               animate={{ scale: [1, 1.2, 1], opacity: [0.4, 0.7, 0.4] }}
@@ -1221,6 +1346,20 @@ const LandingPage = () => {
               animate={{ scale: [1.1, 1.3, 1.1], opacity: [0.3, 0.5, 0.3] }}
               transition={{ duration: 4, repeat: Infinity, delay: 1 }}
             />
+            {/* Additional pulsing rings */}
+            {[...Array(3)].map((_, i) => (
+              <motion.div
+                key={i}
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-primary/20"
+                style={{ width: `${300 + i * 200}px`, height: `${300 + i * 200}px` }}
+                animate={{
+                  scale: [1, 1.2, 1],
+                  opacity: [0.2, 0.4, 0.2],
+                  rotate: [0, 180, 360],
+                }}
+                transition={{ duration: 6 + i * 2, repeat: Infinity, ease: 'linear' }}
+              />
+            ))}
             
             {/* Orbiting elements */}
             <motion.div
@@ -1338,12 +1477,38 @@ const LandingPage = () => {
         </motion.div>
       </motion.section>
 
-      {/* Live Stock Ticker - Enhanced */}
-      <section className="py-6 relative overflow-hidden" aria-label="Live stock ticker">
-        {/* Top border glow */}
+      {/* Live Stock Ticker - MEDIUM SIZE (Educational - Shows Real Data) */}
+      <section className="py-8 md:py-10 relative overflow-hidden" aria-label="Live stock ticker">
+        {/* Animated gradient background */}
+        <motion.div
+          className="absolute inset-0"
+          style={{
+            background: `
+              linear-gradient(90deg, 
+                transparent 0%, 
+                hsl(var(--primary) / 0.05) 25%, 
+                hsl(var(--accent) / 0.05) 50%, 
+                hsl(var(--primary) / 0.05) 75%, 
+                transparent 100%
+              )
+            `,
+          }}
+          animate={{
+            backgroundPosition: ['0% 0%', '100% 0%', '0% 0%'],
+          }}
+          transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
+        />
+        {/* Top border glow - enhanced */}
         <motion.div 
-          className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary to-transparent"
-          animate={{ opacity: [0.3, 1, 0.3] }}
+          className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary via-accent to-transparent"
+          animate={{ 
+            opacity: [0.3, 1, 0.3],
+            boxShadow: [
+              '0 0 10px hsl(var(--primary) / 0.3)',
+              '0 0 20px hsl(var(--primary) / 0.6)',
+              '0 0 10px hsl(var(--primary) / 0.3)',
+            ],
+          }}
           transition={{ duration: 2, repeat: Infinity }}
           aria-hidden="true"
         />
@@ -1406,8 +1571,8 @@ const LandingPage = () => {
         />
       </section>
 
-      {/* Why Start Early - TIME IS YOUR SUPERPOWER */}
-      <section className="py-20 relative overflow-hidden">
+      {/* Why Start Early - TIME IS YOUR SUPERPOWER - BIGGER (Most Important Educational Content) */}
+      <section className="py-32 md:py-40 relative overflow-hidden">
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
             <motion.div
@@ -1417,10 +1582,10 @@ const LandingPage = () => {
               transition={{ type: 'spring' }}
             >
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary mb-3">The Math Doesn't Lie</p>
-              <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-6">
+              <h2 className="text-5xl md:text-6xl lg:text-7xl font-black tracking-tight mb-8">
                 Time Is Your <span className="gradient-text">Superpower</span>
               </h2>
-              <p className="text-lg text-muted-foreground mb-8">
+              <p className="text-xl md:text-2xl text-muted-foreground mb-10">
                 Every year you wait costs you thousands. Starting at 15 instead of 25 could mean 
                 <motion.span 
                   className="text-primary font-bold"
@@ -1429,7 +1594,7 @@ const LandingPage = () => {
                 > 2X more wealth</motion.span> by retirement.
               </p>
               
-              <div className="space-y-4">
+              <div className="space-y-5">
                 {[
                   { emoji: '💰', title: 'Compound Growth', desc: 'Watch your money multiply while you sleep' },
                   { emoji: '🧠', title: 'Build Skills Early', desc: 'Learn to read markets before your peers' },
@@ -1441,19 +1606,19 @@ const LandingPage = () => {
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: i * 0.15, type: 'spring' }}
-                    whileHover={{ x: 10, scale: 1.02 }}
-                    className="flex items-start gap-4 p-4 rounded-xl bg-card/50 border border-border/50 hover:border-primary/30 transition-colors cursor-pointer"
+                    whileHover={{ x: 10, scale: 1.03 }}
+                    className="flex items-start gap-5 p-6 rounded-2xl bg-card/50 border-2 border-border/50 hover:border-primary/40 transition-all cursor-pointer shadow-lg hover:shadow-xl"
                   >
                     <motion.span 
-                      className="text-2xl"
+                      className="text-4xl"
                       animate={{ rotate: [0, 10, -10, 0] }}
                       transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
                     >
                       {item.emoji}
                     </motion.span>
                     <div>
-                      <h4 className="font-bold">{item.title}</h4>
-                      <p className="text-sm text-muted-foreground">{item.desc}</p>
+                      <h4 className="text-xl font-bold mb-1">{item.title}</h4>
+                      <p className="text-base text-muted-foreground">{item.desc}</p>
                     </div>
                   </motion.div>
                 ))}
@@ -1468,54 +1633,54 @@ const LandingPage = () => {
               className="relative"
             >
               <TiltCard>
-                <div className="bg-card rounded-3xl p-8 border border-border/50 shadow-2xl relative overflow-hidden">
+                <div className="bg-card rounded-3xl p-10 md:p-12 border-2 border-border/50 shadow-2xl relative overflow-hidden">
                   <motion.div 
                     className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5"
                     animate={{ opacity: [0.3, 0.6, 0.3] }}
                     transition={{ duration: 3, repeat: Infinity }}
                   />
                   <div className="relative">
-                    <h4 className="text-lg font-bold mb-6 text-center">$100/month invested</h4>
-                    <div className="grid grid-cols-2 gap-6 mb-6">
+                    <h4 className="text-2xl md:text-3xl font-bold mb-8 text-center">$100/month invested</h4>
+                    <div className="grid grid-cols-2 gap-8 mb-8">
                       <motion.div 
-                        className="text-center p-6 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/30"
-                        whileHover={{ scale: 1.05 }}
+                        className="text-center p-8 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 border-2 border-primary/40 shadow-lg"
+                        whileHover={{ scale: 1.08 }}
                       >
-                        <p className="text-4xl font-black gradient-text mb-2">
+                        <p className="text-5xl md:text-6xl font-black gradient-text mb-3">
                           $<SpringCounter value={500} />K+
                         </p>
-                        <p className="text-sm text-muted-foreground">Start at 15</p>
-                        <p className="text-xs text-primary font-semibold mt-1">45 years of growth</p>
+                        <p className="text-base font-semibold text-muted-foreground">Start at 15</p>
+                        <p className="text-sm text-primary font-bold mt-2">45 years of growth</p>
                       </motion.div>
                       <motion.div 
-                        className="text-center p-6 rounded-2xl bg-muted/50 border border-border/50"
+                        className="text-center p-8 rounded-2xl bg-muted/50 border-2 border-border/50"
                         whileHover={{ scale: 1.05 }}
                       >
-                        <p className="text-4xl font-black text-muted-foreground mb-2">
+                        <p className="text-5xl md:text-6xl font-black text-muted-foreground mb-3">
                           $<SpringCounter value={250} />K
                         </p>
-                        <p className="text-sm text-muted-foreground">Start at 25</p>
-                        <p className="text-xs text-muted-foreground mt-1">35 years of growth</p>
+                        <p className="text-base font-semibold text-muted-foreground">Start at 25</p>
+                        <p className="text-sm text-muted-foreground mt-2">35 years of growth</p>
                       </motion.div>
                     </div>
                     <motion.div 
-                      className="text-center p-4 rounded-xl bg-success/10 border border-success/20"
-                      animate={{ scale: [1, 1.02, 1] }}
+                      className="text-center p-6 rounded-xl bg-success/10 border-2 border-success/30 shadow-lg"
+                      animate={{ scale: [1, 1.03, 1] }}
                       transition={{ duration: 2, repeat: Infinity }}
                     >
-                      <p className="text-success font-bold flex items-center justify-center gap-2">
+                      <p className="text-lg md:text-xl text-success font-bold flex items-center justify-center gap-2">
                         <motion.div
                           animate={{ rotate: [0, 360] }}
                           transition={{ duration: 2, repeat: Infinity }}
                         >
-                          <Flame className="w-4 h-4" />
+                          <Flame className="w-5 h-5" />
                         </motion.div>
                         10 extra years = 2X more money
                         <motion.div
                           animate={{ rotate: [0, -360] }}
                           transition={{ duration: 2, repeat: Infinity }}
                         >
-                          <Flame className="w-4 h-4" />
+                          <Flame className="w-5 h-5" />
                         </motion.div>
                       </p>
                     </motion.div>
@@ -1527,8 +1692,8 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Stats Section with Enhanced Interactions */}
-      <section className="py-24 relative">
+      {/* Stats Section with Enhanced Interactions - MEDIUM SIZE */}
+      <section className="py-16 md:py-20 relative">
         {/* Background elements */}
         <div className="absolute inset-0 pointer-events-none">
           <motion.div 
@@ -1612,8 +1777,8 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* AI Assistant Bento */}
-      <section className="py-20 relative overflow-hidden">
+      {/* AI Assistant Bento - BIGGER (Key Educational Tool) */}
+      <section className="py-28 md:py-36 relative overflow-hidden">
         <ParallaxSection speed={0.3}>
           <div className="container mx-auto px-4">
             <motion.div
@@ -1630,23 +1795,23 @@ const LandingPage = () => {
               >
                 AI-Powered Learning
               </motion.p>
-              <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-4">
+              <h2 className="text-5xl md:text-6xl lg:text-7xl font-black tracking-tight mb-6">
                 Your <span className="gradient-text">24/7</span> Trading Coach
               </h2>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto">
                 Get instant answers, personalized insights, and expert guidance—written for teens, not Wall Street.
               </p>
             </motion.div>
             
-            {/* Bento Grid */}
-            <div className="grid md:grid-cols-3 gap-4 max-w-6xl mx-auto">
-              {/* Large Card */}
+            {/* Bento Grid - BIGGER AI CARD */}
+            <div className="grid md:grid-cols-3 gap-6 max-w-7xl mx-auto">
+              {/* Large Card - ENHANCED SIZE */}
               <TiltCard className="md:col-span-2 md:row-span-2">
                 <motion.div 
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  className="h-full rounded-3xl bg-card border border-border/50 p-6 md:p-8"
+                  className="h-full rounded-3xl bg-card border-2 border-border/50 p-8 md:p-10 shadow-2xl"
                 >
                   <div className="flex flex-col h-full">
                     <div className="flex items-start justify-between mb-6">
@@ -1668,8 +1833,8 @@ const LandingPage = () => {
                       </div>
                     </div>
                     
-                    <h3 className="text-2xl md:text-3xl font-bold mb-3">Ask Anything About Investing</h3>
-                    <p className="text-muted-foreground mb-6 flex-grow">
+                    <h3 className="text-3xl md:text-4xl font-bold mb-5">Ask Anything About Investing</h3>
+                    <p className="text-lg text-muted-foreground mb-8 flex-grow">
                       No question is too basic. Our AI coach explains complex concepts in simple terms, 
                       analyzes your portfolio, and helps you make smarter decisions.
                     </p>
@@ -1733,13 +1898,13 @@ const LandingPage = () => {
         </ParallaxSection>
       </section>
 
-      {/* Velocity scroll text */}
-      <section className="py-10 overflow-hidden">
+      {/* Velocity scroll text - SMALLER (Decorative) */}
+      <section className="py-6 overflow-hidden">
         <VelocityText text="LEARN • TRADE • DOMINATE • " />
       </section>
 
-      {/* Features Bento Grid */}
-      <section className="py-20 relative">
+      {/* Features Bento Grid - MEDIUM SIZE */}
+      <section className="py-16 md:py-20 relative">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent pointer-events-none" />
         
         <div className="container mx-auto px-4">
@@ -1780,8 +1945,8 @@ const LandingPage = () => {
           </div>
         </div>
       </section>
-      {/* Testimonials Section */}
-      <section className="py-24 relative overflow-hidden">
+      {/* Testimonials Section - SMALLER (Social Proof, Less Educational) */}
+      <section className="py-12 md:py-16 relative overflow-hidden">
         <div className="container mx-auto px-4">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -1790,12 +1955,12 @@ const LandingPage = () => {
             className="text-center mb-16"
           >
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-accent mb-3">What Teens Say</p>
-            <h2 className="text-4xl md:text-5xl font-black tracking-tight">
+            <h2 className="text-3xl md:text-4xl font-black tracking-tight">
               Real Stories, <span className="gradient-text">Real Growth</span>
             </h2>
           </motion.div>
           
-          <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-4 max-w-5xl mx-auto">
             {[
               { name: 'Alex M.', age: '16', avatar: '🧑‍💻', quote: "I went from knowing nothing about stocks to having a $15K virtual portfolio. TeenVest made it so easy to learn!", rating: 5 },
               { name: 'Sarah K.', age: '17', avatar: '👩‍🎓', quote: "The AI coach is like having a finance teacher available 24/7. My parents are impressed with how much I've learned.", rating: 5 },
@@ -1807,8 +1972,8 @@ const LandingPage = () => {
                 whileInView={{ opacity: 1, y: 0, rotateX: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.15, type: 'spring' }}
-                whileHover={{ y: -10, scale: 1.02 }}
-                className="relative p-8 rounded-3xl bg-card border border-border/50 hover:border-primary/30 transition-all duration-500 cursor-pointer group"
+                whileHover={{ y: -8, scale: 1.02 }}
+                className="relative p-6 rounded-2xl bg-card border border-border/50 hover:border-primary/30 transition-all duration-500 cursor-pointer group"
               >
                 {/* Quote mark */}
                 <motion.div 
@@ -1859,8 +2024,8 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Final CTA - ENHANCED */}
-      <section className="py-32 relative overflow-hidden">
+      {/* Final CTA - BIGGEST (Most Important Conversion Point) */}
+      <section className="py-40 md:py-52 relative overflow-hidden">
         {/* Animated background */}
         <motion.div 
           className="absolute inset-0 bg-gradient-to-b from-primary/10 via-accent/10 to-background"
@@ -1929,7 +2094,7 @@ const LandingPage = () => {
             </motion.div>
             
             <motion.h2 
-              className="text-5xl md:text-7xl font-black tracking-tight mb-6"
+              className="text-6xl md:text-8xl lg:text-9xl font-black tracking-tight mb-8"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -1939,7 +2104,7 @@ const LandingPage = () => {
             </motion.h2>
             
             <motion.p 
-              className="text-xl md:text-2xl text-muted-foreground mb-12 max-w-3xl mx-auto"
+              className="text-2xl md:text-3xl text-muted-foreground mb-16 max-w-4xl mx-auto"
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
@@ -1959,7 +2124,7 @@ const LandingPage = () => {
               <Link to={user ? "/dashboard" : "/signup"}>
                 <MagneticButton 
                   size="lg" 
-                  className="gap-3 bg-gradient-to-r from-primary via-primary-glow to-accent hover:shadow-[0_20px_60px_-15px_hsl(var(--primary)/0.5)] transition-all duration-500 shadow-xl glow-primary font-bold px-12 py-8 rounded-3xl text-xl"
+                  className="gap-4 bg-gradient-to-r from-primary via-primary-glow to-accent hover:shadow-[0_20px_60px_-15px_hsl(var(--primary)/0.5)] transition-all duration-500 shadow-xl glow-primary font-bold px-16 py-10 rounded-3xl text-2xl md:text-3xl"
                 >
                   <motion.span
                     animate={{ scale: [1, 1.3, 1] }}
@@ -2068,10 +2233,30 @@ const LandingPage = () => {
         </div>
       </footer>
       
-      {/* Add stroke text styles */}
+      {/* Add enhanced styles */}
       <style>{`
         .stroke-text {
           -webkit-text-stroke: 2px hsl(var(--primary) / 0.3);
+        }
+        .gradient-text {
+          background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)), hsl(var(--primary)));
+          background-size: 200% 200%;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          animation: gradient-shift 3s ease infinite;
+        }
+        @keyframes gradient-shift {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        .glow-primary {
+          box-shadow: 0 0 20px hsl(var(--primary) / 0.5),
+                      0 0 40px hsl(var(--primary) / 0.3),
+                      0 0 60px hsl(var(--primary) / 0.2);
+        }
+        .bg-gradient-radial {
+          background: radial-gradient(circle, var(--tw-gradient-stops));
         }
       `}</style>
     </div>

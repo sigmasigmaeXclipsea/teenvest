@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Bot, Send, Loader2, Sparkles } from 'lucide-react';
+import { Bot, Send, Loader2, Sparkles, Zap, Brain, MessageCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
+import { motion, AnimatePresence } from 'framer-motion';
 
 type Message = {
   role: 'user' | 'assistant';
@@ -152,35 +153,83 @@ const AIAssistantCard = ({
   };
 
   return (
-    <Card className="border-primary/20 bg-gradient-to-br from-card to-primary/5">
-      <CardHeader className="pb-3">
-        <div className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-            <Bot className="w-5 h-5 text-primary-foreground" />
+    <Card className="border-primary/30 bg-gradient-to-br from-primary/10 via-card to-accent/5 shadow-xl shadow-primary/10 overflow-hidden relative">
+      {/* Animated background glow */}
+      <motion.div
+        className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-accent/10"
+        animate={{ opacity: [0.3, 0.6, 0.3] }}
+        transition={{ duration: 3, repeat: Infinity }}
+      />
+      
+      <CardHeader className="pb-3 relative z-10">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <motion.div 
+              className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary via-primary/80 to-accent flex items-center justify-center shadow-lg relative"
+              animate={{ 
+                scale: [1, 1.05, 1],
+                rotate: [0, 5, -5, 0]
+              }}
+              transition={{ duration: 4, repeat: Infinity }}
+            >
+              <Bot className="w-7 h-7 text-primary-foreground" />
+              <motion.div
+                className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary animate-pulse"
+                animate={{ scale: [1, 1.3, 1], opacity: [1, 0.5, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              />
+            </motion.div>
+            <div>
+              <CardTitle className="text-xl font-bold flex items-center gap-2">
+                {title}
+                <motion.span
+                  animate={{ rotate: [0, 360] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+                >
+                  <Sparkles className="w-4 h-4 text-primary" />
+                </motion.span>
+              </CardTitle>
+              <CardDescription className="text-sm">{description}</CardDescription>
+            </div>
           </div>
-          <div>
-            <CardTitle className="text-lg">{title}</CardTitle>
-            <CardDescription>{description}</CardDescription>
-          </div>
+          <motion.div
+            className="px-3 py-1 rounded-full bg-primary/20 text-primary text-xs font-semibold flex items-center gap-1"
+            animate={{ scale: [1, 1.05, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+            Powered by Gemini
+          </motion.div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-4 relative z-10">
         {/* Suggested Questions */}
         {!isExpanded && suggestedQuestions.length > 0 && (
-          <div className="space-y-2">
+          <motion.div 
+            className="space-y-2"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
             {suggestedQuestions.map((q, i) => (
-              <Button
+              <motion.div
                 key={i}
-                variant="outline"
-                size="sm"
-                className="w-full justify-start text-left h-auto py-2 px-3 text-sm whitespace-normal"
-                onClick={() => sendMessage(q)}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.1 }}
+                whileHover={{ scale: 1.02, x: 5 }}
               >
-                <Sparkles className="w-3 h-3 mr-2 flex-shrink-0 text-primary" />
-                {q}
-              </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full justify-start text-left h-auto py-3 px-4 text-sm whitespace-normal border-primary/30 hover:bg-primary/10 hover:border-primary/50 transition-all"
+                  onClick={() => sendMessage(q)}
+                >
+                  <Sparkles className="w-4 h-4 mr-2 flex-shrink-0 text-primary" />
+                  {q}
+                </Button>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
 
         {/* Chat Messages */}
@@ -224,26 +273,32 @@ const AIAssistantCard = ({
 
         {/* Input */}
         <div className="flex gap-2">
-          <Input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask a question..."
-            disabled={isLoading}
-            className="text-sm"
-          />
-          <Button
-            onClick={() => sendMessage()}
-            disabled={!input.trim() || isLoading}
-            size="icon"
-            className="flex-shrink-0"
-          >
-            {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Send className="w-4 h-4" />
-            )}
-          </Button>
+          <div className="relative flex-1">
+            <MessageCircle className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask anything about investing..."
+              disabled={isLoading}
+              className="text-sm pl-10 border-primary/30 focus:border-primary"
+              onFocus={() => setIsExpanded(true)}
+            />
+          </div>
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              onClick={() => sendMessage()}
+              disabled={!input.trim() || isLoading}
+              size="icon"
+              className="flex-shrink-0 bg-gradient-to-br from-primary to-accent shadow-lg"
+            >
+              {isLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
+            </Button>
+          </motion.div>
         </div>
       </CardContent>
     </Card>

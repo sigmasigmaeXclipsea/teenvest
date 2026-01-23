@@ -35,9 +35,12 @@ const StockNews = ({ symbol, companyName }: StockNewsProps) => {
       if (error) throw error;
       return data;
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 2 * 60 * 1000, // 2 minutes - more frequent updates
     gcTime: 10 * 60 * 1000,
-    retry: 1
+    retry: 1,
+    refetchInterval: 2 * 60 * 1000, // Auto-refresh every 2 minutes
+    refetchOnWindowFocus: true,
+    refetchOnMount: true
   });
 
   const getSentimentIcon = (sentiment: string) => {
@@ -108,10 +111,16 @@ const StockNews = ({ symbol, companyName }: StockNewsProps) => {
     <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Newspaper className="w-5 h-5" />
-            Latest News
-          </CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Newspaper className="w-5 h-5" />
+              Latest News
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-primary animate-pulse" title="Live updates active" />
+              <span className="text-xs text-muted-foreground">Live</span>
+            </div>
+          </div>
           {data?.marketSentiment && getSentimentBadge(data.marketSentiment)}
         </div>
         {data?.keyInsight && (

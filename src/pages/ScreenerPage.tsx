@@ -538,7 +538,7 @@ const ScreenerPage = () => {
         </td>
         <td className="py-3 px-2">
           <Link 
-            to={`/trade?symbol=${stock.symbol}`}
+            to={`/stocks/${stock.symbol}`}
             onClick={(e) => e.stopPropagation()}
           >
             <Button size="sm" className="h-7 text-xs">Trade</Button>
