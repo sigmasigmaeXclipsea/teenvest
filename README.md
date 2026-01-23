@@ -36,6 +36,40 @@ npm i
 npm run dev
 ```
 
+### Syncing Local Changes to Lovable
+
+**How the sync works:**
+- **Lovable → GitHub**: Automatic. Changes made in Lovable are automatically committed to GitHub.
+- **GitHub → Lovable**: Automatic. Once you push changes to GitHub, Lovable automatically reflects them.
+- **Local IDE → GitHub**: Manual. You need to commit and push your changes.
+
+**Quick push helper:**
+
+We've included helper scripts to make pushing easier:
+
+**On macOS/Linux:**
+```sh
+./scripts/push-to-lovable.sh "Your commit message"
+```
+
+**On Windows (PowerShell):**
+```powershell
+.\scripts\push-to-lovable.ps1 "Your commit message"
+```
+
+If you don't provide a commit message, the script will prompt you for one.
+
+**Manual workflow:**
+```sh
+git add .
+git commit -m "Your commit message"
+git push
+```
+
+After pushing to GitHub, your changes will automatically appear in Lovable within a few moments.
+
+**For more automation options** (including an optional auto-push hook), see [scripts/README.md](scripts/README.md).
+
 **Edit a file directly in GitHub**
 
 - Navigate to the desired file(s).
