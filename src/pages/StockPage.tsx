@@ -1,12 +1,19 @@
 import { useParams, Link } from 'react-router-dom';
+import { useState, useMemo } from 'react';
 import { TrendingUp, TrendingDown, ExternalLink, ArrowLeft, Star, StarOff, Loader2, Globe, Building2, Calendar, DollarSign, Activity, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { useStockQuote } from '@/hooks/useStockAPI';
 import { useWatchlist, useAddToWatchlist, useRemoveFromWatchlist } from '@/hooks/useWatchlist';
+import { usePortfolio, useHoldings, useExecuteTrade } from '@/hooks/usePortfolio';
 import { useToast } from '@/hooks/use-toast';
+import { getUserFriendlyError } from '@/lib/errorMessages';
 import { formatMarketCap, formatVolume } from '@/data/mockStocks';
 import StockLineChart from '@/components/StockLineChart';
 import StockCandlestickChart from '@/components/StockCandlestickChart';
@@ -21,10 +28,49 @@ const StockPage = () => {
   const removeFromWatchlist = useRemoveFromWatchlist();
   const { toast } = useToast();
   const { settings } = useSettings();
+  const { data: portfolio } = usePortfolio();
+  const { data: holdings } = useHoldings();
+  const executeTrade = useExecuteTrade();
+
+  const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
+  const [orderType, setOrderType] = useState<'market' | 'limit' | 'stop'>('market');
+  const [shares, setShares] = useState('');
 
   const isAdvancedMode = settings.advancedMode;
 
   const isInWatchlist = watchlist?.some(w => w.symbol === symbol);
+
+  const currentHolding = useMemo(() => {
+    return holdings?.find(h => h.symbol === symbol);
+  }, [holdings, symbol]);
+
+  const totalCost = useMemo(() => {
+    if (!stock || !shares) return 0;
+    return Number(shares) * stock.price;
+  }, [stock, shares]);
+
+  const handleTrade = async () => {
+    if (!stock || !shares || Number(shares) <= 0) {
+      toast({ title: 'Invalid trade', description: 'Please enter a valid number of shares', variant: 'destructive' });
+      return;
+    }
+
+    try {
+      await executeTrade.mutateAsync({
+        symbol: stock.symbol,
+        companyName: stock.companyName,
+        tradeType,
+        orderType,
+        shares: Number(shares),
+        price: stock.price,
+        sector: stock.sector,
+      });
+      toast({ title: 'Trade executed!', description: `${tradeType === 'buy' ? 'Bought' : 'Sold'} ${shares} shares of ${stock.symbol}` });
+      setShares('');
+    } catch (error: any) {
+      toast({ title: 'Trade failed', description: getUserFriendlyError(error), variant: 'destructive' });
+    }
+  };
 
   const handleToggleWatchlist = async () => {
     if (!stock) return;
@@ -99,9 +145,6 @@ const StockPage = () => {
               {isInWatchlist ? <Star className="w-4 h-4 fill-primary text-primary mr-2" /> : <StarOff className="w-4 h-4 mr-2" />}
               {isInWatchlist ? 'Watching' : 'Watch'}
             </Button>
-            <Link to={`/trade?symbol=${stock.symbol}`}>
-              <Button>Trade {stock.symbol}</Button>
-            </Link>
           </div>
         </div>
 
@@ -260,18 +303,99 @@ const StockPage = () => {
           </CardContent>
         </Card>
 
-        {/* Trade CTA */}
+        {/* Trading Interface */}
         <Card className="bg-primary/5 border-primary/20">
-          <CardContent className="py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div>
-              <h3 className="text-lg font-semibold">Ready to trade {stock.symbol}?</h3>
-              <p className="text-muted-foreground">Execute market or limit orders with your paper trading account.</p>
-            </div>
-            <Link to={`/trade?symbol=${stock.symbol}`}>
-              <Button size="lg" className="gap-2">
-                <TrendingUp className="w-4 h-4" /> Trade Now
+          <CardHeader>
+            <CardTitle>Trade {stock.symbol}</CardTitle>
+            <CardDescription>
+              Cash available: ${Number(portfolio?.cash_balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              {currentHolding && (
+                <span className="ml-4">• You own: {Number(currentHolding.shares).toFixed(2)} shares</span>
+              )}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Tabs value={tradeType} onValueChange={(v) => setTradeType(v as 'buy' | 'sell')}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="buy">Buy</TabsTrigger>
+                <TabsTrigger value="sell" disabled={!currentHolding || Number(currentHolding.shares) <= 0}>
+                  Sell
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="order-type">Order Type</Label>
+                <Select value={orderType} onValueChange={(v) => setOrderType(v as 'market' | 'limit' | 'stop')}>
+                  <SelectTrigger id="order-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="market">Market</SelectItem>
+                    <SelectItem value="limit">Limit</SelectItem>
+                    <SelectItem value="stop">Stop</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="shares">Shares</Label>
+                <Input
+                  id="shares"
+                  type="number"
+                  placeholder="0"
+                  value={shares}
+                  onChange={(e) => setShares(e.target.value)}
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+
+              {shares && Number(shares) > 0 && stock && (
+                <div className="p-3 rounded-lg bg-secondary/50">
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-muted-foreground">Price per share:</span>
+                    <span className="font-semibold">${stock.price.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-muted-foreground">Shares:</span>
+                    <span className="font-semibold">{Number(shares).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between font-bold text-lg pt-2 border-t">
+                    <span>Total Cost:</span>
+                    <span className={tradeType === 'buy' && totalCost > Number(portfolio?.cash_balance || 0) ? 'text-destructive' : ''}>
+                      ${totalCost.toFixed(2)}
+                    </span>
+                  </div>
+                  {tradeType === 'buy' && totalCost > Number(portfolio?.cash_balance || 0) && (
+                    <p className="text-xs text-destructive mt-2">Insufficient funds</p>
+                  )}
+                  {tradeType === 'sell' && currentHolding && Number(shares) > Number(currentHolding.shares) && (
+                    <p className="text-xs text-destructive mt-2">Insufficient shares</p>
+                  )}
+                </div>
+              )}
+
+              <Button
+                onClick={handleTrade}
+                disabled={executeTrade.isPending || !shares || Number(shares) <= 0 || (tradeType === 'buy' && totalCost > Number(portfolio?.cash_balance || 0)) || (tradeType === 'sell' && currentHolding && Number(shares) > Number(currentHolding.shares))}
+                className="w-full"
+                size="lg"
+              >
+                {executeTrade.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    {tradeType === 'buy' ? <TrendingUp className="w-4 h-4 mr-2" /> : <TrendingDown className="w-4 h-4 mr-2" />}
+                    {tradeType === 'buy' ? 'Buy' : 'Sell'} {stock.symbol}
+                  </>
+                )}
               </Button>
-            </Link>
+            </div>
           </CardContent>
         </Card>
       </div>
