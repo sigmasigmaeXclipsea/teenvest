@@ -16,6 +16,8 @@ import { useStockQuote, useSearchStock, StockQuote } from '@/hooks/useStockAPI';
 import { getUserFriendlyError } from '@/lib/errorMessages';
 import StockLineChart from '@/components/StockLineChart';
 import StockCandlestickChart from '@/components/StockCandlestickChart';
+import { useSettings } from '@/contexts/SettingsContext';
+import { Lock } from 'lucide-react';
 
 const TradePage = () => {
   const [searchParams] = useSearchParams();
@@ -34,6 +36,9 @@ const TradePage = () => {
   const executeTrade = useExecuteTrade();
   const { toast } = useToast();
   const searchStock = useSearchStock();
+  const { settings } = useSettings();
+  
+  const isAdvancedMode = settings.advancedMode;
   
   // Fetch live data for selected symbol
   const { data: liveQuote, isLoading: isLoadingQuote } = useStockQuote(selectedSymbol);
@@ -290,14 +295,31 @@ const TradePage = () => {
               low={liveQuote.low}
               open={liveQuote.open}
             />
-            <StockCandlestickChart
-              symbol={selectedStock.symbol}
-              currentPrice={selectedStock.price}
-              previousClose={liveQuote.previousClose}
-              high={liveQuote.high}
-              low={liveQuote.low}
-              open={liveQuote.open}
-            />
+            {isAdvancedMode ? (
+              <StockCandlestickChart
+                symbol={selectedStock.symbol}
+                currentPrice={selectedStock.price}
+                previousClose={liveQuote.previousClose}
+                high={liveQuote.high}
+                low={liveQuote.low}
+                open={liveQuote.open}
+              />
+            ) : (
+              <Card className="flex items-center justify-center bg-secondary/30 border-dashed">
+                <CardContent className="text-center py-12">
+                  <Lock className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="font-semibold mb-2">Candlestick Chart</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Enable Advanced Mode in Settings to unlock candlestick charts and technical analysis tools.
+                  </p>
+                  <Link to="/settings">
+                    <Button variant="outline" size="sm">
+                      Go to Settings
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
       </div>

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback, memo } from 'react';
 import { Search, Filter, TrendingUp, TrendingDown, Loader2, Star, StarOff, Eye, RefreshCw, ChevronUp, ChevronDown, ArrowUpDown, Flame, Sparkles, Database } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -442,10 +442,13 @@ const ScreenerPage = () => {
     };
   }, [visibleStocks, selectedSector, selectedRisk, marketCapFilter]);
 
-  const StockRow = ({ stock }: { stock: Stock }) => {
+  const StockRow = memo(({ stock, isInWatchlist, onToggleWatchlist }: { 
+    stock: Stock; 
+    isInWatchlist: boolean;
+    onToggleWatchlist: (symbol: string, companyName: string) => void;
+  }) => {
     if (!stock || !stock.symbol) return null;
     
-    const inWatchlist = isInWatchlist(stock.symbol);
     const price = Number(stock.price) || 0;
     const change = Number(stock.change) || 0;
     const changePercent = Number(stock.changePercent) || 0;
@@ -468,17 +471,24 @@ const ScreenerPage = () => {
         <td className="py-3 px-2">
           <div className="flex items-center gap-2">
             <button
-              onClick={() => handleToggleWatchlist(stock.symbol, stock.companyName || stock.symbol)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleWatchlist(stock.symbol, stock.companyName || stock.symbol);
+              }}
               className="text-muted-foreground hover:text-primary transition-colors"
-              title={inWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}
+              title={isInWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}
             >
-              {inWatchlist ? (
+              {isInWatchlist ? (
                 <Star className="w-4 h-4 fill-primary text-primary" />
               ) : (
                 <StarOff className="w-4 h-4" />
               )}
             </button>
-            <Link to={`/stocks/${stock.symbol}`} className="hover:text-primary transition-colors">
+            <Link 
+              to={`/stocks/${stock.symbol}`} 
+              className="hover:text-primary transition-colors"
+              onClick={(e) => e.stopPropagation()}
+            >
               <p className="font-semibold text-sm">{stock.symbol}</p>
               <p className="text-xs text-muted-foreground truncate max-w-[100px]">{stock.companyName || stock.symbol}</p>
             </Link>
@@ -527,13 +537,16 @@ const ScreenerPage = () => {
           <Badge variant="outline" className="text-xs">{stock.sector || 'Unknown'}</Badge>
         </td>
         <td className="py-3 px-2">
-          <Link to={`/trade?symbol=${stock.symbol}`}>
+          <Link 
+            to={`/trade?symbol=${stock.symbol}`}
+            onClick={(e) => e.stopPropagation()}
+          >
             <Button size="sm" className="h-7 text-xs">Trade</Button>
           </Link>
         </td>
       </tr>
     );
-  };
+  });
 
   return (
     <DashboardLayout>
@@ -808,7 +821,12 @@ const ScreenerPage = () => {
                     </thead>
                     <tbody>
                       {visibleStocks.map(stock => (
-                        <StockRow key={stock.symbol} stock={stock} />
+                        <StockRow 
+                          key={stock.symbol} 
+                          stock={stock}
+                          isInWatchlist={isInWatchlist(stock.symbol)}
+                          onToggleWatchlist={handleToggleWatchlist}
+                        />
                       ))}
                     </tbody>
                   </table>
@@ -880,7 +898,12 @@ const ScreenerPage = () => {
                       </thead>
                       <tbody>
                         {filteredStocks.map(stock => (
-                          <StockRow key={stock.symbol} stock={stock} />
+                          <StockRow 
+                            key={stock.symbol} 
+                            stock={stock}
+                            isInWatchlist={isInWatchlist(stock.symbol)}
+                            onToggleWatchlist={handleToggleWatchlist}
+                          />
                         ))}
                       </tbody>
                     </table>

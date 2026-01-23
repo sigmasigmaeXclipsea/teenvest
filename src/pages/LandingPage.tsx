@@ -10,8 +10,12 @@ import { useMultipleStockQuotes } from '@/hooks/useStockAPI';
 const CursorFollower = () => {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
+  const hoverElementsRef = useRef<Set<Element>>(new Set());
   
   useEffect(() => {
+    // Only enable on desktop
+    if (window.innerWidth < 768) return;
+    
     const handleMouseMove = (e: MouseEvent) => {
       setMousePos({ x: e.clientX, y: e.clientY });
     };
@@ -20,13 +24,30 @@ const CursorFollower = () => {
     const handleHoverEnd = () => setIsHovering(false);
     
     window.addEventListener('mousemove', handleMouseMove);
-    document.querySelectorAll('button, a').forEach(el => {
-      el.addEventListener('mouseenter', handleHoverStart);
-      el.addEventListener('mouseleave', handleHoverEnd);
-    });
+    
+    // Use event delegation instead of adding listeners to each element
+    const handleMouseEnter = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest('button, a')) {
+        setIsHovering(true);
+      }
+    };
+    
+    const handleMouseLeave = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('button, a')) {
+        setIsHovering(false);
+      }
+    };
+    
+    document.addEventListener('mouseenter', handleMouseEnter, true);
+    document.addEventListener('mouseleave', handleMouseLeave, true);
     
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseenter', handleMouseEnter, true);
+      document.removeEventListener('mouseleave', handleMouseLeave, true);
+      hoverElementsRef.current.clear();
     };
   }, []);
   
@@ -343,18 +364,30 @@ const RevealText = ({ text, className }: { text: string; className?: string }) =
 
 // Floating particles background
 const FloatingParticles = () => {
+  const [dimensions, setDimensions] = useState({ width: 1920, height: 1080 });
+  
+  useEffect(() => {
+    const updateDimensions = () => {
+      setDimensions({ width: window.innerWidth, height: window.innerHeight });
+    };
+    
+    updateDimensions();
+    window.addEventListener('resize', updateDimensions);
+    return () => window.removeEventListener('resize', updateDimensions);
+  }, []);
+  
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden">
-      {[...Array(20)].map((_, i) => (
+      {[...Array(15)].map((_, i) => (
         <motion.div
           key={i}
           className="absolute w-1 h-1 rounded-full bg-primary/30"
           initial={{
-            x: Math.random() * window.innerWidth,
-            y: Math.random() * window.innerHeight,
+            x: Math.random() * dimensions.width,
+            y: Math.random() * dimensions.height,
           }}
           animate={{
-            y: [null, Math.random() * -500],
+            y: [null, -dimensions.height - 100],
             opacity: [0, 1, 0],
           }}
           transition={{
@@ -371,8 +404,13 @@ const FloatingParticles = () => {
 // Interactive grid background
 const GridBackground = () => {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [isVisible, setIsVisible] = useState(false);
   
   useEffect(() => {
+    // Only enable on desktop
+    if (window.innerWidth < 768) return;
+    
+    setIsVisible(true);
     const handleMouseMove = (e: MouseEvent) => {
       setMousePos({ x: e.clientX, y: e.clientY });
     };
@@ -380,8 +418,10 @@ const GridBackground = () => {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
   
+  if (!isVisible) return null;
+  
   return (
-    <div className="fixed inset-0 pointer-events-none overflow-hidden opacity-30">
+    <div className="fixed inset-0 pointer-events-none overflow-hidden opacity-20 md:opacity-30">
       <div 
         className="absolute inset-0"
         style={{
@@ -454,7 +494,7 @@ const AnimatedDashboard = () => {
   
   // Fetch real stock data from API
   const stockSymbols = useMemo(() => ['AAPL', 'TSLA', 'NVDA', 'MSFT'], []);
-  const { data: stockQuotes, isLoading } = useMultipleStockQuotes(stockSymbols);
+  const { data: stockQuotes, isLoading, error } = useMultipleStockQuotes(stockSymbols);
   
   const stocks = useMemo(() => {
     const colors = [
@@ -485,14 +525,20 @@ const AnimatedDashboard = () => {
   
   // Calculate portfolio value from real stock prices
   const portfolioValue = useMemo(() => {
-    if (!stockQuotes || stockQuotes.length === 0) return 11200;
-    // Simulate holdings: 15 AAPL, 8 TSLA, 5 NVDA, 12 MSFT (larger portfolio)
-    const holdings = { AAPL: 15, TSLA: 8, NVDA: 5, MSFT: 12 };
-    return stockQuotes.reduce((total, quote) => {
-      const shares = holdings[quote.symbol as keyof typeof holdings] || 0;
-      return total + (quote.price * shares);
-    }, 0);
-  }, [stockQuotes]);
+    if (error || !stockQuotes || stockQuotes.length === 0) return 11200;
+    try {
+      // Simulate holdings: 15 AAPL, 8 TSLA, 5 NVDA, 12 MSFT (larger portfolio)
+      const holdings = { AAPL: 15, TSLA: 8, NVDA: 5, MSFT: 12 };
+      return stockQuotes.reduce((total, quote) => {
+        if (!quote || !quote.symbol || !quote.price) return total;
+        const shares = holdings[quote.symbol as keyof typeof holdings] || 0;
+        return total + (Number(quote.price) * shares);
+      }, 0);
+    } catch (err) {
+      console.error('Error calculating portfolio value:', err);
+      return 11200;
+    }
+  }, [stockQuotes, error]);
   
   // Starting investment is calculated to always show ~+12% gain for demo
   const startingInvestment = useMemo(() => {
@@ -510,13 +556,19 @@ const AnimatedDashboard = () => {
   
   // Calculate today's gain from real data
   const todaysGain = useMemo(() => {
-    if (!stockQuotes || stockQuotes.length === 0) return 0;
-    const holdings = { AAPL: 15, TSLA: 8, NVDA: 5, MSFT: 12 };
-    return stockQuotes.reduce((total, quote) => {
-      const shares = holdings[quote.symbol as keyof typeof holdings] || 0;
-      return total + (quote.change * shares);
-    }, 0);
-  }, [stockQuotes]);
+    if (error || !stockQuotes || stockQuotes.length === 0) return 0;
+    try {
+      const holdings = { AAPL: 15, TSLA: 8, NVDA: 5, MSFT: 12 };
+      return stockQuotes.reduce((total, quote) => {
+        if (!quote || !quote.symbol || quote.change === undefined) return total;
+        const shares = holdings[quote.symbol as keyof typeof holdings] || 0;
+        return total + (Number(quote.change) * shares);
+      }, 0);
+    } catch (err) {
+      console.error('Error calculating today\'s gain:', err);
+      return 0;
+    }
+  }, [stockQuotes, error]);
   
   useEffect(() => {
     const interval = setInterval(() => {
@@ -526,7 +578,7 @@ const AnimatedDashboard = () => {
   }, []);
   
   return (
-    <TiltCard className="w-full">
+    <TiltCard className="w-full max-w-2xl mx-auto">
       <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-card via-card to-primary/10 border-2 border-border/60 shadow-[0_20px_80px_-20px_hsl(var(--primary)/0.4)]">
         {/* Animated border glow */}
         <motion.div
@@ -710,10 +762,12 @@ const AnimatedDashboard = () => {
             >
               {isLoading ? (
                 <span className="text-muted-foreground">Loading...</span>
+              ) : error ? (
+                <span className="text-muted-foreground">+2.1%</span>
               ) : (
                 <>
                   <span className={todaysGain >= 0 ? 'text-success' : 'text-destructive'}>
-                    {todaysGain >= 0 ? '+' : ''}{((todaysGain / portfolioValue) * 100).toFixed(1)}%
+                    {todaysGain >= 0 ? '+' : ''}{portfolioValue > 0 ? ((todaysGain / portfolioValue) * 100).toFixed(1) : '2.1'}%
                   </span> today
                 </>
               )}
@@ -763,9 +817,15 @@ const AnimatedDashboard = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-semibold">${stock.price}</p>
+                    <p className="text-sm font-semibold">
+                      {stock.price > 0 ? `$${stock.price.toFixed(2)}` : '...'}
+                    </p>
                     <motion.p 
-                      className="text-xs text-success font-bold"
+                      className={`text-xs font-bold ${
+                        stock.change.startsWith('+') ? 'text-success' : 
+                        stock.change.startsWith('-') ? 'text-destructive' : 
+                        'text-muted-foreground'
+                      }`}
                       animate={activeStock === i ? { scale: [1, 1.3, 1] } : {}}
                       transition={{ duration: 0.4 }}
                     >
@@ -875,8 +935,8 @@ const LandingPage = () => {
 
   return (
     <div ref={containerRef} className="min-h-screen bg-background relative overflow-x-hidden">
-      {/* Custom cursor */}
-      <CursorFollower />
+      {/* Custom cursor - only on desktop */}
+      {typeof window !== 'undefined' && window.innerWidth >= 768 && <CursorFollower />}
       
       {/* Floating particles */}
       <FloatingParticles />
@@ -901,7 +961,7 @@ const LandingPage = () => {
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.8, type: 'spring' }}
-        className="border-b border-primary/10 bg-background/60 backdrop-blur-2xl sticky top-0 z-50"
+        className="border-b border-primary/10 bg-background/80 backdrop-blur-2xl sticky top-0 z-50 supports-[backdrop-filter]:bg-background/60"
       >
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 group">
@@ -915,12 +975,13 @@ const LandingPage = () => {
             <ScrambleText text="TeenVest" className="text-2xl font-black tracking-tight gradient-text" />
           </Link>
           
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-8" aria-label="Main navigation">
             {['Learn', 'Screener', 'Leaderboard'].map((label, i) => (
               <Link 
                 key={label} 
                 to={user ? `/${label.toLowerCase()}` : '/login'} 
                 className="relative group"
+                aria-label={`Navigate to ${label}`}
               >
                 <motion.span 
                   className="text-sm font-semibold uppercase tracking-wider text-muted-foreground hover:text-primary transition-all duration-300"
@@ -930,6 +991,7 @@ const LandingPage = () => {
                 </motion.span>
                 <motion.span 
                   className="absolute -bottom-1 left-0 h-[3px] bg-gradient-to-r from-primary to-accent rounded-full w-0 group-hover:w-full transition-all duration-300"
+                  aria-hidden="true"
                 />
               </Link>
             ))}
@@ -988,7 +1050,7 @@ const LandingPage = () => {
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 1, type: 'spring' }}
-            className="relative z-10"
+            className="relative z-10 lg:col-span-1"
           >
             {/* Badge */}
             <motion.div 
@@ -1014,7 +1076,7 @@ const LandingPage = () => {
             </motion.div>
             
             {/* Main Headline */}
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-black tracking-tighter mb-6 leading-[0.95]">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tighter mb-6 leading-[0.95]">
               <motion.span 
                 className="block text-foreground"
                 initial={{ opacity: 0, y: 30 }}
@@ -1031,15 +1093,16 @@ const LandingPage = () => {
               >
                 <RevealText text="Financial Empire" className="inline" />
                 <motion.span 
-                  className="absolute -right-4 -top-4"
+                  className="absolute -right-2 sm:-right-4 -top-2 sm:-top-4"
                   animate={{ 
                     rotate: [0, 20, 0],
                     scale: [1, 1.2, 1],
                     y: [0, -5, 0],
                   }}
                   transition={{ duration: 2, repeat: Infinity }}
+                  aria-hidden="true"
                 >
-                  <Sparkles className="w-8 h-8 text-warning" />
+                  <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-warning" />
                 </motion.span>
               </motion.span>
             </h1>
@@ -1049,7 +1112,7 @@ const LandingPage = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.6 }}
-              className="text-lg md:text-xl text-muted-foreground mb-8 max-w-lg leading-relaxed"
+              className="text-base sm:text-lg md:text-xl text-muted-foreground mb-8 max-w-lg leading-relaxed"
             >
               Master investing with <motion.span 
                 className="text-primary font-semibold"
@@ -1145,7 +1208,7 @@ const LandingPage = () => {
             initial={{ opacity: 0, x: 80, rotateY: -15, scale: 0.9 }}
             animate={{ opacity: 1, x: 0, rotateY: 0, scale: 1 }}
             transition={{ duration: 1.2, delay: 0.2, type: 'spring', stiffness: 100 }}
-            className="relative"
+            className="relative lg:col-span-1"
           >
             {/* Multiple glow layers behind dashboard */}
             <motion.div 
@@ -1189,9 +1252,15 @@ const LandingPage = () => {
               }}
               transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
               style={{ perspective: 1200 }}
+              className="w-full hidden lg:block"
             >
               <AnimatedDashboard />
             </motion.div>
+            
+            {/* Mobile-friendly simplified dashboard */}
+            <div className="lg:hidden mt-8">
+              <AnimatedDashboard />
+            </div>
             
             {/* Enhanced floating elements */}
             <motion.div
@@ -1199,7 +1268,7 @@ const LandingPage = () => {
               animate={{ opacity: 1, scale: 1, rotate: 0 }}
               transition={{ delay: 1.5, type: 'spring' }}
               whileHover={{ scale: 1.1, rotate: 5 }}
-              className="absolute -top-6 -right-6 p-4 rounded-2xl bg-card/90 backdrop-blur-xl border border-border/50 shadow-xl cursor-pointer"
+              className="absolute -top-6 -right-6 p-4 rounded-2xl bg-card/90 backdrop-blur-xl border border-border/50 shadow-xl cursor-pointer hidden lg:block"
             >
               <div className="flex items-center gap-3">
                 <motion.div 
@@ -1227,7 +1296,7 @@ const LandingPage = () => {
               animate={{ opacity: 1, scale: 1, rotate: 0 }}
               transition={{ delay: 1.8, type: 'spring' }}
               whileHover={{ scale: 1.1, rotate: -5 }}
-              className="absolute -bottom-4 -left-4 p-3 rounded-xl bg-card/90 backdrop-blur-xl border border-border/50 shadow-xl cursor-pointer"
+              className="absolute -bottom-4 -left-4 p-3 rounded-xl bg-card/90 backdrop-blur-xl border border-border/50 shadow-xl cursor-pointer hidden lg:block"
             >
               <div className="flex items-center gap-2">
                 <motion.div
@@ -1270,15 +1339,16 @@ const LandingPage = () => {
       </motion.section>
 
       {/* Live Stock Ticker - Enhanced */}
-      <section className="py-6 relative overflow-hidden">
+      <section className="py-6 relative overflow-hidden" aria-label="Live stock ticker">
         {/* Top border glow */}
         <motion.div 
           className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary to-transparent"
           animate={{ opacity: [0.3, 1, 0.3] }}
           transition={{ duration: 2, repeat: Infinity }}
+          aria-hidden="true"
         />
         
-        <div className="bg-gradient-to-r from-card/80 via-muted/50 to-card/80 backdrop-blur-sm border-y border-border/30">
+        <div className="bg-gradient-to-r from-card/80 via-muted/50 to-card/80 backdrop-blur-sm border-y border-border/30 supports-[backdrop-filter]:from-card/60">
           <div className="py-5">
             <Marquee speed={25}>
               {[
@@ -1332,6 +1402,7 @@ const LandingPage = () => {
           className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-accent to-transparent"
           animate={{ opacity: [0.3, 1, 0.3] }}
           transition={{ duration: 2, repeat: Infinity, delay: 1 }}
+          aria-hidden="true"
         />
       </section>
 
@@ -1948,12 +2019,13 @@ const LandingPage = () => {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 py-16 bg-card/30 relative overflow-hidden">
+      <footer className="border-t border-border/50 py-16 bg-card/30 relative overflow-hidden" role="contentinfo">
         {/* Footer background animation */}
         <motion.div
           className="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent"
           animate={{ opacity: [0.3, 0.5, 0.3] }}
           transition={{ duration: 4, repeat: Infinity }}
+          aria-hidden="true"
         />
         
         <div className="container mx-auto px-4 relative z-10">
