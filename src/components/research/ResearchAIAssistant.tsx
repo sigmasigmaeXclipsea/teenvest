@@ -39,21 +39,63 @@ const ResearchAIAssistant = ({ symbol }: ResearchAIAssistantProps) => {
     setIsLoading(true);
 
     try {
+      // Build messages array with context
+      const systemContext = `You are a professional stock research analyst assistant. The user is researching ${symbol}. Provide accurate, educational, and balanced analysis. Always remind users this is for educational purposes and not financial advice.`;
+      
+      const chatMessages = [
+        ...messages.map(m => ({ role: m.role, content: m.content })),
+        { role: 'user', content: messageText }
+      ];
+
       const { data, error } = await supabase.functions.invoke('chat', {
         body: {
-          message: `You are a professional stock research analyst assistant. The user is researching ${symbol}. Provide accurate, educational, and balanced analysis. Always remind users this is for educational purposes and not financial advice.
-
-User question: ${messageText}`,
+          messages: chatMessages,
+          context: systemContext
         }
       });
 
       if (error) throw error;
 
-      const assistantMessage = { 
-        role: 'assistant' as const, 
-        content: data.reply || 'I apologize, but I was unable to process your request. Please try again.'
-      };
-      setMessages(prev => [...prev, assistantMessage]);
+      // Handle streaming response
+      if (data instanceof ReadableStream) {
+        const reader = data.getReader();
+        const decoder = new TextDecoder();
+        let fullContent = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n').filter(line => line.startsWith('data: '));
+          
+          for (const line of lines) {
+            const jsonStr = line.replace('data: ', '');
+            if (jsonStr === '[DONE]') continue;
+            
+            try {
+              const parsed = JSON.parse(jsonStr);
+              const content = parsed.choices?.[0]?.delta?.content || '';
+              fullContent += content;
+            } catch {
+              // Skip malformed JSON
+            }
+          }
+        }
+
+        const assistantMessage = { 
+          role: 'assistant' as const, 
+          content: fullContent || 'I apologize, but I was unable to process your request. Please try again.'
+        };
+        setMessages(prev => [...prev, assistantMessage]);
+      } else {
+        // Handle non-streaming response
+        const assistantMessage = { 
+          role: 'assistant' as const, 
+          content: data?.reply || data?.choices?.[0]?.message?.content || 'I apologize, but I was unable to process your request.'
+        };
+        setMessages(prev => [...prev, assistantMessage]);
+      }
     } catch (error) {
       console.error('AI Assistant error:', error);
       toast.error('Failed to get AI response');
