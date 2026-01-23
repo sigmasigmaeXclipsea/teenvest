@@ -2,7 +2,7 @@ import { useMemo, useState, useRef, useEffect, memo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart3 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { createChart, ColorType } from "https://esm.sh/lightweight-charts@4.1.1";
+import { createChart, ColorType } from "lightweight-charts";
 
 interface CandleData {
   date: string;

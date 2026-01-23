@@ -17,7 +17,7 @@ import { getUserFriendlyError } from '@/lib/errorMessages';
 import StockLineChart from '@/components/StockLineChart';
 import StockCandlestickChart from '@/components/StockCandlestickChart';
 import { useSettings } from '@/contexts/SettingsContext';
-import { Lock, Loader2 } from 'lucide-react';
+import { Lock } from 'lucide-react';
 
 // Lazy load line chart for better performance
 const LazyStockLineChart = lazy(() => import('@/components/StockLineChart').then(m => ({ default: m.default })));
