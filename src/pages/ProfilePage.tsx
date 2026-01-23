@@ -1,15 +1,20 @@
+import { useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Trophy, Award, TrendingUp, Clock, Briefcase, BookOpen, User } from 'lucide-react';
+import { Trophy, Award, TrendingUp, Clock, Briefcase, BookOpen, User, Camera, Loader2, Pencil } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAchievements, useUserAchievements } from '@/hooks/useAchievements';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 interface PublicProfile {
   display_name: string;
@@ -33,8 +38,15 @@ interface PublicProfile {
 const ProfilePage = () => {
   const { userId } = useParams<{ userId?: string }>();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const isOwnProfile = !userId || userId === user?.id;
+  
+  // Edit state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editDisplayName, setEditDisplayName] = useState('');
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   
   // Fetch own profile data
   const { data: allAchievements } = useAchievements();
@@ -83,6 +95,84 @@ const ProfilePage = () => {
     },
     enabled: isOwnProfile && !!user,
   });
+
+  // Update profile mutation
+  const updateProfileMutation = useMutation({
+    mutationFn: async (displayName: string) => {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ display_name: displayName || null })
+        .eq('user_id', user!.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['own-profile'] });
+      toast.success('Display name updated!');
+      setIsEditing(false);
+    },
+    onError: () => {
+      toast.error('Failed to update profile');
+    },
+  });
+
+  // Handle avatar upload
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate file type and size
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Image must be less than 2MB');
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/avatar.${fileExt}`;
+
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      // Update profile with avatar URL (add cache buster)
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: `${publicUrl}?t=${Date.now()}` })
+        .eq('user_id', user.id);
+
+      if (updateError) throw updateError;
+
+      queryClient.invalidateQueries({ queryKey: ['own-profile'] });
+      toast.success('Profile picture updated!');
+    } catch (error) {
+      console.error('Avatar upload error:', error);
+      toast.error('Failed to upload image');
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  const handleStartEditing = () => {
+    setEditDisplayName(ownProfile?.display_name || '');
+    setIsEditing(true);
+  };
+
+  const handleSaveProfile = () => {
+    updateProfileMutation.mutate(editDisplayName);
+  };
 
   const getIconComponent = (iconName: string) => {
     const icons: Record<string, React.ElementType> = {
@@ -214,23 +304,85 @@ const ProfilePage = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6 max-w-4xl">
-        {/* Profile Header */}
+        {/* Profile Header with Edit */}
         <Card>
           <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <Avatar className="w-20 h-20">
-                <AvatarImage src={ownProfile?.avatar_url || undefined} />
-                <AvatarFallback className="text-2xl">
-                  {ownProfile?.display_name?.charAt(0) || user?.email?.charAt(0) || '?'}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <h1 className="text-2xl font-bold">{ownProfile?.display_name || 'Your Profile'}</h1>
-                <p className="text-muted-foreground">{user?.email}</p>
-                <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                  <Clock className="w-4 h-4" />
-                  Member since {ownProfile?.created_at ? format(new Date(ownProfile.created_at), 'MMMM yyyy') : 'Unknown'}
-                </p>
+            <div className="flex items-start gap-4">
+              {/* Avatar with upload button */}
+              <div className="relative">
+                <Avatar className="w-20 h-20">
+                  <AvatarImage src={ownProfile?.avatar_url || undefined} />
+                  <AvatarFallback className="text-2xl">
+                    {ownProfile?.display_name?.charAt(0) || user?.email?.charAt(0) || '?'}
+                  </AvatarFallback>
+                </Avatar>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleAvatarUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <Button
+                  size="icon"
+                  variant="secondary"
+                  className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full shadow-md"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingAvatar}
+                >
+                  {isUploadingAvatar ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Camera className="w-4 h-4" />
+                  )}
+                </Button>
+              </div>
+              
+              {/* Profile Info */}
+              <div className="flex-1">
+                {isEditing ? (
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="displayName">Display Name</Label>
+                      <Input
+                        id="displayName"
+                        value={editDisplayName}
+                        onChange={(e) => setEditDisplayName(e.target.value)}
+                        placeholder="Enter your display name"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        onClick={handleSaveProfile}
+                        disabled={updateProfileMutation.isPending}
+                      >
+                        {updateProfileMutation.isPending ? 'Saving...' : 'Save'}
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => setIsEditing(false)}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <h1 className="text-2xl font-bold">{ownProfile?.display_name || 'Your Profile'}</h1>
+                      <Button size="icon" variant="ghost" onClick={handleStartEditing}>
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <p className="text-muted-foreground">{user?.email}</p>
+                    <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                      <Clock className="w-4 h-4" />
+                      Member since {ownProfile?.created_at ? format(new Date(ownProfile.created_at), 'MMMM yyyy') : 'Unknown'}
+                    </p>
+                  </>
+                )}
               </div>
             </div>
           </CardContent>

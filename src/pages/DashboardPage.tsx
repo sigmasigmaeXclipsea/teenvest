@@ -10,6 +10,7 @@ import { useMultipleStockQuotes } from '@/hooks/useStockAPI';
 import { getTickerInfo } from '@/data/russell5000Tickers';
 import PortfolioHealthAI from '@/components/PortfolioHealthAI';
 import AIAssistantCard from '@/components/AIAssistantCard';
+import DashboardStreakWidget from '@/components/DashboardStreakWidget';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
@@ -317,8 +318,11 @@ const DashboardPage = () => {
           </Card>
         </div>
 
-        {/* AI Section - Side by Side */}
+        {/* Streak Widget and AI Health */}
         <div className="grid gap-6 lg:grid-cols-2">
+          {/* Streak & Game Widget */}
+          <DashboardStreakWidget />
+          
           {/* AI Portfolio Health */}
           <PortfolioHealthAI
             holdings={holdings || []}
@@ -326,18 +330,18 @@ const DashboardPage = () => {
             totalValue={portfolioStats?.totalValue || 0}
             startingBalance={startingBalance}
           />
-
-          {/* AI Assistant - Prominent */}
-          <AIAssistantCard 
-            title="Ask AI About Your Portfolio"
-            description="Get personalized investing advice"
-            suggestedQuestions={[
-              "How can I improve my portfolio?",
-              "Should I buy more stocks or diversify?",
-              "What stocks should beginners avoid?"
-            ]}
-          />
         </div>
+
+        {/* AI Assistant */}
+        <AIAssistantCard 
+          title="Ask AI About Your Portfolio"
+          description="Get personalized investing advice"
+          suggestedQuestions={[
+            "How can I improve my portfolio?",
+            "Should I buy more stocks or diversify?",
+            "What stocks should beginners avoid?"
+          ]}
+        />
       </div>
     </DashboardLayout>
   );

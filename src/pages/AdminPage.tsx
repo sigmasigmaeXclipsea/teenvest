@@ -80,16 +80,17 @@ const AdminPage = () => {
     enabled: hasAdminRole === true,
   });
 
-  // Recent platform trades
+  // Recent platform trades with pagination
+  const [tradesLimit, setTradesLimit] = useState(50);
+  
   const { data: recentTrades, isLoading: loadingTrades, error: tradesError, refetch: refetchTrades } = useQuery({
-    queryKey: ['recent-platform-trades'],
+    queryKey: ['recent-platform-trades', tradesLimit],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_recent_platform_trades', { _limit: 15 });
+      const { data, error } = await supabase.rpc('get_recent_platform_trades', { _limit: tradesLimit });
       if (error) {
         console.error('Recent trades error:', error);
         throw error;
       }
-      console.log('Recent trades data:', data);
       return data || [];
     },
     enabled: hasAdminRole === true,
@@ -382,9 +383,22 @@ const AdminPage = () => {
           {/* Activity Tab */}
           <TabsContent value="activity" className="space-y-4">
             <Card>
-              <CardHeader>
-                <CardTitle>Recent Platform Trades</CardTitle>
-                <CardDescription>Last 15 trades across all users</CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Recent Platform Trades</CardTitle>
+                  <CardDescription>Showing {recentTrades?.length || 0} trades across all users</CardDescription>
+                </div>
+                <Select value={tradesLimit.toString()} onValueChange={(v) => setTradesLimit(Number(v))}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="25">Last 25</SelectItem>
+                    <SelectItem value="50">Last 50</SelectItem>
+                    <SelectItem value="100">Last 100</SelectItem>
+                    <SelectItem value="250">Last 250</SelectItem>
+                  </SelectContent>
+                </Select>
               </CardHeader>
               <CardContent>
                 {loadingTrades ? (
@@ -400,7 +414,7 @@ const AdminPage = () => {
                     </Button>
                   </div>
                 ) : recentTrades && recentTrades.length > 0 ? (
-                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                  <div className="space-y-2 max-h-[500px] overflow-y-auto">
                     {recentTrades.map((trade: any) => (
                       <div key={trade.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
                         <div className="flex items-center gap-3">
