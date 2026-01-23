@@ -2534,6 +2534,8 @@ const LandingPage = () => {
             
             <p className="text-sm text-muted-foreground text-center">
               © 2025 TeenVest. Building the next generation of investors. 🚀
+              <br />
+              <span className="text-xs opacity-70">Version 1.1</span>
             </p>
             
             <div className="flex items-center gap-8">

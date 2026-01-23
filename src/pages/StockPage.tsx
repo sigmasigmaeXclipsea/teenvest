@@ -52,14 +52,20 @@ const StockPage = () => {
   }
 
   if (error || !stock) {
+    // Redirect to research page instead of showing error
     return (
       <DashboardLayout>
         <div className="text-center py-20">
           <h2 className="text-2xl font-bold mb-2">Stock Not Found</h2>
           <p className="text-muted-foreground mb-4">Could not find data for "{symbol}"</p>
-          <Link to="/screener">
-            <Button variant="outline"><ArrowLeft className="w-4 h-4 mr-2" />Back to Screener</Button>
-          </Link>
+          <div className="flex gap-2 justify-center">
+            <Link to={`/research?symbol=${symbol}`}>
+              <Button>Try Research Page</Button>
+            </Link>
+            <Link to="/screener">
+              <Button variant="outline"><ArrowLeft className="w-4 h-4 mr-2" />Back to Screener</Button>
+            </Link>
+          </div>
         </div>
       </DashboardLayout>
     );

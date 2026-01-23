@@ -147,8 +147,12 @@ const ResearchPage = () => {
           {/* Quick Access Tools */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card 
-              className="cursor-pointer hover:border-primary/50 transition-colors" 
-              onClick={() => navigate('/screener')}
+              className="cursor-pointer hover:border-primary/50 transition-colors active:scale-95" 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                navigate('/screener');
+              }}
             >
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
@@ -167,12 +171,16 @@ const ResearchPage = () => {
             </Card>
 
             <Card 
-              className="cursor-pointer hover:border-primary/50 transition-colors"
-              onClick={() => {
+              className="cursor-pointer hover:border-primary/50 transition-colors active:scale-95"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 const firstStock = cachedStocks?.[0];
                 if (firstStock) {
                   handleStockSelect(firstStock.symbol);
-                  setActiveTab('compare');
+                  setTimeout(() => setActiveTab('compare'), 100);
+                } else {
+                  navigate('/screener');
                 }
               }}
             >
@@ -193,12 +201,16 @@ const ResearchPage = () => {
             </Card>
 
             <Card 
-              className="cursor-pointer hover:border-primary/50 transition-colors"
-              onClick={() => {
+              className="cursor-pointer hover:border-primary/50 transition-colors active:scale-95"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 const firstStock = cachedStocks?.[0];
                 if (firstStock) {
                   handleStockSelect(firstStock.symbol);
-                  setActiveTab('earnings');
+                  setTimeout(() => setActiveTab('earnings'), 100);
+                } else {
+                  navigate('/screener');
                 }
               }}
             >
@@ -219,12 +231,16 @@ const ResearchPage = () => {
             </Card>
 
             <Card 
-              className="cursor-pointer hover:border-primary/50 transition-colors"
-              onClick={() => {
+              className="cursor-pointer hover:border-primary/50 transition-colors active:scale-95"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 const firstStock = cachedStocks?.[0];
                 if (firstStock) {
                   handleStockSelect(firstStock.symbol);
-                  setActiveTab('ai');
+                  setTimeout(() => setActiveTab('ai'), 100);
+                } else {
+                  navigate('/screener');
                 }
               }}
             >
