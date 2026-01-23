@@ -14,7 +14,8 @@ import {
   Shield,
   Award,
   User,
-  Lightbulb
+  Lightbulb,
+  Search
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,6 +29,7 @@ interface DashboardLayoutProps {
 const navItems = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/screener', icon: BarChart3, label: 'Screener & Watchlist' },
+  { path: '/research', icon: Search, label: 'Research' },
   { path: '/trade', icon: Briefcase, label: 'Trade' },
   { path: '/history', icon: History, label: 'History' },
   { path: '/insights', icon: Lightbulb, label: 'Insights & Challenges' },
@@ -82,6 +84,14 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 }`}
               >
                 Screener
+              </Link>
+              <Link 
+                to="/research" 
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  location.pathname === '/research' ? 'bg-secondary text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                }`}
+              >
+                Research
               </Link>
               <Link 
                 to="/leaderboard" 
