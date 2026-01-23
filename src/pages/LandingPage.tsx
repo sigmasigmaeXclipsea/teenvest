@@ -3,7 +3,8 @@ import { TrendingUp, BookOpen, Trophy, Shield, ArrowRight, BarChart3, Briefcase,
 import { Button } from '@/components/ui/button';
 import { motion, useScroll, useTransform, useSpring, useMotionValue, useVelocity, useAnimationFrame, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRef, useState, useEffect, useCallback } from 'react';
+import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
+import { useMultipleStockQuotes } from '@/hooks/useStockAPI';
 
 // Cursor follower component with trail
 const CursorFollower = () => {
@@ -451,19 +452,64 @@ const AnimatedDashboard = () => {
   const [activeStock, setActiveStock] = useState(0);
   const [hoveredStat, setHoveredStat] = useState<number | null>(null);
   
+  // Fetch real stock data from API
+  const stockSymbols = useMemo(() => ['AAPL', 'TSLA', 'NVDA', 'MSFT'], []);
+  const { data: stockQuotes, isLoading } = useMultipleStockQuotes(stockSymbols);
+  
+  const stocks = useMemo(() => {
+    const colors = [
+      'from-blue-500 to-blue-600',
+      'from-red-500 to-red-600', 
+      'from-green-500 to-green-600',
+      'from-cyan-500 to-cyan-600',
+    ];
+    
+    if (stockQuotes && stockQuotes.length > 0) {
+      return stockQuotes.map((quote, i) => ({
+        symbol: quote.symbol,
+        name: quote.companyName,
+        price: quote.price,
+        change: `${quote.changePercent >= 0 ? '+' : ''}${quote.changePercent.toFixed(2)}%`,
+        color: colors[i] || colors[0],
+      }));
+    }
+    
+    // Fallback while loading
+    return [
+      { symbol: 'AAPL', name: 'Apple Inc.', price: 0, change: '...', color: colors[0] },
+      { symbol: 'TSLA', name: 'Tesla Inc.', price: 0, change: '...', color: colors[1] },
+      { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 0, change: '...', color: colors[2] },
+      { symbol: 'MSFT', name: 'Microsoft', price: 0, change: '...', color: colors[3] },
+    ];
+  }, [stockQuotes]);
+  
+  // Calculate portfolio value from real stock prices
+  const portfolioValue = useMemo(() => {
+    if (!stockQuotes || stockQuotes.length === 0) return 10000;
+    // Simulate holdings: 10 AAPL, 5 TSLA, 2 NVDA, 8 MSFT
+    const holdings = { AAPL: 10, TSLA: 5, NVDA: 2, MSFT: 8 };
+    return stockQuotes.reduce((total, quote) => {
+      const shares = holdings[quote.symbol as keyof typeof holdings] || 0;
+      return total + (quote.price * shares);
+    }, 0);
+  }, [stockQuotes]);
+  
+  // Calculate today's gain from real data
+  const todaysGain = useMemo(() => {
+    if (!stockQuotes || stockQuotes.length === 0) return 0;
+    const holdings = { AAPL: 10, TSLA: 5, NVDA: 2, MSFT: 8 };
+    return stockQuotes.reduce((total, quote) => {
+      const shares = holdings[quote.symbol as keyof typeof holdings] || 0;
+      return total + (quote.change * shares);
+    }, 0);
+  }, [stockQuotes]);
+  
   useEffect(() => {
     const interval = setInterval(() => {
       setActiveStock((prev) => (prev + 1) % 4);
     }, 2000);
     return () => clearInterval(interval);
   }, []);
-  
-  const stocks = [
-    { symbol: 'AAPL', name: 'Apple Inc.', price: 189.84, change: '+1.2%', color: 'from-blue-500 to-blue-600' },
-    { symbol: 'TSLA', name: 'Tesla Inc.', price: 248.50, change: '+3.4%', color: 'from-red-500 to-red-600' },
-    { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 875.35, change: '+2.1%', color: 'from-green-500 to-green-600' },
-    { symbol: 'MSFT', name: 'Microsoft', price: 425.22, change: '+0.9%', color: 'from-cyan-500 to-cyan-600' },
-  ];
   
   return (
     <TiltCard className="w-full">
@@ -520,8 +566,8 @@ const AnimatedDashboard = () => {
           {/* Stats with enhanced interactions */}
           <div className="grid grid-cols-3 gap-4">
             {[
-              { label: 'Portfolio Value', value: 10824, prefix: '$', change: '+8.2%', icon: '💰' },
-              { label: "Today's Gain", value: 127, prefix: '+$', change: '+1.2%', icon: '📈' },
+              { label: 'Portfolio Value', value: Math.round(portfolioValue), prefix: '$', change: todaysGain >= 0 ? `+${((todaysGain / portfolioValue) * 100).toFixed(1)}%` : `${((todaysGain / portfolioValue) * 100).toFixed(1)}%`, icon: '💰' },
+              { label: "Today's Gain", value: Math.abs(Math.round(todaysGain)), prefix: todaysGain >= 0 ? '+$' : '-$', change: todaysGain >= 0 ? '📈' : '📉', icon: '📊' },
               { label: 'Login Streak', value: 7, suffix: ' days', change: '🔥', icon: '⚡' },
             ].map((stat, i) => (
               <motion.div
@@ -648,7 +694,15 @@ const AnimatedDashboard = () => {
               animate={{ y: [0, -5, 0] }}
               transition={{ duration: 2, repeat: Infinity }}
             >
-              <span className="text-success">+8.2%</span> this month
+              {isLoading ? (
+                <span className="text-muted-foreground">Loading...</span>
+              ) : (
+                <>
+                  <span className={todaysGain >= 0 ? 'text-success' : 'text-destructive'}>
+                    {todaysGain >= 0 ? '+' : ''}{((todaysGain / portfolioValue) * 100).toFixed(1)}%
+                  </span> today
+                </>
+              )}
             </motion.div>
           </motion.div>
           
