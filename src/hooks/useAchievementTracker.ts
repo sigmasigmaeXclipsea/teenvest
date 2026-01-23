@@ -1,5 +1,5 @@
 import { useEffect, useCallback } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAchievements, useUserAchievements } from './useAchievements';
@@ -24,6 +24,37 @@ export const useAchievementTracker = () => {
   const { data: trades } = useTrades();
   const { data: watchlist } = useWatchlist();
   const { data: userProgress } = useUserProgress();
+
+  // Fetch streak data
+  const { data: streakData } = useQuery({
+    queryKey: ['daily-streak', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data, error } = await supabase
+        .from('daily_streaks')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  // Fetch quiz results for quiz achievements
+  const { data: quizResults } = useQuery({
+    queryKey: ['quiz-results', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('quiz_results')
+        .select('*')
+        .eq('user_id', user.id);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user,
+  });
 
   const earnAchievement = useCallback(async (achievementId: string, achievementName: string, icon: string) => {
     if (!user) return;
@@ -97,9 +128,35 @@ export const useAchievementTracker = () => {
           }
           break;
           
-        case 'quiz_score':
-          // Check if any quiz has been passed
-          // This would need quiz_results data
+        case 'streak':
+          // Check current or longest streak
+          if (streakData) {
+            const maxStreak = Math.max(
+              streakData.current_streak || 0,
+              streakData.longest_streak || 0
+            );
+            qualified = maxStreak >= achievement.requirement_value;
+          }
+          break;
+          
+        case 'quiz_pass':
+          // Count quizzes passed with 70%+
+          if (quizResults) {
+            const passedQuizzes = quizResults.filter(qr => 
+              (qr.score / qr.total_questions) >= 0.7
+            ).length;
+            qualified = passedQuizzes >= achievement.requirement_value;
+          }
+          break;
+          
+        case 'quiz_perfect':
+          // Count quizzes with 100% score
+          if (quizResults) {
+            const perfectQuizzes = quizResults.filter(qr => 
+              qr.score === qr.total_questions
+            ).length;
+            qualified = perfectQuizzes >= achievement.requirement_value;
+          }
           break;
       }
       
@@ -107,7 +164,7 @@ export const useAchievementTracker = () => {
         earnAchievement(achievement.id, achievement.name, achievement.icon);
       }
     });
-  }, [user, achievements, userAchievements, trades, holdings, watchlist, userProgress, portfolio, earnAchievement]);
+  }, [user, achievements, userAchievements, trades, holdings, watchlist, userProgress, portfolio, streakData, quizResults, earnAchievement]);
 };
 
 export default useAchievementTracker;
