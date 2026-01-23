@@ -483,33 +483,35 @@ const AnimatedDashboard = () => {
     ];
   }, [stockQuotes]);
   
-  // Simulated starting investment for demo purposes
-  const startingInvestment = 10000;
-  
   // Calculate portfolio value from real stock prices
   const portfolioValue = useMemo(() => {
-    if (!stockQuotes || stockQuotes.length === 0) return startingInvestment;
-    // Simulate holdings: 10 AAPL, 5 TSLA, 2 NVDA, 8 MSFT
-    const holdings = { AAPL: 10, TSLA: 5, NVDA: 2, MSFT: 8 };
+    if (!stockQuotes || stockQuotes.length === 0) return 11200;
+    // Simulate holdings: 15 AAPL, 8 TSLA, 5 NVDA, 12 MSFT (larger portfolio)
+    const holdings = { AAPL: 15, TSLA: 8, NVDA: 5, MSFT: 12 };
     return stockQuotes.reduce((total, quote) => {
       const shares = holdings[quote.symbol as keyof typeof holdings] || 0;
       return total + (quote.price * shares);
     }, 0);
   }, [stockQuotes]);
   
+  // Starting investment is calculated to always show ~+12% gain for demo
+  const startingInvestment = useMemo(() => {
+    return portfolioValue / 1.12;
+  }, [portfolioValue]);
+  
   // Calculate total gain from starting investment (shows overall portfolio performance)
   const totalGain = useMemo(() => {
     return portfolioValue - startingInvestment;
-  }, [portfolioValue]);
+  }, [portfolioValue, startingInvestment]);
   
   const totalGainPercent = useMemo(() => {
     return ((portfolioValue - startingInvestment) / startingInvestment) * 100;
-  }, [portfolioValue]);
+  }, [portfolioValue, startingInvestment]);
   
   // Calculate today's gain from real data
   const todaysGain = useMemo(() => {
     if (!stockQuotes || stockQuotes.length === 0) return 0;
-    const holdings = { AAPL: 10, TSLA: 5, NVDA: 2, MSFT: 8 };
+    const holdings = { AAPL: 15, TSLA: 8, NVDA: 5, MSFT: 12 };
     return stockQuotes.reduce((total, quote) => {
       const shares = holdings[quote.symbol as keyof typeof holdings] || 0;
       return total + (quote.change * shares);
