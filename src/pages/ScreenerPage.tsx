@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { Search, Filter, TrendingUp, TrendingDown, Loader2, Star, StarOff, Eye, RefreshCw, ChevronUp, ChevronDown, ArrowUpDown, Flame, Sparkles } from 'lucide-react';
+import { Search, Filter, TrendingUp, TrendingDown, Loader2, Star, StarOff, Eye, RefreshCw, ChevronUp, ChevronDown, ArrowUpDown, Flame, Sparkles, Database } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,6 +15,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { fetchStockQuote, useSearchStock, useMultipleStockQuotes, StockQuote } from '@/hooks/useStockAPI';
 import { useWatchlist, useAddToWatchlist, useRemoveFromWatchlist } from '@/hooks/useWatchlist';
 import { useToast } from '@/hooks/use-toast';
+import { useCachedStocks, useRefreshStockCache, cachedToQuote, isCacheStale } from '@/hooks/useStockCache';
 
 type SortColumn = 'symbol' | 'price' | 'changePercent' | 'marketCap' | 'volume' | 'riskLevel';
 type SortDirection = 'asc' | 'desc';
@@ -43,39 +44,74 @@ const ScreenerPage = () => {
   const addToWatchlist = useAddToWatchlist();
   const removeFromWatchlist = useRemoveFromWatchlist();
   
-  // Auto-fetch popular stocks on load
-  const { data: popularStockData, isLoading: loadingPopular, refetch: refetchPopular } = useMultipleStockQuotes(
-    popularTickers.map(t => t.symbol)
-  );
+  // Load cached stocks first (instant!)
+  const { data: cachedStocks, isLoading: loadingCache } = useCachedStocks();
+  const refreshCache = useRefreshStockCache();
   
-  // Also fetch watchlist stocks
+  // Convert cached stocks to StockQuote format
+  const cachedStockQuotes = useMemo(() => {
+    if (!cachedStocks) return [];
+    return cachedStocks.map(cachedToQuote);
+  }, [cachedStocks]);
+  
+  // Check if cache is stale and needs refresh
+  useEffect(() => {
+    if (cachedStocks && cachedStocks.length > 0) {
+      const newestCache = cachedStocks[0];
+      if (isCacheStale(newestCache.cached_at, 5)) {
+        console.log('Cache is stale, refreshing in background...');
+        refreshCache.mutate(undefined);
+      }
+    } else if (cachedStocks && cachedStocks.length === 0) {
+      // No cache exists, populate it
+      console.log('No cache found, populating...');
+      refreshCache.mutate(undefined);
+    }
+  }, [cachedStocks]);
+  
+  // Also fetch watchlist stocks live
   const watchlistSymbols = useMemo(() => watchlist?.map(w => w.symbol) || [], [watchlist]);
   const { data: watchlistStockData, refetch: refetchWatchlist } = useMultipleStockQuotes(watchlistSymbols);
   
   const sectors = getAllSectors();
   const totalStocks = getTotalTickerCount();
 
-  // Combine all fetched live data
+  // Combine cached data with live fetched data (live takes priority)
   const allLiveData = useMemo(() => {
     const combined: StockQuote[] = [];
     
-    if (popularStockData) combined.push(...popularStockData);
-    if (watchlistStockData) {
-      watchlistStockData.forEach(stock => {
-        if (!combined.some(s => s.symbol === stock.symbol)) combined.push(stock);
-      });
-    }
-    if (autoFetchedStocks.length > 0) {
-      autoFetchedStocks.forEach(stock => {
-        if (!combined.some(s => s.symbol === stock.symbol)) combined.push(stock);
-      });
-    }
-    searchedStocks.forEach(stock => {
+    // Start with cached stocks (instant load)
+    cachedStockQuotes.forEach(stock => {
       if (!combined.some(s => s.symbol === stock.symbol)) combined.push(stock);
     });
     
+    // Overlay watchlist live data
+    if (watchlistStockData) {
+      watchlistStockData.forEach(stock => {
+        const idx = combined.findIndex(s => s.symbol === stock.symbol);
+        if (idx >= 0) combined[idx] = stock; // Replace with fresh data
+        else combined.push(stock);
+      });
+    }
+    
+    // Overlay auto-fetched stocks
+    if (autoFetchedStocks.length > 0) {
+      autoFetchedStocks.forEach(stock => {
+        const idx = combined.findIndex(s => s.symbol === stock.symbol);
+        if (idx >= 0) combined[idx] = stock;
+        else combined.push(stock);
+      });
+    }
+    
+    // Overlay searched stocks
+    searchedStocks.forEach(stock => {
+      const idx = combined.findIndex(s => s.symbol === stock.symbol);
+      if (idx >= 0) combined[idx] = stock;
+      else combined.push(stock);
+    });
+    
     return combined;
-  }, [popularStockData, watchlistStockData, autoFetchedStocks, searchedStocks]);
+  }, [cachedStockQuotes, watchlistStockData, autoFetchedStocks, searchedStocks]);
 
   const isInWatchlist = (symbol: string) => {
     return watchlist?.some(w => w.symbol === symbol);
@@ -96,9 +132,9 @@ const ScreenerPage = () => {
   };
 
   const handleRefresh = () => {
-    refetchPopular();
+    refreshCache.mutate(undefined);
     refetchWatchlist();
-    toast({ title: 'Refreshing...', description: 'Fetching latest stock data' });
+    toast({ title: 'Refreshing...', description: 'Updating stock cache in background' });
   };
 
   // Get ticker suggestions based on search
@@ -492,10 +528,10 @@ const ScreenerPage = () => {
             variant="outline" 
             size="sm" 
             onClick={handleRefresh}
-            disabled={loadingPopular}
+            disabled={loadingCache || refreshCache.isPending}
             className="gap-2"
           >
-            <RefreshCw className={`w-4 h-4 ${loadingPopular ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${refreshCache.isPending ? 'animate-spin' : ''}`} />
             Refresh Prices
           </Button>
         </div>
@@ -682,7 +718,8 @@ const ScreenerPage = () => {
                         (showing {visibleCount.toLocaleString()})
                       </span>
                     )}
-                    {(loadingPopular || isFetchingBatch) && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {(loadingCache || isFetchingBatch || refreshCache.isPending) && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {refreshCache.isPending && <span className="text-sm font-normal text-muted-foreground">Updating cache...</span>}
                     {isFetchingBatch && <span className="text-sm font-normal text-muted-foreground">Fetching live data...</span>}
                   </CardTitle>
                   {visibleCount > 100 && (

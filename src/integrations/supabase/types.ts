@@ -279,6 +279,54 @@ export type Database = {
           },
         ]
       }
+      stock_cache: {
+        Row: {
+          cached_at: string
+          change: number
+          change_percent: number
+          company_name: string
+          created_at: string
+          high: number | null
+          id: string
+          low: number | null
+          market_cap: number | null
+          price: number
+          sector: string | null
+          symbol: string
+          volume: number | null
+        }
+        Insert: {
+          cached_at?: string
+          change?: number
+          change_percent?: number
+          company_name: string
+          created_at?: string
+          high?: number | null
+          id?: string
+          low?: number | null
+          market_cap?: number | null
+          price?: number
+          sector?: string | null
+          symbol: string
+          volume?: number | null
+        }
+        Update: {
+          cached_at?: string
+          change?: number
+          change_percent?: number
+          company_name?: string
+          created_at?: string
+          high?: number | null
+          id?: string
+          low?: number | null
+          market_cap?: number | null
+          price?: number
+          sector?: string | null
+          symbol?: string
+          volume?: number | null
+        }
+        Relationships: []
+      }
       trades: {
         Row: {
           company_name: string
