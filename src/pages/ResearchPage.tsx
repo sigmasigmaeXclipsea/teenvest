@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { useNavigate } from 'react-router-dom';
 import { useCachedStocks, useRefreshStockCache, isCacheStale } from '@/hooks/useStockCache';
+import { useStockQuote } from '@/hooks/useStockAPI';
 import ResearchCompanyProfile from '@/components/research/ResearchCompanyProfile';
 import ResearchFinancials from '@/components/research/ResearchFinancials';
 import ResearchKeyStats from '@/components/research/ResearchKeyStats';
@@ -17,12 +18,17 @@ import ResearchEarningsCalendar from '@/components/research/ResearchEarningsCale
 import ResearchTechnicalIndicators from '@/components/research/ResearchTechnicalIndicators';
 import ResearchAIAssistant from '@/components/research/ResearchAIAssistant';
 import ResearchComparison from '@/components/research/ResearchComparison';
+import StockCandlestickChart from '@/components/StockCandlestickChart';
 
 const ResearchPage = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStock, setSelectedStock] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('overview');
   const { data: cachedStocks, isLoading } = useCachedStocks();
+  
+  // Fetch live stock data for candlestick chart
+  const { data: liveStockData } = useStockQuote(selectedStock || '');
 
   // Filter stocks based on search
   const filteredStocks = cachedStocks?.filter(stock => 
@@ -37,6 +43,7 @@ const ResearchPage = () => {
   const handleStockSelect = (symbol: string) => {
     setSelectedStock(symbol);
     setSearchQuery('');
+    setActiveTab('overview'); // Reset to overview when selecting a new stock
   };
 
   const selectedStockData = cachedStocks?.find(s => s.symbol === selectedStock);
@@ -131,9 +138,10 @@ const ResearchPage = () => {
             </Card>
 
             {/* Research Tabs */}
-            <Tabs defaultValue="overview" className="space-y-6">
-              <TabsList className="grid grid-cols-4 lg:grid-cols-8 w-full">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+              <TabsList className="grid grid-cols-4 lg:grid-cols-9 w-full">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="charts">Charts</TabsTrigger>
                 <TabsTrigger value="financials">Financials</TabsTrigger>
                 <TabsTrigger value="statistics">Statistics</TabsTrigger>
                 <TabsTrigger value="analysts">Analysts</TabsTrigger>
@@ -145,6 +153,34 @@ const ResearchPage = () => {
 
               <TabsContent value="overview">
                 <ResearchCompanyProfile symbol={selectedStock} />
+              </TabsContent>
+
+              <TabsContent value="charts" className="space-y-6">
+                {liveStockData ? (
+                  <StockCandlestickChart
+                    symbol={liveStockData.symbol}
+                    currentPrice={liveStockData.price}
+                    previousClose={liveStockData.previousClose}
+                    high={liveStockData.high}
+                    low={liveStockData.low}
+                    open={liveStockData.open}
+                  />
+                ) : selectedStockData ? (
+                  <StockCandlestickChart
+                    symbol={selectedStock}
+                    currentPrice={selectedStockData.price}
+                    previousClose={selectedStockData.price - selectedStockData.change}
+                    high={selectedStockData.high || selectedStockData.price * 1.02}
+                    low={selectedStockData.low || selectedStockData.price * 0.98}
+                    open={selectedStockData.price - selectedStockData.change}
+                  />
+                ) : (
+                  <Card>
+                    <CardContent className="pt-6">
+                      <p className="text-muted-foreground">Loading chart data...</p>
+                    </CardContent>
+                  </Card>
+                )}
               </TabsContent>
 
               <TabsContent value="financials">
@@ -273,7 +309,26 @@ const ResearchPage = () => {
                 </CardContent>
               </Card>
 
-              <Card className="cursor-pointer hover:border-primary/50 transition-colors">
+              <Card 
+                className="cursor-pointer hover:border-primary/50 transition-colors"
+                onClick={() => {
+                  // If a stock is selected, switch to compare tab, otherwise navigate to screener
+                  if (selectedStock) {
+                    setSelectedStock(null);
+                    setActiveTab('compare');
+                    // Wait a bit then select a stock to show comparison
+                    setTimeout(() => {
+                      const firstStock = cachedStocks?.[0];
+                      if (firstStock) {
+                        setSelectedStock(firstStock.symbol);
+                        setActiveTab('compare');
+                      }
+                    }, 100);
+                  } else {
+                    navigate('/screener');
+                  }
+                }}
+              >
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -290,7 +345,21 @@ const ResearchPage = () => {
                 </CardContent>
               </Card>
 
-              <Card className="cursor-pointer hover:border-primary/50 transition-colors">
+              <Card 
+                className="cursor-pointer hover:border-primary/50 transition-colors"
+                onClick={() => {
+                  // If a stock is selected, switch to earnings tab, otherwise select first stock and show earnings
+                  if (selectedStock) {
+                    setActiveTab('earnings');
+                  } else {
+                    const firstStock = cachedStocks?.[0];
+                    if (firstStock) {
+                      setSelectedStock(firstStock.symbol);
+                      setActiveTab('earnings');
+                    }
+                  }
+                }}
+              >
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -307,7 +376,21 @@ const ResearchPage = () => {
                 </CardContent>
               </Card>
 
-              <Card className="cursor-pointer hover:border-primary/50 transition-colors">
+              <Card 
+                className="cursor-pointer hover:border-primary/50 transition-colors"
+                onClick={() => {
+                  // If a stock is selected, switch to AI tab, otherwise select first stock and show AI
+                  if (selectedStock) {
+                    setActiveTab('ai');
+                  } else {
+                    const firstStock = cachedStocks?.[0];
+                    if (firstStock) {
+                      setSelectedStock(firstStock.symbol);
+                      setActiveTab('ai');
+                    }
+                  }
+                }}
+              >
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
