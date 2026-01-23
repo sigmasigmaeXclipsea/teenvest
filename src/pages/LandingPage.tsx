@@ -990,7 +990,7 @@ const LandingPage = () => {
               >
                 <Flame className="w-3.5 h-3.5 text-warning" />
               </motion.span>
-              <span className="uppercase tracking-widest">Join 10,000+ Teen Investors</span>
+              <span className="uppercase tracking-widest">Start Building Wealth Today</span>
               <motion.span
                 animate={{ scale: [1, 1.3, 1] }}
                 transition={{ duration: 1, repeat: Infinity }}
@@ -1321,6 +1321,127 @@ const LandingPage = () => {
         />
       </section>
 
+      {/* Why Start Early - TIME IS YOUR SUPERPOWER */}
+      <section className="py-20 relative overflow-hidden">
+        <div className="container mx-auto px-4">
+          <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, x: -50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ type: 'spring' }}
+            >
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary mb-3">The Math Doesn't Lie</p>
+              <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-6">
+                Time Is Your <span className="gradient-text">Superpower</span>
+              </h2>
+              <p className="text-lg text-muted-foreground mb-8">
+                Every year you wait costs you thousands. Starting at 15 instead of 25 could mean 
+                <motion.span 
+                  className="text-primary font-bold"
+                  whileHover={{ scale: 1.1 }}
+                  style={{ display: 'inline-block' }}
+                > 2X more wealth</motion.span> by retirement.
+              </p>
+              
+              <div className="space-y-4">
+                {[
+                  { emoji: '💰', title: 'Compound Growth', desc: 'Watch your money multiply while you sleep' },
+                  { emoji: '🧠', title: 'Build Skills Early', desc: 'Learn to read markets before your peers' },
+                  { emoji: '🛡️', title: 'Zero Risk Practice', desc: 'Make mistakes with fake money, not real' },
+                ].map((item, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, x: -30 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.15, type: 'spring' }}
+                    whileHover={{ x: 10, scale: 1.02 }}
+                    className="flex items-start gap-4 p-4 rounded-xl bg-card/50 border border-border/50 hover:border-primary/30 transition-colors cursor-pointer"
+                  >
+                    <motion.span 
+                      className="text-2xl"
+                      animate={{ rotate: [0, 10, -10, 0] }}
+                      transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
+                    >
+                      {item.emoji}
+                    </motion.span>
+                    <div>
+                      <h4 className="font-bold">{item.title}</h4>
+                      <p className="text-sm text-muted-foreground">{item.desc}</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+            
+            <motion.div
+              initial={{ opacity: 0, x: 50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ type: 'spring' }}
+              className="relative"
+            >
+              <TiltCard>
+                <div className="bg-card rounded-3xl p-8 border border-border/50 shadow-2xl relative overflow-hidden">
+                  <motion.div 
+                    className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5"
+                    animate={{ opacity: [0.3, 0.6, 0.3] }}
+                    transition={{ duration: 3, repeat: Infinity }}
+                  />
+                  <div className="relative">
+                    <h4 className="text-lg font-bold mb-6 text-center">$100/month invested</h4>
+                    <div className="grid grid-cols-2 gap-6 mb-6">
+                      <motion.div 
+                        className="text-center p-6 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/30"
+                        whileHover={{ scale: 1.05 }}
+                      >
+                        <p className="text-4xl font-black gradient-text mb-2">
+                          $<SpringCounter value={500} />K+
+                        </p>
+                        <p className="text-sm text-muted-foreground">Start at 15</p>
+                        <p className="text-xs text-primary font-semibold mt-1">45 years of growth</p>
+                      </motion.div>
+                      <motion.div 
+                        className="text-center p-6 rounded-2xl bg-muted/50 border border-border/50"
+                        whileHover={{ scale: 1.05 }}
+                      >
+                        <p className="text-4xl font-black text-muted-foreground mb-2">
+                          $<SpringCounter value={250} />K
+                        </p>
+                        <p className="text-sm text-muted-foreground">Start at 25</p>
+                        <p className="text-xs text-muted-foreground mt-1">35 years of growth</p>
+                      </motion.div>
+                    </div>
+                    <motion.div 
+                      className="text-center p-4 rounded-xl bg-success/10 border border-success/20"
+                      animate={{ scale: [1, 1.02, 1] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    >
+                      <p className="text-success font-bold flex items-center justify-center gap-2">
+                        <motion.div
+                          animate={{ rotate: [0, 360] }}
+                          transition={{ duration: 2, repeat: Infinity }}
+                        >
+                          <Flame className="w-4 h-4" />
+                        </motion.div>
+                        10 extra years = 2X more money
+                        <motion.div
+                          animate={{ rotate: [0, -360] }}
+                          transition={{ duration: 2, repeat: Infinity }}
+                        >
+                          <Flame className="w-4 h-4" />
+                        </motion.div>
+                      </p>
+                    </motion.div>
+                  </div>
+                </div>
+              </TiltCard>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
       {/* Stats Section with Enhanced Interactions */}
       <section className="py-24 relative">
         {/* Background elements */}
@@ -1349,10 +1470,10 @@ const LandingPage = () => {
               animate={{ letterSpacing: ['0.2em', '0.4em', '0.2em'] }}
               transition={{ duration: 4, repeat: Infinity }}
             >
-              By The Numbers
+              What You Get
             </motion.p>
             <h2 className="text-4xl md:text-5xl font-black tracking-tight">
-              Trusted by <span className="gradient-text">Thousands</span>
+              Everything You Need to <span className="gradient-text">Start Investing</span>
             </h2>
           </motion.div>
           
@@ -1363,10 +1484,10 @@ const LandingPage = () => {
             className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-6xl mx-auto"
           >
             {[
-              { value: 10000, suffix: '+', label: 'Active Traders', icon: '👥', color: 'from-primary to-primary-glow' },
-              { value: 50, prefix: '$', suffix: 'M+', label: 'Traded Volume', icon: '📊', color: 'from-accent to-chart-5' },
-              { value: 1500, suffix: '+', label: 'Stocks Available', icon: '📈', color: 'from-chart-3 to-primary' },
-              { value: 4.9, label: 'User Rating', icon: '⭐', suffix: '/5', color: 'from-warning to-chart-5' },
+              { value: 10, suffix: 'K', label: 'Virtual Cash', icon: '💰', color: 'from-primary to-primary-glow', prefix: '$' },
+              { value: 1500, suffix: '+', label: 'Real Stocks', icon: '📈', color: 'from-accent to-chart-5' },
+              { value: 0, suffix: '', label: 'Real Risk', icon: '🛡️', color: 'from-chart-3 to-primary' },
+              { value: 100, suffix: '%', label: 'Free Forever', icon: '⭐', color: 'from-warning to-chart-5' },
             ].map((stat, i) => (
               <motion.div
                 key={i}
@@ -1574,128 +1695,6 @@ const LandingPage = () => {
           </div>
         </div>
       </section>
-
-      {/* Why Start Early */}
-      <section className="py-20 relative overflow-hidden">
-        <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ type: 'spring' }}
-            >
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary mb-3">The Math Doesn't Lie</p>
-              <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-6">
-                Time Is Your <span className="gradient-text">Superpower</span>
-              </h2>
-              <p className="text-lg text-muted-foreground mb-8">
-                Every year you wait costs you thousands. Starting at 15 instead of 25 could mean 
-                <motion.span 
-                  className="text-primary font-bold"
-                  whileHover={{ scale: 1.1 }}
-                  style={{ display: 'inline-block' }}
-                > 2X more wealth</motion.span> by retirement.
-              </p>
-              
-              <div className="space-y-4">
-                {[
-                  { emoji: '💰', title: 'Compound Growth', desc: 'Watch your money multiply while you sleep' },
-                  { emoji: '🧠', title: 'Build Skills Early', desc: 'Learn to read markets before your peers' },
-                  { emoji: '🛡️', title: 'Zero Risk Practice', desc: 'Make mistakes with fake money, not real' },
-                ].map((item, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, x: -30 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.15, type: 'spring' }}
-                    whileHover={{ x: 10, scale: 1.02 }}
-                    className="flex items-start gap-4 p-4 rounded-xl bg-card/50 border border-border/50 hover:border-primary/30 transition-colors cursor-pointer"
-                  >
-                    <motion.span 
-                      className="text-2xl"
-                      animate={{ rotate: [0, 10, -10, 0] }}
-                      transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
-                    >
-                      {item.emoji}
-                    </motion.span>
-                    <div>
-                      <h4 className="font-bold">{item.title}</h4>
-                      <p className="text-sm text-muted-foreground">{item.desc}</p>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
-            
-            <motion.div
-              initial={{ opacity: 0, x: 50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ type: 'spring' }}
-              className="relative"
-            >
-              <TiltCard>
-                <div className="bg-card rounded-3xl p-8 border border-border/50 shadow-2xl relative overflow-hidden">
-                  <motion.div 
-                    className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5"
-                    animate={{ opacity: [0.3, 0.6, 0.3] }}
-                    transition={{ duration: 3, repeat: Infinity }}
-                  />
-                  <div className="relative">
-                    <h4 className="text-lg font-bold mb-6 text-center">$100/month invested</h4>
-                    <div className="grid grid-cols-2 gap-6 mb-6">
-                      <motion.div 
-                        className="text-center p-6 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/30"
-                        whileHover={{ scale: 1.05 }}
-                      >
-                        <p className="text-4xl font-black gradient-text mb-2">
-                          $<SpringCounter value={500} />K+
-                        </p>
-                        <p className="text-sm text-muted-foreground">Start at 15</p>
-                        <p className="text-xs text-primary font-semibold mt-1">45 years of growth</p>
-                      </motion.div>
-                      <motion.div 
-                        className="text-center p-6 rounded-2xl bg-muted/50 border border-border/50"
-                        whileHover={{ scale: 1.05 }}
-                      >
-                        <p className="text-4xl font-black text-muted-foreground mb-2">
-                          $<SpringCounter value={250} />K
-                        </p>
-                        <p className="text-sm text-muted-foreground">Start at 25</p>
-                        <p className="text-xs text-muted-foreground mt-1">35 years of growth</p>
-                      </motion.div>
-                    </div>
-                    <motion.div 
-                      className="text-center p-4 rounded-xl bg-success/10 border border-success/20"
-                      animate={{ scale: [1, 1.02, 1] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                    >
-                      <p className="text-success font-bold flex items-center justify-center gap-2">
-                        <motion.div
-                          animate={{ rotate: [0, 360] }}
-                          transition={{ duration: 2, repeat: Infinity }}
-                        >
-                          <Flame className="w-4 h-4" />
-                        </motion.div>
-                        10 extra years = 2X more money
-                        <motion.div
-                          animate={{ rotate: [0, -360] }}
-                          transition={{ duration: 2, repeat: Infinity }}
-                        >
-                          <Flame className="w-4 h-4" />
-                        </motion.div>
-                      </p>
-                    </motion.div>
-                  </div>
-                </div>
-              </TiltCard>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
       {/* Testimonials Section */}
       <section className="py-24 relative overflow-hidden">
         <div className="container mx-auto px-4">
@@ -1927,7 +1926,7 @@ const LandingPage = () => {
                 ))}
               </div>
               <p className="text-sm text-muted-foreground">
-                <span className="font-bold text-foreground">10,000+</span> teens already investing
+                <span className="font-bold text-foreground">Free forever</span> — no credit card required
               </p>
             </motion.div>
           </motion.div>
