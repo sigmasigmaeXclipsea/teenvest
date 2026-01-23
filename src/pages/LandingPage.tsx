@@ -483,9 +483,12 @@ const AnimatedDashboard = () => {
     ];
   }, [stockQuotes]);
   
+  // Simulated starting investment for demo purposes
+  const startingInvestment = 10000;
+  
   // Calculate portfolio value from real stock prices
   const portfolioValue = useMemo(() => {
-    if (!stockQuotes || stockQuotes.length === 0) return 10000;
+    if (!stockQuotes || stockQuotes.length === 0) return startingInvestment;
     // Simulate holdings: 10 AAPL, 5 TSLA, 2 NVDA, 8 MSFT
     const holdings = { AAPL: 10, TSLA: 5, NVDA: 2, MSFT: 8 };
     return stockQuotes.reduce((total, quote) => {
@@ -493,6 +496,15 @@ const AnimatedDashboard = () => {
       return total + (quote.price * shares);
     }, 0);
   }, [stockQuotes]);
+  
+  // Calculate total gain from starting investment (shows overall portfolio performance)
+  const totalGain = useMemo(() => {
+    return portfolioValue - startingInvestment;
+  }, [portfolioValue]);
+  
+  const totalGainPercent = useMemo(() => {
+    return ((portfolioValue - startingInvestment) / startingInvestment) * 100;
+  }, [portfolioValue]);
   
   // Calculate today's gain from real data
   const todaysGain = useMemo(() => {
@@ -566,8 +578,8 @@ const AnimatedDashboard = () => {
           {/* Stats with enhanced interactions */}
           <div className="grid grid-cols-3 gap-4">
             {[
-              { label: 'Portfolio Value', value: Math.round(portfolioValue), prefix: '$', change: todaysGain >= 0 ? `+${((todaysGain / portfolioValue) * 100).toFixed(1)}%` : `${((todaysGain / portfolioValue) * 100).toFixed(1)}%`, icon: '💰' },
-              { label: "Today's Gain", value: Math.abs(Math.round(todaysGain)), prefix: todaysGain >= 0 ? '+$' : '-$', change: todaysGain >= 0 ? '📈' : '📉', icon: '📊' },
+              { label: 'Portfolio Value', value: Math.round(portfolioValue), prefix: '$', change: totalGainPercent >= 0 ? `+${totalGainPercent.toFixed(1)}%` : `${totalGainPercent.toFixed(1)}%`, icon: '💰' },
+              { label: 'Total Gain', value: Math.abs(Math.round(totalGain)), prefix: totalGain >= 0 ? '+$' : '-$', change: todaysGain >= 0 ? '📈 Today' : '📉 Today', icon: '📊' },
               { label: 'Login Streak', value: 7, suffix: ' days', change: '🔥', icon: '⚡' },
             ].map((stat, i) => (
               <motion.div
