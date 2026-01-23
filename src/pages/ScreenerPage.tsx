@@ -366,59 +366,81 @@ const ScreenerPage = () => {
 
   // Auto-fetch live data for visible rows so the table shows real numbers
   const [isFetchingBatch, setIsFetchingBatch] = useState(false);
+  const fetchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isFetchingRef = useRef(false);
   
   useEffect(() => {
-    const fetchBatch = async () => {
-      try {
-        const symbolsToFetch = filteredStocks
-          .filter(s => s && s.symbol && s.price === 0)
-          .slice(0, 50) // Increased batch size
-          .map(s => s.symbol)
-          .filter((sym): sym is string => Boolean(sym) && typeof sym === 'string' && sym.trim().length > 0)
-          .filter(sym => !fetchedSymbolsRef.current.has(sym));
+    // Clear any pending fetch
+    if (fetchTimeoutRef.current) {
+      clearTimeout(fetchTimeoutRef.current);
+    }
 
-        if (symbolsToFetch.length === 0) return;
+    // Debounce the fetch to avoid excessive API calls
+    fetchTimeoutRef.current = setTimeout(() => {
+      const fetchBatch = async () => {
+        // Prevent concurrent fetches
+        if (isFetchingRef.current) return;
+        
+        try {
+          // Only fetch for visible stocks to reduce load
+          const symbolsToFetch = visibleStocks
+            .filter(s => s && s.symbol && s.price === 0)
+            .slice(0, 30) // Reduced batch size to prevent overload
+            .map(s => s.symbol)
+            .filter((sym): sym is string => Boolean(sym) && typeof sym === 'string' && sym.trim().length > 0)
+            .filter(sym => !fetchedSymbolsRef.current.has(sym));
 
-        setIsFetchingBatch(true);
-        symbolsToFetch.forEach(sym => fetchedSymbolsRef.current.add(sym));
+          if (symbolsToFetch.length === 0) return;
 
-        // Fetch in smaller parallel batches to avoid rate limits
-        const batchSize = 10;
-        for (let i = 0; i < symbolsToFetch.length; i += batchSize) {
-          const batch = symbolsToFetch.slice(i, i + batchSize);
-          const results = await Promise.allSettled(batch.map(sym => fetchStockQuote(sym)));
-          const ok = results
-            .filter((r): r is PromiseFulfilledResult<StockQuote> => r.status === 'fulfilled')
-            .map(r => r.value)
-            .filter(s => s && s.symbol);
+          isFetchingRef.current = true;
+          setIsFetchingBatch(true);
+          symbolsToFetch.forEach(sym => fetchedSymbolsRef.current.add(sym));
 
-          if (ok.length > 0) {
-            setAutoFetchedStocks(prev => {
-              const merged = [...prev];
-              ok.forEach(s => {
-                if (!s || !s.symbol) return;
-                const idx = merged.findIndex(p => p.symbol === s.symbol);
-                if (idx >= 0) merged[idx] = s;
-                else merged.push(s);
+          // Fetch in smaller parallel batches to avoid rate limits
+          const batchSize = 5; // Reduced batch size
+          for (let i = 0; i < symbolsToFetch.length; i += batchSize) {
+            const batch = symbolsToFetch.slice(i, i + batchSize);
+            const results = await Promise.allSettled(batch.map(sym => fetchStockQuote(sym)));
+            const ok = results
+              .filter((r): r is PromiseFulfilledResult<StockQuote> => r.status === 'fulfilled')
+              .map(r => r.value)
+              .filter(s => s && s.symbol);
+
+            if (ok.length > 0) {
+              setAutoFetchedStocks(prev => {
+                const merged = [...prev];
+                ok.forEach(s => {
+                  if (!s || !s.symbol) return;
+                  const idx = merged.findIndex(p => p.symbol === s.symbol);
+                  if (idx >= 0) merged[idx] = s;
+                  else merged.push(s);
+                });
+                return merged;
               });
-              return merged;
-            });
+            }
+            
+            // Increased delay between batches to avoid rate limiting
+            if (i + batchSize < symbolsToFetch.length) {
+              await new Promise(resolve => setTimeout(resolve, 300));
+            }
           }
-          
-          // Small delay between batches to avoid rate limiting
-          if (i + batchSize < symbolsToFetch.length) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-          }
+        } catch (error) {
+          console.error('Auto-fetch error:', error);
+        } finally {
+          setIsFetchingBatch(false);
+          isFetchingRef.current = false;
         }
-      } catch (error) {
-        console.error('Auto-fetch error:', error);
-      } finally {
-        setIsFetchingBatch(false);
+      };
+      
+      fetchBatch();
+    }, 500); // Debounce delay
+    
+    return () => {
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
       }
     };
-    
-    fetchBatch();
-  }, [filteredStocks, selectedSector, selectedRisk, marketCapFilter]);
+  }, [visibleStocks, selectedSector, selectedRisk, marketCapFilter]);
 
   const StockRow = ({ stock }: { stock: Stock }) => {
     if (!stock || !stock.symbol) return null;

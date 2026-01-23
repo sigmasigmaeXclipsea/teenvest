@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowUpDown, TrendingUp, TrendingDown, Search, Loader2, ExternalLink, BarChart3 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -15,10 +15,12 @@ import { useToast } from '@/hooks/use-toast';
 import { useStockQuote, useSearchStock, StockQuote } from '@/hooks/useStockAPI';
 import { getUserFriendlyError } from '@/lib/errorMessages';
 import StockLineChart from '@/components/StockLineChart';
+import StockCandlestickChart from '@/components/StockCandlestickChart';
 
 const TradePage = () => {
   const [searchParams] = useSearchParams();
   const initialSymbol = searchParams.get('symbol') || '';
+  const navigate = useNavigate();
   
   const [selectedSymbol, setSelectedSymbol] = useState(initialSymbol);
   const [tickerSearch, setTickerSearch] = useState('');
@@ -166,8 +168,7 @@ const TradePage = () => {
                       key={t.symbol}
                       className="w-full text-left px-3 py-2 hover:bg-secondary text-sm flex justify-between items-center"
                       onClick={() => {
-                        setSelectedSymbol(t.symbol);
-                        setTickerSearch('');
+                        navigate(`/stocks/${t.symbol}`);
                       }}
                     >
                       <span><strong>{t.symbol}</strong> - {t.name}</span>
@@ -278,16 +279,26 @@ const TradePage = () => {
           </Card>
         </div>
 
-        {/* Stock Chart - Shown when stock is selected */}
+        {/* Stock Charts - Shown when stock is selected */}
         {selectedStock && liveQuote && (
-          <StockLineChart 
-            symbol={selectedStock.symbol}
-            currentPrice={selectedStock.price}
-            previousClose={liveQuote.previousClose}
-            high={liveQuote.high}
-            low={liveQuote.low}
-            open={liveQuote.open}
-          />
+          <div className="grid gap-6 lg:grid-cols-2">
+            <StockLineChart 
+              symbol={selectedStock.symbol}
+              currentPrice={selectedStock.price}
+              previousClose={liveQuote.previousClose}
+              high={liveQuote.high}
+              low={liveQuote.low}
+              open={liveQuote.open}
+            />
+            <StockCandlestickChart
+              symbol={selectedStock.symbol}
+              currentPrice={selectedStock.price}
+              previousClose={liveQuote.previousClose}
+              high={liveQuote.high}
+              low={liveQuote.low}
+              open={liveQuote.open}
+            />
+          </div>
         )}
       </div>
     </DashboardLayout>
