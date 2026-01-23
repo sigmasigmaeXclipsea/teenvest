@@ -1843,8 +1843,8 @@ const LandingPage = () => {
           aria-hidden="true"
         />
         
-        <div className="bg-gradient-to-r from-card/80 via-muted/50 to-card/80 backdrop-blur-sm border-y border-border/30 supports-[backdrop-filter]:from-card/60">
-          <div className="py-5">
+        <div className="bg-gradient-to-r from-card/80 via-muted/50 to-card/80 backdrop-blur-sm border-y border-border/30 supports-[backdrop-filter]:from-card/60 overflow-hidden">
+          <div className="py-5 overflow-hidden">
             <Marquee speed={25}>
               {[
                 { symbol: 'AAPL', change: '+2.4%', price: '$178.25' },
@@ -1858,13 +1858,13 @@ const LandingPage = () => {
               ].map((stock, i) => (
                 <motion.div 
                   key={i} 
-                  className="mx-6 flex items-center gap-3 px-5 py-2.5 rounded-xl bg-card/50 border border-border/30 cursor-pointer group"
+                  className="mx-4 md:mx-6 flex items-center gap-2 md:gap-3 px-4 md:px-5 py-2.5 rounded-xl bg-card/50 border border-border/30 cursor-pointer group flex-shrink-0"
                   whileHover={{ scale: 1.05, backgroundColor: 'hsl(var(--primary) / 0.1)' }}
                 >
-                  <span className="text-lg font-black text-foreground group-hover:text-primary transition-colors">{stock.symbol}</span>
-                  <span className="text-sm text-muted-foreground">{stock.price}</span>
+                  <span className="text-base md:text-lg font-black text-foreground group-hover:text-primary transition-colors whitespace-nowrap">{stock.symbol}</span>
+                  <span className="text-xs md:text-sm text-muted-foreground whitespace-nowrap">{stock.price}</span>
                   <motion.span 
-                    className="text-sm font-bold text-success flex items-center gap-1"
+                    className="text-xs md:text-sm font-bold text-success flex items-center gap-1 whitespace-nowrap"
                     animate={{ scale: [1, 1.1, 1] }}
                     transition={{ duration: 2, repeat: Infinity, delay: i * 0.2 }}
                   >
@@ -1877,12 +1877,12 @@ const LandingPage = () => {
           </div>
           
           {/* Reverse direction ticker */}
-          <div className="py-5 border-t border-border/20">
+          <div className="py-5 border-t border-border/20 overflow-hidden">
             <Marquee speed={30} direction="right">
               {['🚀 NVDA hits all-time high', '📈 Markets rally on earnings', '💎 Diamond hands win again', '🔥 Tech sector on fire', '⭐ Best month for retail traders', '🎯 AI stocks surge 15%', '💰 Record trading volume'].map((news, i) => (
                 <motion.span 
                   key={i} 
-                  className="mx-8 text-sm font-medium text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+                  className="mx-6 md:mx-8 text-xs md:text-sm font-medium text-muted-foreground hover:text-primary transition-colors cursor-pointer whitespace-nowrap flex-shrink-0"
                   whileHover={{ scale: 1.05 }}
                 >
                   {news}
@@ -1971,26 +1971,26 @@ const LandingPage = () => {
                   />
                   <div className="relative">
                     <h4 className="text-2xl md:text-3xl font-bold mb-8 text-center">$100/month invested</h4>
-                    <div className="grid grid-cols-2 gap-8 mb-8">
+                    <div className="grid grid-cols-2 gap-4 md:gap-8 mb-8">
                       <motion.div 
-                        className="text-center p-8 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 border-2 border-primary/40 shadow-lg"
+                        className="text-center p-6 md:p-8 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 border-2 border-primary/40 shadow-lg overflow-hidden"
                         whileHover={{ scale: 1.08 }}
                       >
-                        <p className="text-5xl md:text-6xl font-black gradient-text mb-3">
+                        <p className="text-4xl md:text-5xl lg:text-6xl font-black gradient-text mb-3 break-words whitespace-nowrap">
                           $<SpringCounter value={500} />K+
                         </p>
-                        <p className="text-base font-semibold text-muted-foreground">Start at 15</p>
-                        <p className="text-sm text-primary font-bold mt-2">45 years of growth</p>
+                        <p className="text-sm md:text-base font-semibold text-muted-foreground">Start at 15</p>
+                        <p className="text-xs md:text-sm text-primary font-bold mt-2">45 years of growth</p>
                       </motion.div>
                       <motion.div 
-                        className="text-center p-8 rounded-2xl bg-muted/50 border-2 border-border/50"
+                        className="text-center p-6 md:p-8 rounded-2xl bg-muted/50 border-2 border-border/50 overflow-hidden"
                         whileHover={{ scale: 1.05 }}
                       >
-                        <p className="text-5xl md:text-6xl font-black text-muted-foreground mb-3">
+                        <p className="text-4xl md:text-5xl lg:text-6xl font-black text-muted-foreground mb-3 break-words whitespace-nowrap">
                           $<SpringCounter value={250} />K
                         </p>
-                        <p className="text-base font-semibold text-muted-foreground">Start at 25</p>
-                        <p className="text-sm text-muted-foreground mt-2">35 years of growth</p>
+                        <p className="text-sm md:text-base font-semibold text-muted-foreground">Start at 25</p>
+                        <p className="text-xs md:text-sm text-muted-foreground mt-2">35 years of growth</p>
                       </motion.div>
                     </div>
                     <motion.div 
