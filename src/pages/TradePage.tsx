@@ -19,9 +19,8 @@ import StockCandlestickChart from '@/components/StockCandlestickChart';
 import { useSettings } from '@/contexts/SettingsContext';
 import { Lock, Loader2 } from 'lucide-react';
 
-// Lazy load charts for better performance
+// Lazy load line chart for better performance
 const LazyStockLineChart = lazy(() => import('@/components/StockLineChart').then(m => ({ default: m.default })));
-const LazyStockCandlestickChart = lazy(() => import('@/components/StockCandlestickChart').then(m => ({ default: m.default })));
 
 const TradePage = () => {
   const [searchParams] = useSearchParams();
@@ -300,23 +299,16 @@ const TradePage = () => {
           </Card>
         </div>
 
-        {/* Stock Charts - Shown when stock is selected - Lazy loaded for performance */}
+        {/* Stock Charts - Shown when stock is selected */}
         {selectedStock && liveQuote && (
-          <Suspense fallback={
-            <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Suspense fallback={
               <Card>
                 <CardContent className="flex items-center justify-center h-64">
                   <Loader2 className="w-6 h-6 animate-spin text-primary" />
                 </CardContent>
               </Card>
-              <Card>
-                <CardContent className="flex items-center justify-center h-64">
-                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                </CardContent>
-              </Card>
-            </div>
-          }>
-            <div className="grid gap-6 lg:grid-cols-2">
+            }>
               <LazyStockLineChart 
                 symbol={selectedStock.symbol}
                 currentPrice={selectedStock.price}
@@ -325,33 +317,33 @@ const TradePage = () => {
                 low={liveQuote.low}
                 open={liveQuote.open}
               />
-              {isAdvancedMode ? (
-                <LazyStockCandlestickChart
-                  symbol={selectedStock.symbol}
-                  currentPrice={selectedStock.price}
-                  previousClose={liveQuote.previousClose}
-                  high={liveQuote.high}
-                  low={liveQuote.low}
-                  open={liveQuote.open}
-                />
-              ) : (
-                <Card className="flex items-center justify-center bg-secondary/30 border-dashed">
-                  <CardContent className="text-center py-12">
-                    <Lock className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                    <h3 className="font-semibold mb-2">Candlestick Chart</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Enable Advanced Mode in Settings to unlock candlestick charts and technical analysis tools.
-                    </p>
-                    <Link to="/settings">
-                      <Button variant="outline" size="sm">
-                        Go to Settings
-                      </Button>
-                    </Link>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          </Suspense>
+            </Suspense>
+            {isAdvancedMode ? (
+              <StockCandlestickChart
+                symbol={selectedStock.symbol}
+                currentPrice={selectedStock.price}
+                previousClose={liveQuote.previousClose}
+                high={liveQuote.high}
+                low={liveQuote.low}
+                open={liveQuote.open}
+              />
+            ) : (
+              <Card className="flex items-center justify-center bg-secondary/30 border-dashed">
+                <CardContent className="text-center py-12">
+                  <Lock className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="font-semibold mb-2">Candlestick Chart</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Enable Advanced Mode in Settings to unlock candlestick charts and technical analysis tools.
+                  </p>
+                  <Link to="/settings">
+                    <Button variant="outline" size="sm">
+                      Go to Settings
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         )}
       </div>
     </DashboardLayout>

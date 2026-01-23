@@ -360,58 +360,10 @@ const ResearchPage = () => {
               </CardContent>
             </Card>
 
-            {/* Charts - Show immediately */}
-            <div className="grid gap-6 lg:grid-cols-2">
-              {liveStockData ? (
-                <>
-                  <StockLineChart
-                    symbol={liveStockData.symbol}
-                    currentPrice={liveStockData.price}
-                    previousClose={liveStockData.previousClose}
-                    high={liveStockData.high}
-                    low={liveStockData.low}
-                    open={liveStockData.open}
-                  />
-                  <StockCandlestickChart
-                    symbol={liveStockData.symbol}
-                    currentPrice={liveStockData.price}
-                    previousClose={liveStockData.previousClose}
-                    high={liveStockData.high}
-                    low={liveStockData.low}
-                    open={liveStockData.open}
-                  />
-                </>
-              ) : selectedStockData ? (
-                <>
-                  <StockLineChart
-                    symbol={selectedStock}
-                    currentPrice={selectedStockData.price}
-                    previousClose={selectedStockData.price - selectedStockData.change}
-                    high={selectedStockData.high || selectedStockData.price * 1.02}
-                    low={selectedStockData.low || selectedStockData.price * 0.98}
-                    open={selectedStockData.price - selectedStockData.change}
-                  />
-                  <StockCandlestickChart
-                    symbol={selectedStock}
-                    currentPrice={selectedStockData.price}
-                    previousClose={selectedStockData.price - selectedStockData.change}
-                    high={selectedStockData.high || selectedStockData.price * 1.02}
-                    low={selectedStockData.low || selectedStockData.price * 0.98}
-                    open={selectedStockData.price - selectedStockData.change}
-                  />
-                </>
-              ) : (
-                <Card>
-                  <CardContent className="pt-6">
-                    <p className="text-muted-foreground">Loading chart data...</p>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-
             {/* Research Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className="grid grid-cols-4 lg:grid-cols-8 w-full">
+              <TabsList className="grid grid-cols-4 lg:grid-cols-9 w-full">
+                <TabsTrigger value="charts">Charts</TabsTrigger>
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="financials">Financials</TabsTrigger>
                 <TabsTrigger value="statistics">Statistics</TabsTrigger>
@@ -422,14 +374,58 @@ const ResearchPage = () => {
                 <TabsTrigger value="ai">AI Research</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="overview">
-                <ResearchCompanyProfile symbol={selectedStock} />
+              <TabsContent value="charts">
+                <div className="grid gap-6 lg:grid-cols-2">
+                  {liveStockData ? (
+                    <>
+                      <StockLineChart
+                        symbol={liveStockData.symbol}
+                        currentPrice={liveStockData.price}
+                        previousClose={liveStockData.previousClose}
+                        high={liveStockData.high}
+                        low={liveStockData.low}
+                        open={liveStockData.open}
+                      />
+                      <StockCandlestickChart
+                        symbol={liveStockData.symbol}
+                        currentPrice={liveStockData.price}
+                        previousClose={liveStockData.previousClose}
+                        high={liveStockData.high}
+                        low={liveStockData.low}
+                        open={liveStockData.open}
+                      />
+                    </>
+                  ) : selectedStockData ? (
+                    <>
+                      <StockLineChart
+                        symbol={selectedStock}
+                        currentPrice={selectedStockData.price}
+                        previousClose={selectedStockData.price - selectedStockData.change}
+                        high={selectedStockData.high || selectedStockData.price * 1.02}
+                        low={selectedStockData.low || selectedStockData.price * 0.98}
+                        open={selectedStockData.price - selectedStockData.change}
+                      />
+                      <StockCandlestickChart
+                        symbol={selectedStock}
+                        currentPrice={selectedStockData.price}
+                        previousClose={selectedStockData.price - selectedStockData.change}
+                        high={selectedStockData.high || selectedStockData.price * 1.02}
+                        low={selectedStockData.low || selectedStockData.price * 0.98}
+                        open={selectedStockData.price - selectedStockData.change}
+                      />
+                    </>
+                  ) : (
+                    <Card>
+                      <CardContent className="pt-6">
+                        <p className="text-muted-foreground">Loading chart data...</p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
               </TabsContent>
 
-              <TabsContent value="charts">
-                <div className="text-center py-8 text-muted-foreground">
-                  <p>Charts are displayed above. Use the tabs below to explore other research data.</p>
-                </div>
+              <TabsContent value="overview">
+                <ResearchCompanyProfile symbol={selectedStock} />
               </TabsContent>
 
               <TabsContent value="financials">
