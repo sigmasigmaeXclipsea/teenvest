@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { MessageCircle, Bot, Send, Loader2, Sparkles } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Bot, Send, Loader2, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { supabase } from '@/integrations/supabase/client';
 
 type Message = {
   role: 'user' | 'assistant';
@@ -29,6 +30,24 @@ const AIAssistantCard = ({
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+
+  // Get session token on mount
+  useEffect(() => {
+    const getToken = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        setAccessToken(session.access_token);
+      }
+    };
+    getToken();
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setAccessToken(session?.access_token || null);
+    });
+    
+    return () => subscription.unsubscribe();
+  }, []);
 
   const sendMessage = async (messageText?: string) => {
     const text = messageText || input.trim();
@@ -62,13 +81,17 @@ const AIAssistantCard = ({
       }));
       messagesForAPI.push({ role: 'user', content: contextPrefix + text });
 
+      if (!accessToken) {
+        throw new Error('Please sign in to use the AI assistant');
+      }
+
       const resp = await fetch(CHAT_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({ messages: messagesForAPI }),
+        body: JSON.stringify({ messages: messagesForAPI, context }),
       });
 
       if (!resp.ok) {
