@@ -153,20 +153,23 @@ const TiltCard = ({ children, className }: { children: React.ReactNode; classNam
   );
 };
 
-// Morphing blob shape
+// Morphing blob shape - scroll-triggered
 const MorphingBlob = ({ className }: { className?: string }) => {
   return (
     <motion.div
       className={`absolute rounded-full blur-3xl ${className}`}
-      animate={{
+      initial={{ opacity: 0, scale: 0.8 }}
+      whileInView={{
         borderRadius: [
           '60% 40% 30% 70%/60% 30% 70% 40%',
           '30% 60% 70% 40%/50% 60% 30% 60%',
           '60% 40% 30% 70%/60% 30% 70% 40%',
         ],
-        scale: [1, 1.1, 1],
+        scale: [1, 1.05, 1],
         rotate: [0, 180, 360],
+        opacity: 1,
       }}
+      viewport={{ once: true }}
       transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
     />
   );
@@ -289,8 +292,9 @@ const MagneticButton = ({ children, className, ...props }: React.ComponentProps<
   return (
     <motion.div 
       style={{ x: springX, y: springY }}
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      className="overflow-visible"
     >
       <Button
         ref={ref}
@@ -642,9 +646,8 @@ const AnimatedDashboard = () => {
               <motion.div
                 key={i}
                 className={`w-3.5 h-3.5 rounded-full ${dot.color} shadow-lg`}
-                whileHover={{ scale: 1.4, backgroundColor: dot.hoverColor }}
-                animate={{ scale: [1, 1.1, 1] }}
-                transition={{ delay: i * 0.15, duration: 2, repeat: Infinity }}
+                whileHover={{ scale: 1.2, backgroundColor: dot.hoverColor }}
+                transition={{ duration: 0.2 }}
               />
             ))}
           </motion.div>
@@ -653,12 +656,9 @@ const AnimatedDashboard = () => {
               className="px-6 py-1.5 rounded-xl bg-background/80 text-sm text-muted-foreground font-medium border border-border/50"
               whileHover={{ scale: 1.02 }}
             >
-              <motion.span
-                animate={{ opacity: [0.7, 1, 0.7] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
+              <span>
                 🔒 teenvests.com/dashboard
-              </motion.span>
+              </span>
             </motion.div>
           </div>
         </div>
@@ -1152,72 +1152,69 @@ const LandingPage = () => {
           />
         </div>
         
-        {/* Simplified glowing rings - reduced for performance */}
+        {/* Simplified glowing rings - scroll-triggered */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
           <GlowingRing size={600} delay={0} />
           <motion.div
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full border border-primary/10"
-            animate={{
-              scale: [1, 1.05, 1],
-              opacity: [0.2, 0.4, 0.2],
+            initial={{ scale: 0.95, opacity: 0 }}
+            whileInView={{
+              scale: [1, 1.03, 1],
+              opacity: [0.2, 0.3, 0.2],
             }}
+            viewport={{ once: true }}
             transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
           />
         </div>
         
-        {/* Simplified particles - reduced for performance */}
-        {[...Array(typeof window !== 'undefined' && window.innerWidth >= 768 ? 6 : 3)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-2 h-2 rounded-full bg-primary/40 blur-sm"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-            }}
-            animate={{
-              x: [
-                Math.random() * 200 - 100,
-                Math.random() * 200 - 100,
-                Math.random() * 200 - 100,
-              ],
-              y: [
-                Math.random() * 200 - 100,
-                Math.random() * 200 - 100,
-                Math.random() * 200 - 100,
-              ],
-              z: [0, Math.random() * 100, 0],
-              scale: [0.5, 1.5, 0.5],
-              opacity: [0.2, 0.8, 0.2],
-              rotateX: [0, 360],
-              rotateY: [0, 360],
-            }}
-            transition={{
-              duration: 8 + Math.random() * 4,
-              repeat: Infinity,
-              ease: 'easeInOut',
-              delay: Math.random() * 2,
-            }}
-          />
-        ))}
+        {/* Simplified particles - scroll-triggered */}
+        {[...Array(typeof window !== 'undefined' && window.innerWidth >= 768 ? 4 : 2)].map((_, i) => {
+          const randomX = Math.random() * 200 - 100;
+          const randomY = Math.random() * 200 - 100;
+          return (
+            <motion.div
+              key={i}
+              className="absolute w-2 h-2 rounded-full bg-primary/30 blur-sm"
+              style={{
+                left: `${20 + i * 20}%`,
+                top: `${30 + i * 15}%`,
+              }}
+              initial={{ opacity: 0, scale: 0 }}
+              whileInView={{
+                x: [0, randomX, 0],
+                y: [0, randomY, 0],
+                scale: [0.8, 1.2, 0.8],
+                opacity: [0.2, 0.5, 0.2],
+              }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{
+                duration: 6 + i * 2,
+                repeat: Infinity,
+                ease: 'easeInOut',
+                delay: i * 0.5,
+              }}
+            />
+          );
+        })}
         
-        {/* Simplified energy streams - reduced for performance */}
+        {/* Simplified energy streams - scroll-triggered */}
         {[...Array(2)].map((_, i) => (
           <motion.div
             key={`stream-${i}`}
-            className="absolute w-px h-full bg-gradient-to-b from-transparent via-primary/30 to-transparent"
+            className="absolute w-px h-full bg-gradient-to-b from-transparent via-primary/20 to-transparent"
             style={{
               left: `${15 + i * 20}%`,
               transformStyle: 'preserve-3d',
               transform: `perspective(1000px) rotateY(${i * 20}deg) translateZ(${i * 50}px)`,
             }}
-            animate={{
-              opacity: [0.2, 0.6, 0.2],
-              scaleY: [0.8, 1.2, 0.8],
-              x: [0, Math.sin(i) * 50, 0],
-              z: [0, Math.cos(i) * 100, 0],
+            initial={{ opacity: 0, scaleY: 0.5 }}
+            whileInView={{
+              opacity: [0.15, 0.4, 0.15],
+              scaleY: [0.9, 1.1, 0.9],
             }}
+            viewport={{ once: true, margin: "-100px" }}
             transition={{
-              duration: 3 + i,
+              duration: 4 + i,
               repeat: Infinity,
               ease: 'easeInOut',
               delay: i * 0.5,
@@ -1334,15 +1331,15 @@ const LandingPage = () => {
               className="inline-flex items-center gap-2 bg-gradient-to-r from-primary/15 via-accent/15 to-primary/15 text-foreground px-4 py-2 rounded-full text-xs font-semibold mb-6 border border-primary/20 backdrop-blur-sm cursor-pointer"
             >
               <motion.span
-                animate={{ rotate: [0, 360] }}
-                transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+                whileHover={{ rotate: 360 }}
+                transition={{ duration: 0.5 }}
               >
                 <Flame className="w-3.5 h-3.5 text-warning" />
               </motion.span>
               <span className="uppercase tracking-widest">Start Building Wealth Today</span>
               <motion.span
-                animate={{ scale: [1, 1.3, 1] }}
-                transition={{ duration: 1, repeat: Infinity }}
+                whileHover={{ scale: 1.2 }}
+                transition={{ duration: 0.3 }}
               >
                 <Star className="w-3.5 h-3.5 text-warning" />
               </motion.span>
@@ -1483,52 +1480,48 @@ const LandingPage = () => {
             >
               <Link to={user ? "/dashboard" : "/signup"}>
                 <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="relative"
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                  className="relative overflow-visible"
                 >
-                  {/* Glow effect behind button */}
+                  {/* Glow effect behind button - reduced intensity */}
                   <motion.div
-                    className="absolute -inset-2 bg-gradient-to-r from-primary via-accent to-primary rounded-2xl blur-xl opacity-50"
-                    animate={{
-                      opacity: [0.3, 0.6, 0.3],
-                      scale: [1, 1.1, 1],
+                    className="absolute -inset-2 bg-gradient-to-r from-primary via-accent to-primary rounded-2xl blur-xl opacity-30"
+                    whileHover={{
+                      opacity: [0.3, 0.5, 0.3],
+                      scale: [1, 1.05, 1],
                     }}
                     transition={{ duration: 2, repeat: Infinity }}
                   />
                   <MagneticButton 
                     size="lg" 
-                    className="gap-3 bg-gradient-to-r from-primary via-primary-glow to-accent hover:shadow-2xl transition-all duration-500 shadow-xl glow-primary font-bold px-8 py-6 rounded-2xl text-lg group relative z-10 overflow-hidden"
+                    className="gap-3 bg-gradient-to-r from-primary via-primary-glow to-accent hover:shadow-2xl transition-all duration-500 shadow-xl glow-primary font-bold px-8 py-6 rounded-2xl text-lg group relative z-10 overflow-hidden whitespace-nowrap"
                   >
-                    {/* Animated background gradient */}
+                    {/* Animated background gradient - only on hover */}
                     <motion.div
-                      className="absolute inset-0 bg-gradient-to-r from-accent via-primary to-accent"
-                      animate={{
+                      className="absolute inset-0 bg-gradient-to-r from-accent via-primary to-accent opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                      whileHover={{
                         backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
                       }}
                       transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
                       style={{ backgroundSize: '200% 100%' }}
                     />
-                    {/* Shimmer effect */}
+                    {/* Shimmer effect - only on hover */}
                     <motion.div
-                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
-                      animate={{ x: ['-100%', '200%'] }}
-                      transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
+                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100"
+                      whileHover={{ x: ['-100%', '200%'] }}
+                      transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 0.5 }}
                     />
-                    <motion.span
-                      className="relative z-10 flex items-center"
-                      animate={{ scale: [1, 1.2, 1] }}
-                      transition={{ duration: 1, repeat: Infinity }}
-                    >
+                    <span className="relative z-10 flex items-center">
                       <Play className="w-5 h-5 fill-current mr-2" />
-                    </motion.span>
+                    </span>
                     <span className="relative z-10">
                       {user ? "Go to Dashboard" : "Start Free Today"}
                     </span>
                     <motion.span
                       className="relative z-10"
-                      animate={{ x: [0, 8, 0] }}
-                      transition={{ duration: 1.5, repeat: Infinity }}
+                      whileHover={{ x: [0, 4, 0] }}
+                      transition={{ duration: 0.8, repeat: Infinity }}
                     >
                       <ArrowRight className="w-5 h-5" />
                     </motion.span>
@@ -1536,11 +1529,15 @@ const LandingPage = () => {
                 </motion.div>
               </Link>
               <Link to={user ? "/learn" : "/login"}>
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <motion.div 
+                  whileHover={{ scale: 1.01 }} 
+                  whileTap={{ scale: 0.99 }}
+                  className="overflow-visible"
+                >
                   <Button 
                     size="lg" 
                     variant="outline" 
-                    className="border-2 border-primary/40 hover:bg-primary/10 hover:border-primary font-semibold px-8 py-6 rounded-2xl transition-all duration-300 group"
+                    className="border-2 border-primary/40 hover:bg-primary/10 hover:border-primary font-semibold px-8 py-6 rounded-2xl transition-all duration-300 group whitespace-nowrap"
                   >
                     <BookOpen className="w-5 h-5 mr-2" />
                     Explore Lessons
@@ -1617,12 +1614,16 @@ const LandingPage = () => {
             {/* Multiple glow layers behind dashboard - enhanced */}
             <motion.div 
               className="absolute -inset-20 bg-gradient-radial from-primary/40 via-primary/15 to-transparent blur-3xl"
-              animate={{ scale: [1, 1.2, 1], opacity: [0.4, 0.7, 0.4] }}
+              whileInView={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }}
+              viewport={{ once: true }}
+              transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
               transition={{ duration: 5, repeat: Infinity }}
             />
             <motion.div 
               className="absolute -inset-10 bg-gradient-radial from-accent/30 via-transparent to-transparent blur-2xl"
-              animate={{ scale: [1.1, 1.3, 1.1], opacity: [0.3, 0.5, 0.3] }}
+              whileInView={{ scale: [1.05, 1.15, 1.05], opacity: [0.2, 0.4, 0.2] }}
+              viewport={{ once: true }}
+              transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
               transition={{ duration: 4, repeat: Infinity, delay: 1 }}
             />
             {/* Additional pulsing rings */}
@@ -1722,20 +1723,16 @@ const LandingPage = () => {
               <div className="flex items-center gap-3">
                 <motion.div 
                   className="w-10 h-10 rounded-xl bg-gradient-to-br from-success to-primary flex items-center justify-center"
-                  animate={{ rotate: [0, 360] }}
-                  transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
+                  whileHover={{ rotate: 360 }}
+                  transition={{ duration: 0.8 }}
                 >
                   <TrendingUp className="w-5 h-5 text-white" />
                 </motion.div>
                 <div>
                   <p className="text-xs text-muted-foreground">Today's Gain</p>
-                  <motion.p 
-                    className="text-lg font-bold text-success"
-                    animate={{ scale: [1, 1.05, 1] }}
-                    transition={{ duration: 1, repeat: Infinity }}
-                  >
+                  <p className="text-lg font-bold text-success">
                     +$245.00
-                  </motion.p>
+                  </p>
                 </div>
               </div>
             </motion.div>
@@ -1749,8 +1746,8 @@ const LandingPage = () => {
             >
               <div className="flex items-center gap-2">
                 <motion.div
-                  animate={{ scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] }}
-                  transition={{ duration: 1, repeat: Infinity }}
+                  whileHover={{ scale: 1.1, rotate: [0, 10, -10, 0] }}
+                  transition={{ duration: 0.5 }}
                 >
                   <Flame className="w-6 h-6 text-warning" />
                 </motion.div>
@@ -1771,15 +1768,16 @@ const LandingPage = () => {
           className="absolute bottom-8 left-1/2 -translate-x-1/2"
         >
           <motion.div
-            animate={{ y: [0, 15, 0] }}
-            transition={{ duration: 2, repeat: Infinity }}
+            whileInView={{ y: [0, 10, 0] }}
+            viewport={{ once: true }}
+            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
             className="flex flex-col items-center gap-2 text-muted-foreground cursor-pointer"
-            whileHover={{ scale: 1.1 }}
+            whileHover={{ scale: 1.05 }}
           >
             <span className="text-xs uppercase tracking-widest">Scroll to explore</span>
             <motion.div
-              animate={{ rotate: [0, 360] }}
-              transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+              whileHover={{ rotate: 360 }}
+              transition={{ duration: 0.5 }}
             >
               <MousePointer2 className="w-5 h-5" />
             </motion.div>
@@ -1843,14 +1841,12 @@ const LandingPage = () => {
                 >
                   <span className="text-base md:text-lg font-black text-foreground group-hover:text-primary transition-colors whitespace-nowrap">{stock.symbol}</span>
                   <span className="text-xs md:text-sm text-muted-foreground whitespace-nowrap">{stock.price}</span>
-                  <motion.span 
+                  <span 
                     className="text-xs md:text-sm font-bold text-success flex items-center gap-1 whitespace-nowrap"
-                    animate={{ scale: [1, 1.1, 1] }}
-                    transition={{ duration: 2, repeat: Infinity, delay: i * 0.2 }}
                   >
                     <TrendingUp className="w-3 h-3" />
                     {stock.change}
-                  </motion.span>
+                  </span>
                 </motion.div>
               ))}
             </Marquee>
@@ -1872,11 +1868,13 @@ const LandingPage = () => {
           </div>
         </div>
         
-        {/* Bottom border glow */}
+        {/* Bottom border glow - scroll-triggered */}
         <motion.div 
           className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-accent to-transparent"
-          animate={{ opacity: [0.3, 1, 0.3] }}
-          transition={{ duration: 2, repeat: Infinity, delay: 1 }}
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: [0.2, 0.6, 0.2] }}
+          viewport={{ once: true }}
+          transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
           aria-hidden="true"
         />
       </section>
@@ -1946,7 +1944,9 @@ const LandingPage = () => {
                 <div className="bg-card rounded-3xl p-10 md:p-12 border-2 border-border/50 shadow-2xl relative overflow-hidden">
                   <motion.div 
                     className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5"
-                    animate={{ opacity: [0.3, 0.6, 0.3] }}
+                    whileInView={{ opacity: [0.2, 0.4, 0.2] }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
                     transition={{ duration: 3, repeat: Infinity }}
                   />
                   <div className="relative">
