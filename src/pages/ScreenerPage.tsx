@@ -60,12 +60,10 @@ const ScreenerPage = () => {
     if (cachedStocks && cachedStocks.length > 0) {
       const newestCache = cachedStocks[0];
       if (isCacheStale(newestCache.cached_at, 5)) {
-        console.log('Cache is stale, refreshing in background...');
         refreshCache.mutate(undefined);
       }
     } else if (cachedStocks && cachedStocks.length === 0) {
       // No cache exists, populate it
-      console.log('No cache found, populating...');
       refreshCache.mutate(undefined);
     }
   }, [cachedStocks]);
@@ -266,8 +264,7 @@ const ScreenerPage = () => {
         if (aPrice === 0 && bPrice > 0) return 1;
         return 0;
       });
-    } catch (error) {
-      console.error('Error building stocks list:', error);
+    } catch {
       return [];
     }
   }, [allLiveData, loadedStocksCount]);
@@ -445,7 +442,7 @@ const ScreenerPage = () => {
             }
           }
         } catch (error) {
-          console.error('Auto-fetch error:', error);
+          // Silently fail - data will load when user scrolls
         } finally {
           setIsFetchingBatch(false);
           isFetchingRef.current = false;

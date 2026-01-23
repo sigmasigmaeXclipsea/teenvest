@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useMemo } from "react";
+import React, { useEffect, useRef, useMemo, memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart } from 'lucide-react';
 import { createChart, ColorType } from "lightweight-charts";
@@ -175,4 +175,4 @@ const StockLineChart = ({ symbol, currentPrice, previousClose, high, low, open }
   );
 };
 
-export default StockLineChart;
+export default memo(StockLineChart);

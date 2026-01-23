@@ -1,13 +1,16 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   BookOpen, Clock, CheckCircle, ChevronRight, GraduationCap, Award, 
-  Sparkles, Trophy, Flame, Target, Brain, Star, Zap, Lock
+  Sparkles, Trophy, Flame, Target, Brain, Star, Zap, Lock, Search
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { useLearningModules, useUserProgress } from '@/hooks/useLearning';
 import { useQuizResults } from '@/hooks/useQuiz';
@@ -71,6 +74,7 @@ const getCategories = (totalModules: number) => {
 };
 
 const LearnPage = () => {
+  const [search, setSearch] = useState('');
   const { data: modules, isLoading: modulesLoading } = useLearningModules();
   const { data: progress, isLoading: progressLoading } = useUserProgress();
   const { data: quizResults } = useQuizResults();
@@ -87,7 +91,7 @@ const LearnPage = () => {
   const totalModules = modules?.length || 0;
   const progressPercent = totalModules > 0 ? (completedCount / totalModules) * 100 : 0;
   
-  // Get dynamic categories based on total modules
+  // Get dynamic categories based on total modules; filter applies within categories
   const categories = getCategories(totalModules);
   
   // Calculate streak & XP from completed modules
@@ -167,6 +171,19 @@ const LearnPage = () => {
           </div>
         </motion.div>
 
+        {/* Search */}
+        {totalModules > 20 && (
+          <motion.div variants={item} className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search lessons by title or description..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-10 max-w-md"
+            />
+          </motion.div>
+        )}
+
         {/* Main Progress Bar */}
         <motion.div variants={item}>
           <Card className="bg-gradient-to-r from-card to-card/50 border-primary/20">
@@ -200,8 +217,15 @@ const LearnPage = () => {
           <div className="lg:col-span-2 space-y-8">
             {/* Learning Path Categories */}
             {categories.map((category, catIndex) => {
-              const categoryModules = modules?.slice(category.startIndex, category.endIndex) || [];
-              const categoryCompleted = categoryModules.filter(m => isCompleted(m.id)).length;
+              const allInCategory = modules?.slice(category.startIndex, category.endIndex) || [];
+              const categoryModules = search.trim()
+                ? allInCategory.filter(
+                    (m) =>
+                      m.title.toLowerCase().includes(search.toLowerCase()) ||
+                      m.description.toLowerCase().includes(search.toLowerCase())
+                  )
+                : allInCategory;
+              const categoryCompleted = allInCategory.filter(m => isCompleted(m.id)).length;
               
               if (categoryModules.length === 0) return null;
               
@@ -214,14 +238,15 @@ const LearnPage = () => {
                     <div>
                       <h2 className="text-xl font-bold">{category.name}</h2>
                       <p className="text-sm text-muted-foreground">
-                        {categoryCompleted}/{categoryModules.length} lessons completed • {category.description}
+                        {categoryCompleted}/{allInCategory.length} lessons completed • {category.description}
                       </p>
                     </div>
                   </div>
 
-                  <div className="space-y-3">
+                  <ScrollArea className={allInCategory.length > 8 ? 'h-[420px] pr-4' : ''}>
+                    <div className="space-y-3">
                     {categoryModules.map((module, localIndex) => {
-                      const globalIndex = category.startIndex + localIndex;
+                      const globalIndex = modules?.findIndex((x) => x.id === module.id) ?? category.startIndex + localIndex;
                       const completed = isCompleted(module.id);
                       const quizScore = getQuizScore(module.id);
                       const locked = isLocked(globalIndex);
@@ -317,7 +342,8 @@ const LearnPage = () => {
                         </Link>
                       );
                     })}
-                  </div>
+                    </div>
+                  </ScrollArea>
                 </motion.div>
               );
             })}

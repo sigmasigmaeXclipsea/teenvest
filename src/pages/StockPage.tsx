@@ -1,11 +1,12 @@
 import { useParams, Link } from 'react-router-dom';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, lazy, Suspense } from 'react';
 import { TrendingUp, TrendingDown, ExternalLink, ArrowLeft, Star, StarOff, Loader2, Globe, Building2, Calendar, DollarSign, Activity, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
@@ -17,7 +18,8 @@ import { getUserFriendlyError } from '@/lib/errorMessages';
 import { formatMarketCap, formatVolume } from '@/data/mockStocks';
 import StockLineChart from '@/components/StockLineChart';
 import StockCandlestickChart from '@/components/StockCandlestickChart';
-import StockNews from '@/components/StockNews';
+// Lazy load StockNews - it's heavy with API calls
+const StockNews = lazy(() => import('@/components/StockNews'));
 import { useSettings } from '@/contexts/SettingsContext';
 
 const StockPage = () => {
@@ -186,8 +188,10 @@ const StockPage = () => {
           />
         </div>
 
-        {/* News Section */}
-        <StockNews symbol={stock.symbol} companyName={stock.companyName} />
+        {/* News Section - Lazy loaded */}
+        <Suspense fallback={<Card><CardContent className="pt-6"><Skeleton className="h-64" /></CardContent></Card>}>
+          <StockNews symbol={stock.symbol} companyName={stock.companyName} />
+        </Suspense>
 
         {/* Stats Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

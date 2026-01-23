@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
 import { Search, TrendingUp, TrendingDown, Building2, BarChart3, Calendar, Brain, GitCompare, ChevronRight, ArrowLeft, AlertTriangle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -10,17 +10,19 @@ import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useCachedStocks, useRefreshStockCache, isCacheStale } from '@/hooks/useStockCache';
 import { useStockQuote } from '@/hooks/useStockAPI';
-import ResearchCompanyProfile from '@/components/research/ResearchCompanyProfile';
-import ResearchFinancials from '@/components/research/ResearchFinancials';
-import ResearchKeyStats from '@/components/research/ResearchKeyStats';
-import ResearchAnalystRatings from '@/components/research/ResearchAnalystRatings';
-import ResearchEarningsCalendar from '@/components/research/ResearchEarningsCalendar';
-import ResearchTechnicalIndicators from '@/components/research/ResearchTechnicalIndicators';
-import ResearchAIAssistant from '@/components/research/ResearchAIAssistant';
-import ResearchComparison from '@/components/research/ResearchComparison';
 import StockCandlestickChart from '@/components/StockCandlestickChart';
 import StockLineChart from '@/components/StockLineChart';
 import ProfessionalCandlestickChart from '@/components/ProfessionalCandlestickChart';
+
+// Lazy load heavy research components - only load when tab is active
+const ResearchCompanyProfile = lazy(() => import('@/components/research/ResearchCompanyProfile'));
+const ResearchFinancials = lazy(() => import('@/components/research/ResearchFinancials'));
+const ResearchKeyStats = lazy(() => import('@/components/research/ResearchKeyStats'));
+const ResearchAnalystRatings = lazy(() => import('@/components/research/ResearchAnalystRatings'));
+const ResearchEarningsCalendar = lazy(() => import('@/components/research/ResearchEarningsCalendar'));
+const ResearchTechnicalIndicators = lazy(() => import('@/components/research/ResearchTechnicalIndicators'));
+const ResearchAIAssistant = lazy(() => import('@/components/research/ResearchAIAssistant'));
+const ResearchComparison = lazy(() => import('@/components/research/ResearchComparison'));
 
 const ResearchPage = () => {
   const navigate = useNavigate();
@@ -28,9 +30,16 @@ const ResearchPage = () => {
   const symbolFromUrl = searchParams.get('symbol') || '';
   
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedStock, setSelectedStock] = useState<string | null>(symbolFromUrl || null);
   const [activeTab, setActiveTab] = useState('charts'); // Default to charts tab
   const { data: cachedStocks, isLoading } = useCachedStocks();
+  
+  // Debounce search input to reduce re-renders
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
   
   // Update selectedStock when URL param changes
   useEffect(() => {
@@ -38,30 +47,65 @@ const ResearchPage = () => {
       setSelectedStock(symbolFromUrl);
       setActiveTab('charts'); // Default to charts
     }
-  }, [symbolFromUrl]);
+  }, [symbolFromUrl, selectedStock]);
   
   // Fetch live stock data for candlestick chart
   const { data: liveStockData, isLoading: isLoadingLiveData, error: liveDataError } = useStockQuote(selectedStock || '');
 
-  // Filter stocks based on search
-  const filteredStocks = cachedStocks?.filter(stock => 
-    stock.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    stock.company_name.toLowerCase().includes(searchQuery.toLowerCase())
-  ).slice(0, 8) || [];
+  // Memoize filtered stocks to avoid recalculating on every render
+  const filteredStocks = useMemo(() => {
+    if (!cachedStocks || !debouncedSearch) return [];
+    const query = debouncedSearch.toLowerCase();
+    return cachedStocks.filter(stock => 
+      stock.symbol.toLowerCase().includes(query) ||
+      stock.company_name.toLowerCase().includes(query)
+    ).slice(0, 8);
+  }, [cachedStocks, debouncedSearch]);
 
 
-  const handleStockSelect = (symbol: string) => {
+  // Memoize handler to prevent unnecessary re-renders
+  const handleStockSelect = useCallback((symbol: string) => {
     setSelectedStock(symbol);
     setSearchQuery('');
+    setDebouncedSearch('');
     setActiveTab('charts'); // Default to charts tab
     // Update URL with symbol
     setSearchParams({ symbol });
-  };
+  }, [setSearchParams]);
 
-  const selectedStockData = cachedStocks?.find(s => s.symbol === selectedStock);
+  // Memoize selected stock data lookup
+  const selectedStockData = useMemo(() => {
+    return cachedStocks?.find(s => s.symbol === selectedStock);
+  }, [cachedStocks, selectedStock]);
+  
+  // Memoize stock data calculation (used in multiple places)
+  const stockData = useMemo(() => {
+    if (liveStockData) {
+      return {
+        symbol: liveStockData.symbol,
+        price: liveStockData.price || 0,
+        previousClose: liveStockData.previousClose || liveStockData.price || 0,
+        high: liveStockData.high || liveStockData.price * 1.02 || 0,
+        low: liveStockData.low || liveStockData.price * 0.98 || 0,
+        open: liveStockData.open || liveStockData.price || 0,
+      };
+    }
+    if (selectedStockData) {
+      const price = selectedStockData.price ?? 0;
+      return {
+        symbol: selectedStock,
+        price,
+        previousClose: price - (selectedStockData.change ?? 0),
+        high: selectedStockData.high ?? price * 1.02,
+        low: selectedStockData.low ?? price * 0.98,
+        open: price - (selectedStockData.change ?? 0),
+      };
+    }
+    return null;
+  }, [liveStockData, selectedStockData, selectedStock]);
   
   // Check if we have any valid stock data
-  const hasValidStockData = liveStockData || selectedStockData;
+  const hasValidStockData = !!stockData;
 
   // If no stock selected, show search interface
   if (!selectedStock) {
@@ -95,6 +139,7 @@ const ResearchPage = () => {
                       handleStockSelect(filteredStocks[0].symbol);
                     }
                   }}
+                  autoComplete="off"
                 />
                 
                 {/* Search Dropdown */}
@@ -296,6 +341,7 @@ const ResearchPage = () => {
               className="pl-10"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              autoComplete="off"
             />
             
             {/* Search Dropdown */}
@@ -412,109 +458,93 @@ const ResearchPage = () => {
                 </TabsList>
 
               <TabsContent value="charts">
-                <div className="space-y-6">
-                  {/* Top: Line and Candlestick Charts */}
-                  <div className="grid gap-6 lg:grid-cols-2">
-                    {(() => {
-                      const stockData = liveStockData || (selectedStockData ? {
-                        symbol: selectedStock,
-                        price: selectedStockData.price ?? 0,
-                        previousClose: (selectedStockData.price ?? 0) - (selectedStockData.change ?? 0),
-                        high: selectedStockData.high ?? (selectedStockData.price ?? 0) * 1.02,
-                        low: selectedStockData.low ?? (selectedStockData.price ?? 0) * 0.98,
-                        open: (selectedStockData.price ?? 0) - (selectedStockData.change ?? 0),
-                      } : null);
-
-                      if (!stockData || !stockData.symbol) {
-                        return (
-                          <Card>
-                            <CardContent className="pt-6">
-                              <p className="text-muted-foreground">Loading chart data...</p>
-                            </CardContent>
-                          </Card>
-                        );
-                      }
-
-                      return (
-                        <>
-                          <StockLineChart
-                            symbol={stockData.symbol}
-                            currentPrice={stockData.price || 0}
-                            previousClose={stockData.previousClose || stockData.price || 0}
-                            high={stockData.high || stockData.price * 1.02 || 0}
-                            low={stockData.low || stockData.price * 0.98 || 0}
-                            open={stockData.open || stockData.price || 0}
-                          />
-                          <StockCandlestickChart
-                            symbol={stockData.symbol}
-                            currentPrice={stockData.price || 0}
-                            previousClose={stockData.previousClose || stockData.price || 0}
-                            high={stockData.high || stockData.price * 1.02 || 0}
-                            low={stockData.low || stockData.price * 0.98 || 0}
-                            open={stockData.open || stockData.price || 0}
-                          />
-                        </>
-                      );
-                    })()}
-                  </div>
-
-                  {/* Bottom: Professional Full-Width Candlestick Chart with Volume */}
-                  {(() => {
-                    const stockData = liveStockData || (selectedStockData ? {
-                      symbol: selectedStock,
-                      price: selectedStockData.price ?? 0,
-                      previousClose: (selectedStockData.price ?? 0) - (selectedStockData.change ?? 0),
-                      high: selectedStockData.high ?? (selectedStockData.price ?? 0) * 1.02,
-                      low: selectedStockData.low ?? (selectedStockData.price ?? 0) * 0.98,
-                      open: (selectedStockData.price ?? 0) - (selectedStockData.change ?? 0),
-                    } : null);
-
-                    if (!stockData || !stockData.symbol) return null;
-
-                    return (
-                      <ProfessionalCandlestickChart
+                {stockData ? (
+                  <div className="space-y-6">
+                    {/* Top: Line and Candlestick Charts */}
+                    <div className="grid gap-6 lg:grid-cols-2">
+                      <StockLineChart
                         symbol={stockData.symbol}
-                        currentPrice={stockData.price || 0}
-                        previousClose={stockData.previousClose || stockData.price || 0}
-                        high={stockData.high || stockData.price * 1.02 || 0}
-                        low={stockData.low || stockData.price * 0.98 || 0}
-                        open={stockData.open || stockData.price || 0}
+                        currentPrice={stockData.price}
+                        previousClose={stockData.previousClose}
+                        high={stockData.high}
+                        low={stockData.low}
+                        open={stockData.open}
                       />
-                    );
-                  })()}
-                </div>
+                      <StockCandlestickChart
+                        symbol={stockData.symbol}
+                        currentPrice={stockData.price}
+                        previousClose={stockData.previousClose}
+                        high={stockData.high}
+                        low={stockData.low}
+                        open={stockData.open}
+                      />
+                    </div>
+
+                    {/* Bottom: Professional Full-Width Candlestick Chart with Volume */}
+                    <ProfessionalCandlestickChart
+                      symbol={stockData.symbol}
+                      currentPrice={stockData.price}
+                      previousClose={stockData.previousClose}
+                      high={stockData.high}
+                      low={stockData.low}
+                      open={stockData.open}
+                    />
+                  </div>
+                ) : (
+                  <Card>
+                    <CardContent className="pt-6">
+                      <p className="text-muted-foreground">Loading chart data...</p>
+                    </CardContent>
+                  </Card>
+                )}
               </TabsContent>
 
               <TabsContent value="overview">
-                <ResearchCompanyProfile symbol={selectedStock} />
+                <Suspense fallback={<Skeleton className="h-64" />}>
+                  <ResearchCompanyProfile symbol={selectedStock} />
+                </Suspense>
               </TabsContent>
 
               <TabsContent value="financials">
-                <ResearchFinancials symbol={selectedStock} />
+                <Suspense fallback={<Skeleton className="h-64" />}>
+                  <ResearchFinancials symbol={selectedStock} />
+                </Suspense>
               </TabsContent>
 
               <TabsContent value="statistics">
-                <ResearchKeyStats symbol={selectedStock} stockData={selectedStockData} />
+                <Suspense fallback={<Skeleton className="h-64" />}>
+                  <ResearchKeyStats symbol={selectedStock} stockData={selectedStockData} />
+                </Suspense>
               </TabsContent>
 
               <TabsContent value="analysts">
-                <ResearchAnalystRatings symbol={selectedStock} />
+                <Suspense fallback={<Skeleton className="h-64" />}>
+                  <ResearchAnalystRatings symbol={selectedStock} />
+                </Suspense>
               </TabsContent>
 
               <TabsContent value="earnings">
-                <ResearchEarningsCalendar symbol={selectedStock} />
+                <Suspense fallback={<Skeleton className="h-64" />}>
+                  <ResearchEarningsCalendar symbol={selectedStock} />
+                </Suspense>
               </TabsContent>
 
               <TabsContent value="technicals">
-                <ResearchTechnicalIndicators symbol={selectedStock} />
+                <Suspense fallback={<Skeleton className="h-64" />}>
+                  <ResearchTechnicalIndicators symbol={selectedStock} />
+                </Suspense>
               </TabsContent>
 
               <TabsContent value="compare">
-                <ResearchComparison primarySymbol={selectedStock} cachedStocks={cachedStocks || []} />
+                <Suspense fallback={<Skeleton className="h-64" />}>
+                  <ResearchComparison primarySymbol={selectedStock} cachedStocks={cachedStocks || []} />
+                </Suspense>
               </TabsContent>
 
               <TabsContent value="ai">
-                <ResearchAIAssistant symbol={selectedStock} />
+                <Suspense fallback={<Skeleton className="h-64" />}>
+                  <ResearchAIAssistant symbol={selectedStock} />
+                </Suspense>
               </TabsContent>
               </Tabs>
             )}

@@ -93,66 +93,63 @@ const LessonPage = () => {
     }
   };
 
+  const parseBold = (text: string) => {
+    const parts = text.split(/(\*\*[^*]+\*\*)/g);
+    return parts.map((part, j) =>
+      part.startsWith('**') && part.endsWith('**')
+        ? <strong key={j}>{part.slice(2, -2)}</strong>
+        : part
+    );
+  };
+
   const renderContent = (content: string) => {
     const lines = content.split('\n');
     return lines.map((line, i) => {
-      // Handle headers with **
-      if (line.startsWith('**') && line.endsWith('**')) {
+      const trimmed = line.trim();
+      // Standalone **header** (section title)
+      if (trimmed.startsWith('**') && trimmed.endsWith('**')) {
         return (
-          <h2 key={i} className="text-2xl font-bold mt-8 mb-4 text-foreground border-b pb-2">
-            {line.replace(/\*\*/g, '')}
+          <h2 key={i} className="text-xl font-bold mt-8 mb-3 text-foreground border-b border-border/50 pb-2 first:mt-0">
+            {trimmed.replace(/\*\*/g, '')}
           </h2>
         );
       }
-      // Handle inline bold headers
-      if (line.includes('**') && line.includes(':')) {
-        const parts = line.split('**').filter(Boolean);
+      // List items: - **Bold**: rest or - item
+      if (trimmed.startsWith('- ')) {
+        const inner = line.substring(line.indexOf('- ') + 2);
         return (
-          <h3 key={i} className="text-xl font-semibold mt-6 mb-3 text-foreground">
-            {parts.join('')}
-          </h3>
-        );
-      }
-      // Handle list items
-      if (line.trim().startsWith('- ')) {
-        const content = line.substring(2);
-        return (
-          <div key={i} className="flex items-start gap-3 mb-3 ml-4">
-            <div className="w-2 h-2 rounded-full bg-primary mt-2 flex-shrink-0" />
-            <p className="text-lg text-foreground/90 leading-relaxed">
-              {content.split('**').map((part, j) => 
-                j % 2 === 1 ? <strong key={j}>{part}</strong> : part
-              )}
+          <div key={i} className="flex items-start gap-3 mb-2 ml-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2.5 flex-shrink-0" />
+            <p className="text-base text-foreground/90 leading-relaxed">
+              {parseBold(inner)}
             </p>
           </div>
         );
       }
-      // Handle numbered items
-      if (/^\d+\./.test(line.trim())) {
-        const num = line.match(/^(\d+)\./)?.[1];
-        const content = line.replace(/^\d+\.\s*/, '');
+      // Numbered items: 1. **Bold** rest
+      if (/^\d+\.\s/.test(trimmed)) {
+        const num = trimmed.match(/^(\d+)\./)?.[1];
+        const inner = trimmed.replace(/^\d+\.\s*/, '');
         return (
-          <div key={i} className="flex items-start gap-3 mb-3 ml-4">
-            <span className="w-7 h-7 rounded-full bg-primary/10 text-primary font-semibold flex items-center justify-center flex-shrink-0 text-sm">
+          <div key={i} className="flex items-start gap-3 mb-2 ml-2">
+            <span className="w-6 h-6 rounded-full bg-primary/10 text-primary font-semibold flex items-center justify-center flex-shrink-0 text-xs">
               {num}
             </span>
-            <p className="text-lg text-foreground/90 leading-relaxed pt-0.5">
-              {content.split('**').map((part, j) => 
-                j % 2 === 1 ? <strong key={j}>{part}</strong> : part
-              )}
+            <p className="text-base text-foreground/90 leading-relaxed pt-0.5">
+              {parseBold(inner)}
             </p>
           </div>
         );
       }
-      // Regular paragraph
-      if (line.trim()) {
+      // Regular paragraph (may contain **bold**)
+      if (trimmed) {
         return (
-          <p key={i} className="text-lg text-foreground/90 leading-relaxed mb-4">
-            {line}
+          <p key={i} className="text-base text-foreground/90 leading-relaxed mb-4">
+            {parseBold(line)}
           </p>
         );
       }
-      return <div key={i} className="h-2" />;
+      return <div key={i} className="h-1" />;
     });
   };
 
@@ -460,30 +457,36 @@ const LessonPage = () => {
 
             {/* Quick Navigation */}
             <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Other Lessons</CardTitle>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">All Lessons</CardTitle>
+                <CardDescription className="text-xs">
+                  {modules?.length ?? 0} total • jump to any lesson
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <ScrollArea className="h-64">
-                  <div className="space-y-2">
+                <ScrollArea className="h-[400px] pr-3">
+                  <div className="space-y-1">
                     {modules?.map((mod, i) => {
                       const completed = progress?.some(p => p.module_id === mod.id && p.completed);
                       return (
-                        <Link 
-                          key={mod.id} 
+                        <Link
+                          key={mod.id}
                           to={`/learn/${mod.id}`}
-                          className={`flex items-center gap-2 p-2 rounded-lg transition-colors ${
-                            mod.id === moduleId 
-                              ? 'bg-primary/10 text-primary' 
+                          className={`flex items-center gap-2 p-2 rounded-lg transition-colors text-left ${
+                            mod.id === moduleId
+                              ? 'bg-primary/10 text-primary font-medium'
                               : 'hover:bg-secondary'
                           }`}
                         >
+                          <span className="w-6 text-xs tabular-nums text-muted-foreground flex-shrink-0">
+                            {i + 1}
+                          </span>
                           {completed ? (
                             <CheckCircle className="w-4 h-4 text-primary flex-shrink-0" />
                           ) : (
-                            <div className="w-4 h-4 rounded-full border-2 flex-shrink-0" />
+                            <div className="w-4 h-4 rounded-full border-2 border-muted flex-shrink-0" />
                           )}
-                          <span className="text-sm truncate">{mod.title}</span>
+                          <span className="text-sm truncate flex-1">{mod.title}</span>
                         </Link>
                       );
                     })}

@@ -81,10 +81,10 @@ export const useStockQuote = (symbol: string) =>
     queryKey: ["stock", symbol],
     queryFn: () => fetchStockQuote(symbol),
     enabled: !!symbol && typeof symbol === 'string' && symbol.trim().length > 0,
-    staleTime: 30000,
-    gcTime: 60000,
-    refetchInterval: 30000,
-    refetchOnWindowFocus: true,
+    staleTime: 60000, // Consider fresh for 60s (reduced API calls)
+    gcTime: 300000, // Keep in cache for 5min
+    refetchInterval: 60000, // Refetch every 60s instead of 30s (less aggressive)
+    refetchOnWindowFocus: false, // Don't refetch on focus (reduces unnecessary calls)
     retry: 1,
   });
 
@@ -114,7 +114,8 @@ export const useMultipleStockQuotes = (symbols: string[]) =>
         .map((r) => r.value);
     },
     enabled: Array.isArray(symbols) && symbols.length > 0,
-    staleTime: 30000,
-    gcTime: 60000,
+    staleTime: 60000, // 60s stale time
+    gcTime: 300000, // 5min cache
+    refetchOnWindowFocus: false, // Don't refetch on focus
     retry: 1,
   });

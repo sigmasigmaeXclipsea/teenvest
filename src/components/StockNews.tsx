@@ -35,12 +35,12 @@ const StockNews = ({ symbol, companyName }: StockNewsProps) => {
       if (error) throw error;
       return data;
     },
-    staleTime: 2 * 60 * 1000, // 2 minutes - more frequent updates
-    gcTime: 10 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // 5 minutes - less frequent updates
+    gcTime: 15 * 60 * 1000, // 15min cache
     retry: 1,
-    refetchInterval: 2 * 60 * 1000, // Auto-refresh every 2 minutes
-    refetchOnWindowFocus: true,
-    refetchOnMount: true
+    refetchInterval: 5 * 60 * 1000, // Auto-refresh every 5 minutes (less aggressive)
+    refetchOnWindowFocus: false, // Don't refetch on focus
+    refetchOnMount: false // Don't refetch on mount if data exists
   });
 
   const getSentimentIcon = (sentiment: string) => {

@@ -74,11 +74,31 @@ export default defineConfig(({ mode }) => ({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ["react", "react-dom", "react-router-dom"],
-          ui: ["@radix-ui/react-dialog", "@radix-ui/react-dropdown-menu", "@radix-ui/react-tabs"],
-          charts: ["recharts"],
-          framerMotion: ["framer-motion"],
+        manualChunks: (id) => {
+          // Vendor chunk - core React
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/react-router')) {
+            return 'vendor';
+          }
+          // UI chunk - Radix components
+          if (id.includes('node_modules/@radix-ui')) {
+            return 'ui';
+          }
+          // Charts chunk
+          if (id.includes('node_modules/lightweight-charts') || id.includes('node_modules/recharts')) {
+            return 'charts';
+          }
+          // Framer Motion chunk
+          if (id.includes('node_modules/framer-motion')) {
+            return 'framerMotion';
+          }
+          // Supabase chunk
+          if (id.includes('node_modules/@supabase')) {
+            return 'supabase';
+          }
+          // TanStack Query chunk
+          if (id.includes('node_modules/@tanstack')) {
+            return 'query';
+          }
         },
       },
     },
@@ -87,9 +107,11 @@ export default defineConfig(({ mode }) => ({
       compress: {
         drop_console: true,
         drop_debugger: true,
+        pure_funcs: ['console.log', 'console.info', 'console.debug'],
       },
     },
     chunkSizeWarningLimit: 1000,
+    target: 'esnext', // Use modern JS for smaller bundles
   },
   optimizeDeps: {
     include: ['react', 'react-dom', 'react-router-dom', 'framer-motion', 'lightweight-charts'],
