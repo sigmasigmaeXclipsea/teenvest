@@ -397,20 +397,19 @@ const ResearchPage = () => {
             )}
 
             {/* Research Tabs - Only show if we have valid data */}
-            {/* Research Tabs - Only show if we have valid data */}
             {hasValidStockData && (
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className="grid grid-cols-4 lg:grid-cols-9 w-full">
-                <TabsTrigger value="charts">Charts</TabsTrigger>
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="financials">Financials</TabsTrigger>
-                <TabsTrigger value="statistics">Statistics</TabsTrigger>
-                <TabsTrigger value="analysts">Analysts</TabsTrigger>
-                <TabsTrigger value="earnings">Earnings</TabsTrigger>
-                <TabsTrigger value="technicals">Technicals</TabsTrigger>
-                <TabsTrigger value="compare">Compare</TabsTrigger>
-                <TabsTrigger value="ai">AI Research</TabsTrigger>
-              </TabsList>
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+                <TabsList className="grid grid-cols-4 lg:grid-cols-9 w-full">
+                  <TabsTrigger value="charts">Charts</TabsTrigger>
+                  <TabsTrigger value="overview">Overview</TabsTrigger>
+                  <TabsTrigger value="financials">Financials</TabsTrigger>
+                  <TabsTrigger value="statistics">Statistics</TabsTrigger>
+                  <TabsTrigger value="analysts">Analysts</TabsTrigger>
+                  <TabsTrigger value="earnings">Earnings</TabsTrigger>
+                  <TabsTrigger value="technicals">Technicals</TabsTrigger>
+                  <TabsTrigger value="compare">Compare</TabsTrigger>
+                  <TabsTrigger value="ai">AI Research</TabsTrigger>
+                </TabsList>
 
               <TabsContent value="charts">
                 <div className="space-y-6">
@@ -517,7 +516,8 @@ const ResearchPage = () => {
               <TabsContent value="ai">
                 <ResearchAIAssistant symbol={selectedStock} />
               </TabsContent>
-            </Tabs>
+              </Tabs>
+            )}
           </div>
         )}
       </div>

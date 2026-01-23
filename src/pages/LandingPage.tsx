@@ -1441,14 +1441,12 @@ const LandingPage = () => {
               whileInView={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }}
               viewport={{ once: true }}
               transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-              transition={{ duration: 5, repeat: Infinity }}
             />
             <motion.div 
               className="absolute -inset-10 bg-gradient-radial from-accent/30 via-transparent to-transparent blur-2xl"
               whileInView={{ scale: [1.05, 1.15, 1.05], opacity: [0.2, 0.4, 0.2] }}
               viewport={{ once: true }}
               transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-              transition={{ duration: 4, repeat: Infinity, delay: 1 }}
             />
             {/* Additional pulsing rings */}
             {[...Array(3)].map((_, i) => (
