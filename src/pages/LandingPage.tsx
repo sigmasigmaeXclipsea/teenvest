@@ -370,8 +370,9 @@ const RevealText = ({ text, className }: { text: string; className?: string }) =
   );
 };
 
-// Floating particles background
+// Floating particles background - optimized for performance
 const FloatingParticles = () => {
+  const particleCount = typeof window !== 'undefined' && window.innerWidth >= 768 ? 20 : 10; // Reduce on mobile
   const [dimensions, setDimensions] = useState({ width: 1920, height: 1080 });
   
   useEffect(() => {
@@ -386,7 +387,7 @@ const FloatingParticles = () => {
   
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden">
-      {[...Array(15)].map((_, i) => (
+      {[...Array(particleCount)].map((_, i) => (
         <motion.div
           key={i}
           className="absolute w-1 h-1 rounded-full bg-primary/30"
@@ -957,6 +958,7 @@ const LandingPage = () => {
     navigate('/');
   };
 
+
   return (
     <div 
       ref={containerRef} 
@@ -969,15 +971,17 @@ const LandingPage = () => {
       {/* Custom cursor - only on desktop */}
       {typeof window !== 'undefined' && window.innerWidth >= 768 && <CursorFollower />}
       
-      {/* 3D Floating particles with depth */}
+      {/* 3D Floating particles with depth - reduced on mobile for performance */}
       <div style={{ transformStyle: 'preserve-3d' }}>
         <FloatingParticles />
       </div>
       
-      {/* Interactive grid with 3D depth */}
-      <div style={{ transformStyle: 'preserve-3d' }}>
-        <GridBackground />
-      </div>
+      {/* Interactive grid with 3D depth - only on desktop for performance */}
+      {typeof window !== 'undefined' && window.innerWidth >= 768 && (
+        <div style={{ transformStyle: 'preserve-3d' }}>
+          <GridBackground />
+        </div>
+      )}
       
       {/* 3D Morphing background blobs with depth */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ transformStyle: 'preserve-3d' }}>
@@ -1182,7 +1186,7 @@ const LandingPage = () => {
         </div>
         
         {/* 3D Flowing particles that move around elements */}
-        {[...Array(20)].map((_, i) => (
+        {[...Array(typeof window !== 'undefined' && window.innerWidth >= 768 ? 15 : 8)].map((_, i) => (
           <motion.div
             key={i}
             className="absolute w-2 h-2 rounded-full bg-primary/40 blur-sm"
@@ -2510,7 +2514,10 @@ const LandingPage = () => {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 py-16 bg-card/30 relative overflow-hidden" role="contentinfo">
+      <footer 
+        className="border-t border-border/50 py-16 bg-card/50 relative overflow-hidden z-10" 
+        role="contentinfo"
+      >
         {/* Footer background animation */}
         <motion.div
           className="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent"
@@ -2532,8 +2539,8 @@ const LandingPage = () => {
               <span className="text-2xl font-black gradient-text">TeenVest</span>
             </Link>
             
-            <p className="text-sm text-foreground/80 text-center md:text-left whitespace-nowrap">
-              © 2025 TeenVest <span className="font-bold text-primary">v1.2</span>. Building the next generation of investors. 🚀
+            <p className="text-sm text-foreground text-center md:text-left whitespace-nowrap px-4 py-2 bg-background/50 backdrop-blur-sm rounded-lg border border-border/50">
+              © 2025 TeenVest <span className="font-bold text-primary text-base">v1.2</span>. Building the next generation of investors. 🚀
             </p>
             
             <div className="flex items-center gap-8">

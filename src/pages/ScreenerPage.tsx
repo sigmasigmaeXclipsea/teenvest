@@ -460,7 +460,7 @@ const ScreenerPage = () => {
       // Don't navigate if clicking on interactive elements
       const target = e.target as HTMLElement;
       if (target.closest('button') || target.closest('a')) return;
-      navigate(`/stocks/${stock.symbol}`);
+      navigate(`/research?symbol=${stock.symbol}`);
     };
     
     return (
@@ -485,7 +485,7 @@ const ScreenerPage = () => {
               )}
             </button>
             <Link 
-              to={`/stocks/${stock.symbol}`} 
+              to={`/research?symbol=${stock.symbol}`} 
               className="hover:text-primary transition-colors"
               onClick={(e) => e.stopPropagation()}
             >
@@ -538,7 +538,7 @@ const ScreenerPage = () => {
         </td>
         <td className="py-3 px-2">
           <Link 
-            to={`/stocks/${stock.symbol}`}
+            to={`/research?symbol=${stock.symbol}`}
             onClick={(e) => e.stopPropagation()}
           >
             <Button size="sm" className="h-7 text-xs">Trade</Button>
@@ -586,7 +586,7 @@ const ScreenerPage = () => {
                   {topGainers.map(stock => (
                     <Link 
                       key={stock.symbol} 
-                      to={`/stocks/${stock.symbol}`}
+                      to={`/research?symbol=${stock.symbol}`}
                       className="flex items-center justify-between p-2 rounded-lg hover:bg-secondary/50 transition-colors"
                     >
                       <div className="flex items-center gap-2">
@@ -618,7 +618,7 @@ const ScreenerPage = () => {
                   {topLosers.map(stock => (
                     <Link 
                       key={stock.symbol} 
-                      to={`/stocks/${stock.symbol}`}
+                      to={`/research?symbol=${stock.symbol}`}
                       className="flex items-center justify-between p-2 rounded-lg hover:bg-secondary/50 transition-colors"
                     >
                       <div className="flex items-center gap-2">
