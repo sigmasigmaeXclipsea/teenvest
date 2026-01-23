@@ -982,17 +982,8 @@ const LandingPage = () => {
       {/* Custom cursor - disabled for performance, can re-enable if needed */}
       {false && typeof window !== 'undefined' && window.innerWidth >= 768 && <CursorFollower />}
       
-      {/* 3D Floating particles with depth - reduced on mobile for performance */}
-      <div style={{ transformStyle: 'preserve-3d' }}>
-        <FloatingParticles />
-      </div>
-      
-      {/* Interactive grid with 3D depth - only on desktop for performance */}
-      {typeof window !== 'undefined' && window.innerWidth >= 768 && (
-        <div style={{ transformStyle: 'preserve-3d' }}>
-          <GridBackground />
-        </div>
-      )}
+      {/* Floating particles disabled for performance */}
+      {/* Grid background disabled for performance */}
       
       {/* Simplified static gradient background - removed 3D blobs for performance */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
@@ -1018,34 +1009,7 @@ const LandingPage = () => {
         </motion.div>
       )}
       
-      {/* Simplified energy waves - reduced for performance */}
-      {[...Array(3)].map((_, i) => (
-        <motion.div
-          key={`wave-${i}`}
-          className="absolute rounded-full border-2 border-primary/20"
-          style={{
-            width: `${200 + i * 100}px`,
-            height: `${200 + i * 100}px`,
-            top: '50%',
-            left: '50%',
-            transform: `translate(-50%, -50%) translateZ(${-200 + i * 50}px) rotateX(${i * 15}deg) rotateY(${i * 20}deg)`,
-            transformStyle: 'preserve-3d',
-          }}
-          animate={{
-            scale: [1, 1.3, 1],
-            opacity: [0.1, 0.4, 0.1],
-            rotateZ: [0, 360],
-            rotateX: [i * 15, i * 15 + 360],
-            rotateY: [i * 20, i * 20 + 360],
-          }}
-          transition={{
-            duration: 10 + i * 2,
-            repeat: Infinity,
-            ease: 'linear',
-            delay: i * 0.3,
-          }}
-        />
-      ))}
+      {/* Energy waves disabled for performance */}
       
       {/* Header */}
       <motion.header 
@@ -1134,117 +1098,20 @@ const LandingPage = () => {
         }}
         className="container mx-auto px-4 pt-12 pb-20 md:pt-16 md:pb-28 relative min-h-[90vh] flex items-center overflow-hidden"
       >
-        {/* Animated gradient mesh background */}
-        <div className="absolute inset-0 pointer-events-none">
-          <motion.div
-            className="absolute top-0 left-0 w-full h-full"
-            style={{
-              background: `
-                radial-gradient(circle at 20% 30%, hsl(var(--primary) / 0.15) 0%, transparent 50%),
-                radial-gradient(circle at 80% 70%, hsl(var(--accent) / 0.15) 0%, transparent 50%),
-                radial-gradient(circle at 50% 50%, hsl(var(--primary) / 0.1) 0%, transparent 70%)
-              `,
-            }}
-            animate={{
-              backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'],
-            }}
-            transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-          />
-        </div>
+        {/* Static gradient mesh - no animation for performance */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: `
+              radial-gradient(circle at 20% 30%, hsl(var(--primary) / 0.12) 0%, transparent 50%),
+              radial-gradient(circle at 80% 70%, hsl(var(--accent) / 0.12) 0%, transparent 50%),
+              radial-gradient(circle at 50% 50%, hsl(var(--primary) / 0.08) 0%, transparent 70%)
+            `,
+          }}
+        />
         
-        {/* Simplified glowing rings - scroll-triggered */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-          <GlowingRing size={600} delay={0} />
-          <motion.div
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full border border-primary/10"
-            initial={{ scale: 0.95, opacity: 0 }}
-            whileInView={{
-              scale: [1, 1.03, 1],
-              opacity: [0.2, 0.3, 0.2],
-            }}
-            viewport={{ once: true }}
-            transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-          />
-        </div>
-        
-        {/* Simplified particles - scroll-triggered */}
-        {[...Array(typeof window !== 'undefined' && window.innerWidth >= 768 ? 4 : 2)].map((_, i) => {
-          const randomX = Math.random() * 200 - 100;
-          const randomY = Math.random() * 200 - 100;
-          return (
-            <motion.div
-              key={i}
-              className="absolute w-2 h-2 rounded-full bg-primary/30 blur-sm"
-              style={{
-                left: `${20 + i * 20}%`,
-                top: `${30 + i * 15}%`,
-              }}
-              initial={{ opacity: 0, scale: 0 }}
-              whileInView={{
-                x: [0, randomX, 0],
-                y: [0, randomY, 0],
-                scale: [0.8, 1.2, 0.8],
-                opacity: [0.2, 0.5, 0.2],
-              }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{
-                duration: 6 + i * 2,
-                repeat: Infinity,
-                ease: 'easeInOut',
-                delay: i * 0.5,
-              }}
-            />
-          );
-        })}
-        
-        {/* Simplified energy streams - scroll-triggered */}
-        {[...Array(2)].map((_, i) => (
-          <motion.div
-            key={`stream-${i}`}
-            className="absolute w-px h-full bg-gradient-to-b from-transparent via-primary/20 to-transparent"
-            style={{
-              left: `${15 + i * 20}%`,
-              transformStyle: 'preserve-3d',
-              transform: `perspective(1000px) rotateY(${i * 20}deg) translateZ(${i * 50}px)`,
-            }}
-            initial={{ opacity: 0, scaleY: 0.5 }}
-            whileInView={{
-              opacity: [0.15, 0.4, 0.15],
-              scaleY: [0.9, 1.1, 0.9],
-            }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{
-              duration: 4 + i,
-              repeat: Infinity,
-              ease: 'easeInOut',
-              delay: i * 0.5,
-            }}
-          />
-        ))}
-        
-        {/* Simplified light beams - reduced for performance */}
-        {[...Array(1)].map((_, i) => (
-          <motion.div
-            key={`beam-${i}`}
-            className="absolute w-1 h-full bg-gradient-to-b from-primary/30 via-transparent to-transparent"
-            style={{
-              left: `${20 + i * 30}%`,
-              top: 0,
-              transformStyle: 'preserve-3d',
-              transform: `perspective(1000px) rotateX(${i * 10}deg) translateZ(${i * 30}px)`,
-            }}
-            animate={{
-              opacity: [0, 0.5, 0],
-              scaleY: [0.5, 1, 0.5],
-              rotateZ: [0, 5, 0],
-            }}
-            transition={{
-              duration: 4 + i,
-              repeat: Infinity,
-              delay: i * 1.5,
-            }}
-          />
-        ))}
+        {/* Static ring - no animation for performance */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(90vw,600px)] h-[min(90vw,600px)] rounded-full border border-primary/10 pointer-events-none" />
         
         {/* 3D Container with flowing middle section */}
         <motion.div 
@@ -1253,54 +1120,11 @@ const LandingPage = () => {
             transformStyle: 'preserve-3d',
             perspective: '1500px',
           }}
-          animate={{
-            rotateY: [0, 1, 0],
-            rotateX: [0, 0.5, 0],
-          }}
-          transition={{
-            duration: 20,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
+          initial={{ opacity: 1 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0 }}
         >
-          {/* Flowing particles in the middle gap */}
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full pointer-events-none hidden lg:block">
-            {[...Array(15)].map((_, i) => (
-              <motion.div
-                key={`flow-${i}`}
-                className="absolute w-3 h-3 rounded-full bg-primary/30 blur-sm"
-                style={{
-                  left: `${40 + Math.random() * 20}%`,
-                  top: `${30 + Math.random() * 40}%`,
-                  transformStyle: 'preserve-3d',
-                }}
-                animate={{
-                  x: [
-                    Math.sin(i) * 100,
-                    Math.sin(i + Math.PI) * 100,
-                    Math.sin(i) * 100,
-                  ],
-                  y: [
-                    Math.cos(i) * 100,
-                    Math.cos(i + Math.PI) * 100,
-                    Math.cos(i) * 100,
-                  ],
-                  z: [0, 200, 0],
-                  rotateX: [0, 360],
-                  rotateY: [0, 360],
-                  rotateZ: [0, 360],
-                  scale: [0.5, 1.5, 0.5],
-                  opacity: [0.2, 0.8, 0.2],
-                }}
-                transition={{
-                  duration: 6 + Math.random() * 4,
-                  repeat: Infinity,
-                  ease: 'easeInOut',
-                  delay: Math.random() * 2,
-                }}
-              />
-            ))}
-          </div>
+          {/* Flowing particles disabled for performance */}
           {/* Left Content - 3D TRANSFORMED */}
           <motion.div 
             initial={{ opacity: 0, x: -50, rotateY: -20, z: -100 }}
@@ -1894,12 +1718,7 @@ const LandingPage = () => {
                 Time Is Your <span className="gradient-text">Superpower</span>
               </h2>
               <p className="text-xl md:text-2xl text-muted-foreground mb-10">
-                Every year you wait costs you thousands. Starting at 15 instead of 25 could mean 
-                <motion.span 
-                  className="text-primary font-bold"
-                  whileHover={{ scale: 1.1 }}
-                  style={{ display: 'inline-block' }}
-                > 2X more wealth</motion.span> by retirement.
+                Every year you wait costs you thousands. Start at <strong className="text-primary">15</strong> vs <strong className="text-muted-foreground">25</strong>—same $100/month—could mean <strong className="text-primary">~2× more</strong> by retirement.
               </p>
               
               <div className="space-y-5">
@@ -1913,17 +1732,11 @@ const LandingPage = () => {
                     initial={{ opacity: 0, x: -30 }}
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
-                    transition={{ delay: i * 0.15, type: 'spring' }}
-                    whileHover={{ x: 10, scale: 1.03 }}
-                    className="flex items-start gap-5 p-6 rounded-2xl bg-card/50 border-2 border-border/50 hover:border-primary/40 transition-all cursor-pointer shadow-lg hover:shadow-xl"
+                    transition={{ delay: i * 0.1, type: 'spring' }}
+                    whileHover={{ x: 6, scale: 1.02 }}
+                    className="flex items-start gap-5 p-6 rounded-2xl bg-card/50 border-2 border-border/50 hover:border-primary/40 transition-colors cursor-pointer shadow-lg"
                   >
-                    <motion.span 
-                      className="text-4xl"
-                      animate={{ rotate: [0, 10, -10, 0] }}
-                      transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
-                    >
-                      {item.emoji}
-                    </motion.span>
+                    <span className="text-4xl">{item.emoji}</span>
                     <div>
                       <h4 className="text-xl font-bold mb-1">{item.title}</h4>
                       <p className="text-base text-muted-foreground">{item.desc}</p>
@@ -1933,70 +1746,50 @@ const LandingPage = () => {
               </div>
             </motion.div>
             
-            <motion.div
+              <motion.div
               initial={{ opacity: 0, x: 50 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ type: 'spring' }}
               className="relative"
             >
-              <TiltCard>
-                <div className="bg-card rounded-3xl p-10 md:p-12 border-2 border-border/50 shadow-2xl relative overflow-hidden">
-                  <motion.div 
-                    className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5"
-                    whileInView={{ opacity: [0.2, 0.4, 0.2] }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                    transition={{ duration: 3, repeat: Infinity }}
-                  />
-                  <div className="relative">
-                    <h4 className="text-2xl md:text-3xl font-bold mb-8 text-center">$100/month invested</h4>
-                    <div className="grid grid-cols-2 gap-4 md:gap-8 mb-8">
-                      <motion.div 
-                        className="text-center p-6 md:p-8 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 border-2 border-primary/40 shadow-lg overflow-hidden"
-                        whileHover={{ scale: 1.08 }}
-                      >
-                        <p className="text-4xl md:text-5xl lg:text-6xl font-black gradient-text mb-3 break-words whitespace-nowrap">
-                          $<SpringCounter value={500} />K+
-                        </p>
-                        <p className="text-sm md:text-base font-semibold text-muted-foreground">Start at 15</p>
-                        <p className="text-xs md:text-sm text-primary font-bold mt-2">45 years of growth</p>
-                      </motion.div>
-                      <motion.div 
-                        className="text-center p-6 md:p-8 rounded-2xl bg-muted/50 border-2 border-border/50 overflow-hidden"
-                        whileHover={{ scale: 1.05 }}
-                      >
-                        <p className="text-4xl md:text-5xl lg:text-6xl font-black text-muted-foreground mb-3 break-words whitespace-nowrap">
-                          $<SpringCounter value={250} />K
-                        </p>
-                        <p className="text-sm md:text-base font-semibold text-muted-foreground">Start at 25</p>
-                        <p className="text-xs md:text-sm text-muted-foreground mt-2">35 years of growth</p>
-                      </motion.div>
-                    </div>
+              <div className="bg-card rounded-3xl p-8 md:p-10 border-2 border-border/50 shadow-2xl relative overflow-hidden">
+                <div className="relative">
+                  <h4 className="text-xl md:text-2xl font-bold mb-6 text-center text-muted-foreground">
+                    $100/month · 7% return
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4 md:gap-6 mb-6">
                     <motion.div 
-                      className="text-center p-6 rounded-xl bg-success/10 border-2 border-success/30 shadow-lg"
-                      animate={{ scale: [1, 1.03, 1] }}
-                      transition={{ duration: 2, repeat: Infinity }}
+                      className="text-center p-5 md:p-6 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 border-2 border-primary/40 shadow-lg"
+                      whileHover={{ scale: 1.03 }}
+                      transition={{ type: 'spring', stiffness: 400 }}
                     >
-                      <p className="text-lg md:text-xl text-success font-bold flex items-center justify-center gap-2">
-                        <motion.div
-                          animate={{ rotate: [0, 360] }}
-                          transition={{ duration: 2, repeat: Infinity }}
-                        >
-                          <Flame className="w-5 h-5" />
-                        </motion.div>
-                        10 extra years = 2X more money
-                        <motion.div
-                          animate={{ rotate: [0, -360] }}
-                          transition={{ duration: 2, repeat: Infinity }}
-                        >
-                          <Flame className="w-5 h-5" />
-                        </motion.div>
+                      <p className="text-3xl md:text-4xl lg:text-5xl font-black text-primary mb-1">
+                        $<SpringCounter value={500} />K+
                       </p>
+                      <p className="text-sm font-bold text-foreground">Start at 15</p>
+                      <p className="text-xs text-primary/80 mt-1">45 years · compound growth</p>
+                    </motion.div>
+                    <motion.div 
+                      className="text-center p-5 md:p-6 rounded-2xl bg-muted/50 border-2 border-border/50"
+                      whileHover={{ scale: 1.02 }}
+                      transition={{ type: 'spring', stiffness: 400 }}
+                    >
+                      <p className="text-3xl md:text-4xl lg:text-5xl font-black text-muted-foreground mb-1">
+                        $<SpringCounter value={250} />K
+                      </p>
+                      <p className="text-sm font-semibold text-muted-foreground">Start at 25</p>
+                      <p className="text-xs text-muted-foreground mt-1">35 years</p>
                     </motion.div>
                   </div>
+                  <div className="text-center py-4 px-4 rounded-xl bg-success/10 border border-success/30">
+                    <p className="text-base md:text-lg font-bold text-success flex items-center justify-center gap-2 flex-wrap">
+                      <Flame className="w-5 h-5 shrink-0" />
+                      10 years earlier ≈ 2× the wealth
+                    </p>
+                  </div>
                 </div>
-              </TiltCard>
+              </div>
             </motion.div>
           </div>
         </div>
@@ -2045,7 +1838,7 @@ const LandingPage = () => {
           >
             {[
               { value: 10, suffix: 'K', label: 'Virtual Cash', icon: '💰', color: 'from-primary to-primary-glow', prefix: '$' },
-              { value: 1500, suffix: '+', label: 'Real Stocks', icon: '📈', color: 'from-accent to-chart-5' },
+              { value: 5000, suffix: '+', label: 'Real Stocks', icon: '📈', color: 'from-accent to-chart-5' },
               { value: 0, suffix: '', label: 'Real Risk', icon: '🛡️', color: 'from-chart-3 to-primary' },
               { value: 100, suffix: '%', label: 'Free Forever', icon: '⭐', color: 'from-warning to-chart-5' },
             ].map((stat, i) => (

@@ -30,7 +30,8 @@ const ScreenerPage = () => {
   const [autoFetchedStocks, setAutoFetchedStocks] = useState<StockQuote[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
-  const [visibleCount, setVisibleCount] = useState(100);
+  const [visibleCount, setVisibleCount] = useState(20); // Start with top 20
+  const [loadedStocksCount, setLoadedStocksCount] = useState(20); // Track how many stocks we've loaded from full list
   const [sortColumn, setSortColumn] = useState<SortColumn>('symbol');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -192,29 +193,42 @@ const ScreenerPage = () => {
   };
 
   // Convert Russell 5000 tickers to Stock format, merging with live data
+  // Only load a subset initially (top 20, then load more on scroll)
   const allStocks = useMemo(() => {
     try {
       const stocksMap = new Map<string, Stock>();
       
-      // Add all Russell stocks as base
-      if (Array.isArray(russell5000Tickers)) {
-        russell5000Tickers.forEach(t => {
-          if (!t || !t.symbol) return;
-          stocksMap.set(t.symbol, {
-            symbol: t.symbol,
-            companyName: t.name || t.symbol,
-            price: 0,
-            change: 0,
-            changePercent: 0,
-            volume: 0,
-            marketCap: 0,
-            sector: t.sector || 'Unknown',
-            riskLevel: 'medium' as const,
-            high52Week: 0,
-            low52Week: 0,
-          });
+      // Only load top N stocks from Russell list (start with 20, expand as user scrolls)
+      // Prioritize popular stocks first
+      const stocksToLoad = [
+        ...popularTickers.slice(0, 20), // Top 20 popular stocks
+        ...(Array.isArray(russell5000Tickers) ? russell5000Tickers.slice(0, loadedStocksCount) : [])
+      ];
+      
+      // Deduplicate by symbol
+      const seen = new Set<string>();
+      const uniqueStocks = stocksToLoad.filter(t => {
+        if (!t || !t.symbol || seen.has(t.symbol)) return false;
+        seen.add(t.symbol);
+        return true;
+      });
+      
+      uniqueStocks.forEach(t => {
+        if (!t || !t.symbol) return;
+        stocksMap.set(t.symbol, {
+          symbol: t.symbol,
+          companyName: t.name || t.symbol,
+          price: 0,
+          change: 0,
+          changePercent: 0,
+          volume: 0,
+          marketCap: 0,
+          sector: t.sector || 'Unknown',
+          riskLevel: 'medium' as const,
+          high52Week: 0,
+          low52Week: 0,
         });
-      }
+      });
       
       // Overlay live data
       if (Array.isArray(allLiveData)) {
@@ -256,7 +270,7 @@ const ScreenerPage = () => {
       console.error('Error building stocks list:', error);
       return [];
     }
-  }, [allLiveData]);
+  }, [allLiveData, loadedStocksCount]);
 
   // Top Gainers & Losers from live data
   const { topGainers, topLosers } = useMemo(() => {
@@ -349,15 +363,21 @@ const ScreenerPage = () => {
 
   // Reset visible count when filters change
   useEffect(() => {
-    setVisibleCount(100);
+    setVisibleCount(20);
+    setLoadedStocksCount(20); // Reset loaded count too
   }, [search, selectedSector, selectedRisk, marketCapFilter, activeTab]);
 
   // Load more stocks when scrolling near bottom
   const handleLoadMore = useCallback(() => {
-    if (visibleCount < filteredStocks.length) {
-      setVisibleCount(prev => Math.min(prev + 100, filteredStocks.length));
+    // First, load more stocks from the full list if we haven't loaded enough
+    if (loadedStocksCount < (russell5000Tickers?.length || 0)) {
+      setLoadedStocksCount(prev => Math.min(prev + 50, russell5000Tickers?.length || 0));
     }
-  }, [visibleCount, filteredStocks.length]);
+    // Then, show more visible rows
+    if (visibleCount < filteredStocks.length) {
+      setVisibleCount(prev => Math.min(prev + 50, filteredStocks.length));
+    }
+  }, [visibleCount, filteredStocks.length, loadedStocksCount]);
 
   // Scroll to top function
   const scrollToTop = () => {
@@ -747,11 +767,22 @@ const ScreenerPage = () => {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2">
-                    {filteredStocks.length.toLocaleString()} stocks found
-                    {visibleCount < filteredStocks.length && (
-                      <span className="text-sm font-normal text-muted-foreground">
-                        (showing {visibleCount.toLocaleString()})
-                      </span>
+                    {loadedStocksCount < (russell5000Tickers?.length || 0) ? (
+                      <>
+                        {loadedStocksCount.toLocaleString()} stocks loaded
+                        <span className="text-sm font-normal text-muted-foreground">
+                          (of {getTotalTickerCount().toLocaleString()})
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        {filteredStocks.length.toLocaleString()} stocks found
+                        {visibleCount < filteredStocks.length && (
+                          <span className="text-sm font-normal text-muted-foreground">
+                            (showing {visibleCount.toLocaleString()})
+                          </span>
+                        )}
+                      </>
                     )}
                     {(loadingCache || isFetchingBatch || refreshCache.isPending) && <Loader2 className="w-4 h-4 animate-spin" />}
                     {refreshCache.isPending && <span className="text-sm font-normal text-muted-foreground">Updating cache...</span>}
@@ -830,10 +861,24 @@ const ScreenerPage = () => {
                       ))}
                     </tbody>
                   </table>
-                  {visibleCount < filteredStocks.length && (
+                  {(visibleCount < filteredStocks.length || loadedStocksCount < (russell5000Tickers?.length || 0)) && (
                     <div className="py-4 text-center">
-                      <Button variant="outline" onClick={handleLoadMore}>
-                        Load More ({(filteredStocks.length - visibleCount).toLocaleString()} remaining)
+                      <Button variant="outline" onClick={handleLoadMore} disabled={isFetchingBatch}>
+                        {isFetchingBatch ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Loading...
+                          </>
+                        ) : (
+                          <>
+                            Load More
+                            {loadedStocksCount < (russell5000Tickers?.length || 0) && (
+                              <span className="ml-2 text-xs text-muted-foreground">
+                                ({loadedStocksCount.toLocaleString()} / {getTotalTickerCount().toLocaleString()})
+                              </span>
+                            )}
+                          </>
+                        )}
                       </Button>
                     </div>
                   )}

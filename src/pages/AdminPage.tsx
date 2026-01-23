@@ -37,6 +37,8 @@ const AdminPage = () => {
   const [selectedAchievement, setSelectedAchievement] = useState('');
   const [startingBalanceEmail, setStartingBalanceEmail] = useState('');
   const [newStartingBalance, setNewStartingBalance] = useState('');
+  const [cashBalanceEmail, setCashBalanceEmail] = useState('');
+  const [newCashBalanceForUser, setNewCashBalanceForUser] = useState('');
 
   const isOwner = user?.email === OWNER_EMAIL;
 
@@ -91,9 +93,22 @@ const AdminPage = () => {
         console.error('Recent trades error:', error);
         throw error;
       }
-      return data || [];
+      // Ensure data is an array and has all required fields
+      const trades = Array.isArray(data) ? data : [];
+      return trades.map((trade: any) => ({
+        id: trade.id,
+        user_email: trade.user_email || 'unknown',
+        user_name: trade.user_name || trade.user_email || 'Unknown User',
+        symbol: trade.symbol || '',
+        trade_type: trade.trade_type || 'buy',
+        shares: Number(trade.shares) || 0,
+        price: Number(trade.price) || 0,
+        total_amount: Number(trade.total_amount || (trade.shares * trade.price)) || 0,
+        created_at: trade.created_at,
+      }));
     },
     enabled: hasAdminRole === true,
+    retry: 1,
   });
 
   // All achievements for dropdown
@@ -214,6 +229,38 @@ const AdminPage = () => {
     onError: (error: any) => toast.error(getUserFriendlyError(error)),
   });
 
+  const updateCashBalanceMutation = useMutation({
+    mutationFn: async ({ email, balance }: { email: string; balance: number }) => {
+      const { data, error } = await supabase.rpc('admin_update_cash_balance', { 
+        _email: email, 
+        _new_balance: balance 
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data: any) => {
+      if (data?.success) {
+        toast.success(`Cash balance updated to $${data.new_balance.toLocaleString()}`);
+        setCashBalanceEmail('');
+        setNewCashBalanceForUser('');
+        queryClient.invalidateQueries({ queryKey: ['portfolio'] });
+        // Refresh user lookup if currently viewing a user
+        if (lookedUpUser?.found && lookupEmail.trim()) {
+          const refreshLookup = async () => {
+            try {
+              const { data, error } = await supabase.rpc('admin_lookup_user', { _email: lookupEmail.trim() });
+              if (!error && data) setLookedUpUser(data);
+            } catch {}
+          };
+          refreshLookup();
+        }
+      } else {
+        toast.error(data?.error || 'Failed to update cash balance');
+      }
+    },
+    onError: (error: any) => toast.error(getUserFriendlyError(error)),
+  });
+
   const handleUpdateCash = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -243,8 +290,8 @@ const AdminPage = () => {
     }
   };
 
-  const handleLookupUser = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLookupUser = async (e?: React.FormEvent | { preventDefault: () => void }) => {
+    if (e && 'preventDefault' in e) e.preventDefault();
     if (!lookupEmail.trim()) return;
 
     try {
@@ -406,38 +453,65 @@ const AdminPage = () => {
                     <Loader2 className="w-6 h-6 animate-spin" />
                   </div>
                 ) : tradesError ? (
-                  <div className="text-center text-destructive py-8">
-                    <p className="font-medium">Error loading trades</p>
-                    <p className="text-sm text-muted-foreground">{(tradesError as Error)?.message || 'Unknown error'}</p>
-                    <Button variant="outline" size="sm" className="mt-4" onClick={() => refetchTrades()}>
+                  <div className="text-center py-8">
+                    <p className="font-medium text-destructive mb-2">Error loading trades</p>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      {(tradesError as Error)?.message || 'Unknown error'}
+                    </p>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      This may be a database function issue. Check Supabase logs.
+                    </p>
+                    <Button variant="outline" size="sm" onClick={() => refetchTrades()}>
+                      <RefreshCw className="w-4 h-4 mr-2" />
                       Retry
                     </Button>
                   </div>
                 ) : recentTrades && recentTrades.length > 0 ? (
                   <div className="space-y-2 max-h-[500px] overflow-y-auto">
-                    {recentTrades.map((trade: any) => (
-                      <div key={trade.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
-                        <div className="flex items-center gap-3">
-                          <div className={`p-1.5 rounded ${trade.trade_type === 'buy' ? 'bg-primary/20' : 'bg-destructive/20'}`}>
-                            {trade.trade_type === 'buy' ? (
-                              <ArrowUpRight className="w-4 h-4 text-primary" />
-                            ) : (
-                              <ArrowDownRight className="w-4 h-4 text-destructive" />
-                            )}
+                    <div className="grid grid-cols-1 gap-2">
+                      {recentTrades.map((trade: any) => (
+                        <div key={trade.id} className="flex items-center justify-between p-4 rounded-lg bg-secondary/50 border border-border/50 hover:bg-secondary/70 transition-colors">
+                          <div className="flex items-center gap-4 flex-1">
+                            <div className={`p-2 rounded-lg ${trade.trade_type === 'buy' ? 'bg-primary/20' : 'bg-destructive/20'}`}>
+                              {trade.trade_type === 'buy' ? (
+                                <ArrowUpRight className="w-5 h-5 text-primary" />
+                              ) : (
+                                <ArrowDownRight className="w-5 h-5 text-destructive" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <p className="font-bold text-lg">{trade.symbol}</p>
+                                <Badge variant={trade.trade_type === 'buy' ? 'default' : 'destructive'} className="text-xs">
+                                  {trade.trade_type.toUpperCase()}
+                                </Badge>
+                              </div>
+                              <p className="text-sm font-semibold text-foreground">{trade.user_name || trade.user_email}</p>
+                              <p className="text-xs text-muted-foreground">{trade.user_email}</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {new Date(trade.created_at).toLocaleString('en-US', { 
+                                  month: 'short', 
+                                  day: 'numeric', 
+                                  year: 'numeric',
+                                  hour: 'numeric', 
+                                  minute: '2-digit' 
+                                })}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-medium">{trade.symbol}</p>
-                            <p className="text-xs text-muted-foreground">{trade.user_email}</p>
+                          <div className="text-right ml-4">
+                            <p className="text-sm text-muted-foreground mb-1">Shares</p>
+                            <p className="font-semibold text-base">{Number(trade.shares).toFixed(2)}</p>
+                            <p className="text-sm text-muted-foreground mt-2 mb-1">Price</p>
+                            <p className="font-semibold text-base">${Number(trade.price).toFixed(2)}</p>
+                            <p className="text-sm text-muted-foreground mt-2 mb-1">Total</p>
+                            <p className="font-bold text-lg text-primary">
+                              ${Number(trade.total_amount || (trade.shares * trade.price)).toFixed(2)}
+                            </p>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-medium">{Number(trade.shares).toFixed(2)} @ ${Number(trade.price).toFixed(2)}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(trade.created_at).toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 ) : (
                   <p className="text-center text-muted-foreground py-8">No trades yet</p>
@@ -498,7 +572,7 @@ const AdminPage = () => {
                 </form>
 
                 {lookedUpUser?.found && (
-                  <div className="p-4 rounded-lg bg-secondary/50 space-y-3">
+                  <div className="p-4 rounded-lg bg-secondary/50 space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="font-semibold">{lookedUpUser.display_name}</p>
@@ -537,6 +611,40 @@ const AdminPage = () => {
                         <p className="text-xs text-muted-foreground">Achievements</p>
                         <p className="font-semibold">{lookedUpUser.achievements_earned}</p>
                       </div>
+                    </div>
+                    
+                    {/* Update Cash Balance */}
+                    <div className="pt-4 border-t border-border/50">
+                      <Label className="text-sm font-semibold mb-2 block">Update Cash Balance</Label>
+                      <form 
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          updateCashBalanceMutation.mutate({ 
+                            email: lookupEmail.trim(), 
+                            balance: parseFloat(newCashBalanceForUser) 
+                          });
+                        }} 
+                        className="flex gap-2"
+                      >
+                        <div className="relative flex-1">
+                          <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={newCashBalanceForUser}
+                            onChange={(e) => setNewCashBalanceForUser(e.target.value)}
+                            placeholder="10000.00"
+                            className="pl-9"
+                          />
+                        </div>
+                        <Button 
+                          type="submit" 
+                          disabled={updateCashBalanceMutation.isPending || !newCashBalanceForUser}
+                        >
+                          {updateCashBalanceMutation.isPending ? 'Updating...' : 'Update Cash'}
+                        </Button>
+                      </form>
                     </div>
                   </div>
                 )}

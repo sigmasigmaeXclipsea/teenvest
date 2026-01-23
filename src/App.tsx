@@ -11,6 +11,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
+import AuthCallbackPage from "./pages/AuthCallbackPage";
 import DashboardPage from "./pages/DashboardPage";
 import ScreenerPage from "./pages/ScreenerPage";
 import TradePage from "./pages/TradePage";
@@ -49,6 +50,7 @@ const App = () => (
                 <Route path="/home" element={<LandingPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/signup" element={<SignupPage />} />
+                <Route path="/auth/callback" element={<AuthCallbackPage />} />
                 <Route path="/dashboard" element={<ProtectedRoute><ErrorBoundary><DashboardPage /></ErrorBoundary></ProtectedRoute>} />
                 <Route path="/screener" element={<ProtectedRoute><ErrorBoundary><ScreenerPage /></ErrorBoundary></ProtectedRoute>} />
                 <Route path="/trade" element={<ProtectedRoute><ErrorBoundary><TradePage /></ErrorBoundary></ProtectedRoute>} />

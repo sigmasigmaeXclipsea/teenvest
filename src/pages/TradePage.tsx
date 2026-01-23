@@ -133,6 +133,18 @@ const TradePage = () => {
     }
   };
 
+  // Show loading state if portfolio or holdings are loading
+  if (!portfolio || !holdings) {
+    return (
+      <DashboardLayout>
+        <div className="min-h-[400px] flex flex-col items-center justify-center gap-4">
+          <Loader2 className="w-10 h-10 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading trading data...</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -180,7 +192,7 @@ const TradePage = () => {
                 return (
                   <div className="border rounded-lg bg-background max-h-48 overflow-y-auto">
                     <p className="text-xs text-muted-foreground p-2 border-b">
-                      {getTotalTickerCount()} Russell stocks available - showing matches:
+                      Showing matches:
                     </p>
                     {matches.map(t => (
                       <button
