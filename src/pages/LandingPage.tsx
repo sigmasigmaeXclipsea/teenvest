@@ -1,56 +1,272 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { TrendingUp, BookOpen, Trophy, Shield, ArrowRight, BarChart3, Briefcase, Target, Bot, MessageCircle, Sparkles, ChevronDown, Zap, Flame, Rocket, User, LogOut } from 'lucide-react';
+import { TrendingUp, BookOpen, Trophy, Shield, ArrowRight, BarChart3, Briefcase, Target, Bot, MessageCircle, Sparkles, Zap, Flame, Rocket, User, LogOut, Play, Star, ChevronRight, MousePointer2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { motion, type Variants } from 'framer-motion';
+import { motion, useScroll, useTransform, useSpring, useMotionValue, useAnimationFrame, type Variants } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRef, useState } from 'react';
 
+// Animation Variants
 const fadeInUp: Variants = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.25, 0.1, 0.25, 1] } }
+  hidden: { opacity: 0, y: 60 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.25, 0.1, 0.25, 1] } }
 };
 
 const fadeIn: Variants = {
   hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { duration: 0.6 } }
+  visible: { opacity: 1, transition: { duration: 0.8 } }
 };
 
 const staggerContainer: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.1 }
+    transition: { staggerChildren: 0.15, delayChildren: 0.1 }
   }
 };
 
-const scaleIn: Variants = {
-  hidden: { opacity: 0, scale: 0.9 },
-  visible: { opacity: 1, scale: 1, transition: { duration: 0.5 } }
+const scaleRotate: Variants = {
+  hidden: { opacity: 0, scale: 0.8, rotate: -5 },
+  visible: { opacity: 1, scale: 1, rotate: 0, transition: { duration: 0.8, ease: [0.25, 0.1, 0.25, 1] } }
 };
+
+const slideInLeft: Variants = {
+  hidden: { opacity: 0, x: -100 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.8, ease: [0.25, 0.1, 0.25, 1] } }
+};
+
+const slideInRight: Variants = {
+  hidden: { opacity: 0, x: 100 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.8, ease: [0.25, 0.1, 0.25, 1] } }
+};
+
+// Magnetic Button Component
+const MagneticButton = ({ children, className, ...props }: React.ComponentProps<typeof Button>) => {
+  const ref = useRef<HTMLButtonElement>(null);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    x.set((e.clientX - centerX) * 0.15);
+    y.set((e.clientY - centerY) * 0.15);
+  };
+
+  const handleMouseLeave = () => {
+    x.set(0);
+    y.set(0);
+  };
+
+  const springX = useSpring(x, { stiffness: 300, damping: 20 });
+  const springY = useSpring(y, { stiffness: 300, damping: 20 });
+
+  return (
+    <motion.div style={{ x: springX, y: springY }}>
+      <Button
+        ref={ref}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+        className={className}
+        {...props}
+      >
+        {children}
+      </Button>
+    </motion.div>
+  );
+};
+
+// Floating Orb Component
+const FloatingOrb = ({ className, delay = 0 }: { className?: string; delay?: number }) => (
+  <motion.div
+    className={`absolute rounded-full blur-3xl pointer-events-none ${className}`}
+    animate={{
+      y: [0, -30, 0],
+      x: [0, 15, 0],
+      scale: [1, 1.1, 1],
+    }}
+    transition={{
+      duration: 8,
+      repeat: Infinity,
+      ease: "easeInOut",
+      delay,
+    }}
+  />
+);
+
+// Animated Counter Component
+const AnimatedCounter = ({ value, suffix = '' }: { value: string; suffix?: string }) => {
+  const [displayValue, setDisplayValue] = useState(0);
+  const numericValue = parseInt(value.replace(/[^0-9]/g, '')) || 0;
+  
+  useAnimationFrame((t) => {
+    const progress = Math.min(t / 2000, 1);
+    setDisplayValue(Math.floor(numericValue * progress));
+  });
+  
+  return <span>{value.includes('$') ? '$' : ''}{displayValue.toLocaleString()}{suffix}</span>;
+};
+
+// Bento Card Component
+const BentoCard = ({ children, className, delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 40, scale: 0.95 }}
+    whileInView={{ opacity: 1, y: 0, scale: 1 }}
+    viewport={{ once: true, margin: "-50px" }}
+    transition={{ duration: 0.6, delay, ease: [0.25, 0.1, 0.25, 1] }}
+    whileHover={{ y: -8, transition: { duration: 0.3 } }}
+    className={`group relative overflow-hidden rounded-3xl bg-card border border-border/50 p-6 md:p-8 transition-all duration-500 hover:border-primary/30 hover:shadow-2xl hover:shadow-primary/10 ${className}`}
+  >
+    {/* Shimmer effect on hover */}
+    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+    </div>
+    {children}
+  </motion.div>
+);
+
+// Mock Dashboard Component
+const MockDashboard = () => (
+  <div className="relative w-full aspect-[16/10] rounded-2xl overflow-hidden bg-gradient-to-br from-card via-card to-primary/5 border border-border/50 shadow-2xl">
+    {/* Window controls */}
+    <div className="flex items-center gap-2 p-4 border-b border-border/50 bg-muted/30">
+      <div className="flex gap-1.5">
+        <div className="w-3 h-3 rounded-full bg-destructive/70" />
+        <div className="w-3 h-3 rounded-full bg-warning/70" />
+        <div className="w-3 h-3 rounded-full bg-success/70" />
+      </div>
+      <div className="flex-1 flex justify-center">
+        <div className="px-4 py-1 rounded-lg bg-muted/50 text-xs text-muted-foreground">teenvest.app/dashboard</div>
+      </div>
+    </div>
+    
+    {/* Dashboard content */}
+    <div className="p-4 space-y-3">
+      {/* Stats row */}
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { label: 'Portfolio', value: '$12,450', change: '+12.4%', positive: true },
+          { label: 'Today', value: '+$245', change: '+1.9%', positive: true },
+          { label: 'Streak', value: '7 days', change: '🔥', positive: true },
+        ].map((stat, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 + i * 0.1 }}
+            className="p-3 rounded-xl bg-muted/30 border border-border/30"
+          >
+            <p className="text-[10px] text-muted-foreground">{stat.label}</p>
+            <p className="text-sm font-bold">{stat.value}</p>
+            <p className={`text-[10px] ${stat.positive ? 'text-success' : 'text-destructive'}`}>{stat.change}</p>
+          </motion.div>
+        ))}
+      </div>
+      
+      {/* Chart placeholder */}
+      <motion.div
+        initial={{ opacity: 0, scaleY: 0.8 }}
+        animate={{ opacity: 1, scaleY: 1 }}
+        transition={{ delay: 0.8 }}
+        className="h-24 rounded-xl bg-gradient-to-t from-primary/20 via-primary/10 to-transparent border border-border/30 relative overflow-hidden"
+      >
+        <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
+          <motion.path
+            d="M0,80 Q50,60 100,70 T200,50 T300,60 T400,30"
+            fill="none"
+            stroke="hsl(var(--primary))"
+            strokeWidth="2"
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: 1 }}
+            transition={{ duration: 2, delay: 1 }}
+          />
+        </svg>
+      </motion.div>
+      
+      {/* Holdings */}
+      <div className="space-y-2">
+        {[
+          { symbol: 'AAPL', name: 'Apple Inc', change: '+2.4%' },
+          { symbol: 'TSLA', name: 'Tesla Inc', change: '+5.1%' },
+        ].map((stock, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 1.2 + i * 0.1 }}
+            className="flex items-center justify-between p-2 rounded-lg bg-muted/20 border border-border/20"
+          >
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-primary/20 flex items-center justify-center text-[10px] font-bold">{stock.symbol[0]}</div>
+              <div>
+                <p className="text-xs font-semibold">{stock.symbol}</p>
+                <p className="text-[9px] text-muted-foreground">{stock.name}</p>
+              </div>
+            </div>
+            <span className="text-xs text-success font-semibold">{stock.change}</span>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+    
+    {/* Shimmer overlay */}
+    <motion.div
+      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"
+      animate={{ x: ['-100%', '200%'] }}
+      transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
+    />
+  </div>
+);
 
 const LandingPage = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end end"]
+  });
+  
+  const heroY = useTransform(scrollYProgress, [0, 0.3], [0, -100]);
+  const heroScale = useTransform(scrollYProgress, [0, 0.2], [1, 0.95]);
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.2], [1, 0.8]);
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
   };
 
-  return <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Animated background */}
-      <div className="fixed inset-0 animated-gradient opacity-60 pointer-events-none" />
-      <div className="fixed inset-0 noise pointer-events-none" />
+  return (
+    <div ref={containerRef} className="min-h-screen bg-background relative overflow-x-hidden">
+      {/* Animated Gradient Background */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute inset-0 animated-gradient opacity-40" />
+        <div className="absolute inset-0 noise" />
+        <FloatingOrb className="w-[600px] h-[600px] bg-primary/20 top-[-200px] left-[-200px]" />
+        <FloatingOrb className="w-[500px] h-[500px] bg-accent/15 bottom-[-100px] right-[-100px]" delay={2} />
+        <FloatingOrb className="w-[300px] h-[300px] bg-chart-3/10 top-1/2 left-1/3" delay={4} />
+      </div>
       
       {/* Header */}
-      <header className="border-b border-primary/20 bg-background/60 backdrop-blur-2xl sticky top-0 z-50">
+      <motion.header 
+        initial={{ y: -100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
+        className="border-b border-primary/10 bg-background/60 backdrop-blur-2xl sticky top-0 z-50"
+      >
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary via-primary-glow to-accent flex items-center justify-center shadow-2xl glow-primary group-hover:scale-110 transition-all duration-300">
+            <motion.div 
+              whileHover={{ scale: 1.1, rotate: 5 }}
+              className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary via-primary-glow to-accent flex items-center justify-center shadow-2xl glow-primary"
+            >
               <TrendingUp className="w-6 h-6 text-primary-foreground" />
-            </div>
+            </motion.div>
             <span className="text-2xl font-black tracking-tight gradient-text">TeenVest</span>
           </Link>
+          
           <nav className="hidden md:flex items-center gap-8">
             {[
               { to: user ? '/learn' : '/login', label: 'Learn' },
@@ -59,10 +275,16 @@ const LandingPage = () => {
             ].map((link) => (
               <Link key={link.label} to={link.to} className="text-sm font-semibold uppercase tracking-wider text-muted-foreground hover:text-primary transition-all duration-300 relative group">
                 {link.label}
-                <span className="absolute -bottom-1 left-0 w-0 h-[3px] bg-gradient-to-r from-primary to-accent transition-all duration-300 group-hover:w-full rounded-full" />
+                <motion.span 
+                  className="absolute -bottom-1 left-0 h-[3px] bg-gradient-to-r from-primary to-accent rounded-full"
+                  initial={{ width: 0 }}
+                  whileHover={{ width: '100%' }}
+                  transition={{ duration: 0.3 }}
+                />
               </Link>
             ))}
           </nav>
+          
           <div className="flex items-center gap-3">
             {user ? (
               <>
@@ -87,379 +309,609 @@ const LandingPage = () => {
                   <Button variant="ghost" className="font-semibold hover:bg-primary/10 hover:text-primary">Log In</Button>
                 </Link>
                 <Link to="/signup">
-                  <Button className="font-bold bg-gradient-to-r from-primary via-primary-glow to-accent hover:scale-105 transition-all duration-300 shadow-xl glow-primary">
+                  <MagneticButton className="font-bold bg-gradient-to-r from-primary via-primary-glow to-accent hover:shadow-xl transition-all duration-300 shadow-lg glow-primary">
                     <Zap className="w-4 h-4 mr-1" />
                     Get Started
-                  </Button>
+                  </MagneticButton>
                 </Link>
               </>
             )}
           </div>
         </div>
-      </header>
+      </motion.header>
 
       {/* Hero Section */}
-      <section className="container mx-auto px-4 pt-12 pb-16 md:pt-20 md:pb-24 relative">
-        {/* Background elements */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-gradient-radial from-primary/15 via-primary/5 to-transparent rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute top-10 left-10 w-24 h-24 bg-primary/15 rounded-full blur-2xl float" />
-        <div className="absolute bottom-10 right-10 w-32 h-32 bg-accent/15 rounded-full blur-2xl float" style={{ animationDelay: '2s' }} />
-        
-        <motion.div 
-          className="max-w-4xl mx-auto text-center relative"
-          initial="hidden"
-          animate="visible"
-          variants={staggerContainer}
-        >
-          {/* Badge */}
-          <motion.div 
-            variants={fadeIn}
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-primary/15 via-accent/15 to-primary/15 text-foreground px-4 py-2 rounded-full text-xs font-semibold mb-6 border border-primary/20"
-          >
-            <Flame className="w-3.5 h-3.5 text-warning animate-pulse" />
-            <span className="uppercase tracking-widest">The Future Starts Now</span>
-            <Rocket className="w-3.5 h-3.5 text-primary animate-bounce-subtle" />
-          </motion.div>
-          
-          {/* Main Headline */}
-          <motion.h1 
-            variants={fadeInUp}
-            className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-5 leading-tight"
-          >
-            <span className="block text-foreground">Build Your</span>
-            <span className="block gradient-text mt-1">Empire</span>
-          </motion.h1>
-          
-          {/* Subheadline */}
-          <motion.p 
-            variants={fadeInUp}
-            className="text-base md:text-lg text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed"
-          >
-            Master investing with <span className="text-primary font-semibold">zero risk</span>. Trade stocks, crush the leaderboard, 
-            and stack skills that'll make your future self proud.
-          </motion.p>
-          
-          {/* CTA Buttons */}
-          <motion.div 
-            variants={fadeInUp}
-            className="flex flex-col sm:flex-row items-center justify-center gap-3"
-          >
-            <Link to={user ? "/dashboard" : "/signup"}>
-              <Button size="default" className="gap-2 bg-gradient-to-r from-primary via-primary-glow to-accent hover:scale-105 transition-all duration-300 shadow-lg glow-primary font-semibold px-6 py-5 rounded-xl group">
-                {user ? "Go to Dashboard" : "Start Trading Now"}
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </Link>
-            <Link to={user ? "/learn" : "/login"}>
-              <Button size="default" variant="outline" className="border border-primary/40 hover:bg-primary/10 hover:border-primary font-semibold px-6 py-5 rounded-xl transition-all duration-300">
-                <BookOpen className="w-4 h-4 mr-2" />
-                Level Up First
-              </Button>
-            </Link>
-          </motion.div>
-          
-          {/* Stats Bar */}
-          <motion.div 
-            variants={fadeInUp}
-            className="mt-12 flex flex-wrap items-center justify-center gap-6 md:gap-12"
-          >
-            {[
-              { value: '1,500+', label: 'Stocks to Trade' },
-              { value: '$10K', label: 'Virtual Cash' },
-              { value: '0%', label: 'Risk' }
-            ].map((stat, i) => (
-              <div key={i} className="text-center">
-                <p className="text-2xl md:text-3xl font-bold gradient-text">{stat.value}</p>
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mt-1">{stat.label}</p>
-              </div>
-            ))}
-          </motion.div>
-          
-          {/* Scroll indicator */}
-          <motion.div 
-            variants={fadeIn}
-            className="mt-12"
-          >
-            <div className="inline-flex flex-col items-center gap-1 text-muted-foreground">
-              <span className="text-[10px] uppercase tracking-widest font-medium">Scroll</span>
-              <ChevronDown className="w-4 h-4 scroll-indicator" />
-            </div>
-          </motion.div>
-        </motion.div>
-      </section>
-
-      {/* AI Assistant Banner */}
       <motion.section 
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, margin: "-100px" }}
-        variants={fadeIn}
-        className="border-y border-primary/20 bg-gradient-to-r from-background via-primary/5 to-background py-12 relative overflow-hidden"
+        style={{ y: heroY, scale: heroScale, opacity: heroOpacity }}
+        className="container mx-auto px-4 pt-16 pb-24 md:pt-24 md:pb-32 relative"
       >
-        <div className="absolute inset-0 noise opacity-50" />
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-64 h-64 bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-64 h-64 bg-accent/10 rounded-full blur-3xl" />
-        
-        <div className="container mx-auto px-4 relative">
-          <div className="max-w-5xl mx-auto">
-            <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
-              {/* AI Bot */}
-              <motion.div 
-                variants={scaleIn}
-                className="relative"
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center max-w-7xl mx-auto">
+          {/* Left Content */}
+          <motion.div 
+            initial="hidden"
+            animate="visible"
+            variants={staggerContainer}
+            className="relative z-10"
+          >
+            {/* Badge */}
+            <motion.div 
+              variants={fadeIn}
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-primary/15 via-accent/15 to-primary/15 text-foreground px-4 py-2 rounded-full text-xs font-semibold mb-6 border border-primary/20 backdrop-blur-sm"
+            >
+              <motion.span
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
               >
-                <div className="w-28 h-28 lg:w-36 lg:h-36 rounded-2xl bg-gradient-to-br from-primary via-primary-glow to-accent flex items-center justify-center shadow-xl glow-primary rotate-3 hover:rotate-0 transition-transform duration-500">
-                  <Bot className="w-14 h-14 lg:w-18 lg:h-18 text-white" />
-                </div>
-                <div className="absolute -top-2 -right-2 w-10 h-10 rounded-xl bg-gradient-to-br from-warning to-chart-5 flex items-center justify-center animate-bounce-subtle shadow-lg">
-                  <Sparkles className="w-5 h-5 text-white" />
-                </div>
-                <div className="absolute -bottom-2 -left-2 w-8 h-8 rounded-lg bg-gradient-to-br from-chart-3 to-accent flex items-center justify-center shadow-lg">
-                  <Zap className="w-4 h-4 text-white" />
-                </div>
-              </motion.div>
-              
-              {/* Content */}
-              <motion.div 
-                variants={fadeInUp}
-                className="flex-1 text-center lg:text-left"
+                <Flame className="w-3.5 h-3.5 text-warning" />
+              </motion.span>
+              <span className="uppercase tracking-widest">Join 10,000+ Teen Investors</span>
+              <Star className="w-3.5 h-3.5 text-warning" />
+            </motion.div>
+            
+            {/* Main Headline */}
+            <motion.h1 
+              variants={fadeInUp}
+              className="text-5xl md:text-6xl lg:text-7xl font-black tracking-tighter mb-6 leading-[0.95]"
+            >
+              <span className="block text-foreground">Build Your</span>
+              <motion.span 
+                className="block gradient-text relative"
+                animate={{ 
+                  backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+                }}
+                transition={{ duration: 5, repeat: Infinity, ease: 'linear' }}
+                style={{ backgroundSize: '200% 200%' }}
               >
-                <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-3 tracking-tight">
-                  Your <span className="gradient-text">24/7</span> AI Coach
-                </h2>
-                <p className="text-sm md:text-base text-muted-foreground mb-5 max-w-lg">
-                  No dumb questions. Get instant answers, portfolio breakdowns, and 
-                  investing wisdom — written for teens, not Wall Street bros.
-                </p>
-                <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
-                  {[
-                    { icon: MessageCircle, text: 'Instant Answers', color: 'from-primary to-primary-glow' },
-                    { icon: Target, text: 'Smart Insights', color: 'from-accent to-chart-5' },
-                    { icon: TrendingUp, text: 'Portfolio Tips', color: 'from-chart-3 to-primary' }
-                  ].map((item, i) => (
-                    <div key={i} className={`flex items-center gap-2 bg-gradient-to-r ${item.color} px-3 py-1.5 rounded-lg text-xs font-semibold text-white shadow hover:scale-105 transition-transform`}>
-                      <item.icon className="w-3.5 h-3.5" />
-                      {item.text}
-                    </div>
+                Financial Empire
+                <motion.span 
+                  className="absolute -right-4 -top-4"
+                  animate={{ rotate: [0, 15, 0], scale: [1, 1.1, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  <Sparkles className="w-8 h-8 text-warning" />
+                </motion.span>
+              </motion.span>
+            </motion.h1>
+            
+            {/* Subheadline */}
+            <motion.p 
+              variants={fadeInUp}
+              className="text-lg md:text-xl text-muted-foreground mb-8 max-w-lg leading-relaxed"
+            >
+              Master investing with <span className="text-primary font-semibold">zero risk</span>. 
+              Trade stocks, crush the leaderboard, and build skills that'll set you apart.
+            </motion.p>
+            
+            {/* CTA Buttons */}
+            <motion.div 
+              variants={fadeInUp}
+              className="flex flex-col sm:flex-row items-start gap-4 mb-10"
+            >
+              <Link to={user ? "/dashboard" : "/signup"}>
+                <MagneticButton 
+                  size="lg" 
+                  className="gap-3 bg-gradient-to-r from-primary via-primary-glow to-accent hover:shadow-2xl transition-all duration-500 shadow-xl glow-primary font-bold px-8 py-6 rounded-2xl text-lg group"
+                >
+                  <Play className="w-5 h-5 fill-current" />
+                  {user ? "Go to Dashboard" : "Start Free Today"}
+                  <motion.span
+                    animate={{ x: [0, 5, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  >
+                    <ArrowRight className="w-5 h-5" />
+                  </motion.span>
+                </MagneticButton>
+              </Link>
+              <Link to={user ? "/learn" : "/login"}>
+                <Button 
+                  size="lg" 
+                  variant="outline" 
+                  className="border-2 border-primary/40 hover:bg-primary/10 hover:border-primary font-semibold px-8 py-6 rounded-2xl transition-all duration-300 group"
+                >
+                  <BookOpen className="w-5 h-5 mr-2" />
+                  Explore Lessons
+                  <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </Link>
+            </motion.div>
+            
+            {/* Trust Badges */}
+            <motion.div 
+              variants={fadeInUp}
+              className="flex items-center gap-6"
+            >
+              <div className="flex -space-x-2">
+                {[1,2,3,4,5].map((i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.8 + i * 0.1 }}
+                    className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/30 to-accent/30 border-2 border-background flex items-center justify-center text-xs font-bold"
+                  >
+                    {['🚀', '💎', '📈', '🔥', '⭐'][i-1]}
+                  </motion.div>
+                ))}
+              </div>
+              <div>
+                <div className="flex items-center gap-1">
+                  {[1,2,3,4,5].map((i) => (
+                    <Star key={i} className="w-4 h-4 fill-warning text-warning" />
                   ))}
                 </div>
-              </motion.div>
-            </div>
-          </div>
+                <p className="text-xs text-muted-foreground">Loved by teens everywhere</p>
+              </div>
+            </motion.div>
+          </motion.div>
+          
+          {/* Right - Dashboard Preview */}
+          <motion.div
+            variants={slideInRight}
+            initial="hidden"
+            animate="visible"
+            className="relative lg:pl-8"
+          >
+            {/* Glow behind dashboard */}
+            <div className="absolute inset-0 bg-gradient-radial from-primary/30 via-primary/10 to-transparent blur-3xl scale-150" />
+            
+            <motion.div
+              animate={{ 
+                y: [0, -10, 0],
+                rotateX: [0, 2, 0],
+                rotateY: [-2, 2, -2],
+              }}
+              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+              style={{ perspective: 1000 }}
+            >
+              <MockDashboard />
+            </motion.div>
+            
+            {/* Floating elements */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 1.5 }}
+              className="absolute -top-6 -right-6 p-4 rounded-2xl bg-card/90 backdrop-blur-xl border border-border/50 shadow-xl"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-success to-primary flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Today's Gain</p>
+                  <p className="text-lg font-bold text-success">+$245.00</p>
+                </div>
+              </div>
+            </motion.div>
+            
+            <motion.div
+              initial={{ opacity: 0, scale: 0 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 1.8 }}
+              className="absolute -bottom-4 -left-4 p-3 rounded-xl bg-card/90 backdrop-blur-xl border border-border/50 shadow-xl"
+            >
+              <div className="flex items-center gap-2">
+                <Flame className="w-6 h-6 text-warning" />
+                <div>
+                  <p className="text-sm font-bold">7 Day Streak! 🔥</p>
+                  <p className="text-xs text-muted-foreground">Keep it going!</p>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
         </div>
+        
+        {/* Scroll Indicator */}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 2 }}
+          className="absolute bottom-8 left-1/2 -translate-x-1/2"
+        >
+          <motion.div
+            animate={{ y: [0, 10, 0] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="flex flex-col items-center gap-2 text-muted-foreground"
+          >
+            <span className="text-xs uppercase tracking-widest">Scroll to explore</span>
+            <MousePointer2 className="w-5 h-5" />
+          </motion.div>
+        </motion.div>
       </motion.section>
 
-      {/* Why Invest Early Section */}
-      <section className="bg-background py-16 md:py-20 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-accent/5" />
-        <div className="container mx-auto px-4 relative">
-          <motion.div 
+      {/* Stats Section */}
+      <section className="py-16 relative">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={staggerContainer}
+            className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-5xl mx-auto"
+          >
+            {[
+              { value: '10,000+', label: 'Active Traders', icon: '👥' },
+              { value: '$50M+', label: 'Traded Volume', icon: '📊' },
+              { value: '1,500+', label: 'Stocks Available', icon: '📈' },
+              { value: '4.9/5', label: 'User Rating', icon: '⭐' },
+            ].map((stat, i) => (
+              <motion.div
+                key={i}
+                variants={fadeInUp}
+                whileHover={{ scale: 1.05, y: -5 }}
+                className="text-center p-6 rounded-2xl bg-card/50 backdrop-blur-sm border border-border/50 hover:border-primary/30 transition-all duration-300"
+              >
+                <span className="text-3xl mb-2 block">{stat.icon}</span>
+                <p className="text-3xl md:text-4xl font-black gradient-text mb-1">{stat.value}</p>
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{stat.label}</p>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* AI Assistant Bento */}
+      <section className="py-20 relative overflow-hidden">
+        <div className="container mx-auto px-4">
+          <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-100px" }}
             variants={fadeInUp}
             className="text-center mb-12"
           >
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary mb-2">Why Start Early?</p>
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-3">
-              Time Is <span className="gradient-text">Money</span>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary mb-3">AI-Powered Learning</p>
+            <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-4">
+              Your <span className="gradient-text">24/7</span> Trading Coach
             </h2>
-            <p className="text-sm md:text-base text-muted-foreground max-w-xl mx-auto">
-              Every year you wait costs you thousands. The math doesn't lie.
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Get instant answers, personalized insights, and expert guidance—written for teens, not Wall Street.
             </p>
           </motion.div>
           
-          {/* Featured Cards */}
-          <motion.div 
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
-            variants={staggerContainer}
-            className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto mb-10"
-          >
-            {/* Compound Growth Card */}
-            <motion.div variants={fadeInUp}>
-              <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-primary/5 overflow-hidden group hover:scale-[1.02] transition-all duration-500 rounded-2xl h-full">
-                <CardContent className="p-6 md:p-8">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary via-primary-glow to-accent flex items-center justify-center mb-5 shadow-lg glow-primary group-hover:scale-110 transition-transform duration-500">
-                    <TrendingUp className="w-7 h-7 text-primary-foreground" />
+          {/* Bento Grid */}
+          <div className="grid md:grid-cols-3 gap-4 max-w-6xl mx-auto">
+            {/* Large Card */}
+            <BentoCard className="md:col-span-2 md:row-span-2">
+              <div className="flex flex-col h-full">
+                <div className="flex items-start justify-between mb-6">
+                  <motion.div 
+                    whileHover={{ rotate: 10, scale: 1.1 }}
+                    className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary via-primary-glow to-accent flex items-center justify-center shadow-xl glow-primary"
+                  >
+                    <Bot className="w-8 h-8 text-white" />
+                  </motion.div>
+                  <div className="flex gap-2">
+                    <span className="px-3 py-1 rounded-full bg-success/20 text-success text-xs font-semibold">Live</span>
+                    <span className="px-3 py-1 rounded-full bg-primary/20 text-primary text-xs font-semibold">Free</span>
                   </div>
-                  <h3 className="text-xl md:text-2xl font-bold mb-2 tracking-tight">Compound Growth</h3>
-                  <p className="text-sm text-muted-foreground mb-5">
-                    Your biggest flex? Starting early. Watch your money stack while others sleep.
-                  </p>
-                  <div className="bg-gradient-to-br from-primary/15 to-accent/10 rounded-xl p-5 border border-primary/20">
-                    <div className="grid grid-cols-2 gap-4 text-center mb-4">
-                      <div className="p-3 bg-background/50 rounded-lg">
-                        <p className="text-2xl md:text-3xl font-bold gradient-text">$500K+</p>
-                        <p className="text-[10px] text-muted-foreground font-medium mt-1 uppercase tracking-wider">Start at 15</p>
-                      </div>
-                      <div className="p-3 bg-background/50 rounded-lg">
-                        <p className="text-2xl md:text-3xl font-bold text-muted-foreground/50">$250K</p>
-                        <p className="text-[10px] text-muted-foreground font-medium mt-1 uppercase tracking-wider">Start at 25</p>
-                      </div>
+                </div>
+                
+                <h3 className="text-2xl md:text-3xl font-bold mb-3">Ask Anything About Investing</h3>
+                <p className="text-muted-foreground mb-6 flex-grow">
+                  No question is too basic. Our AI coach explains complex concepts in simple terms, 
+                  analyzes your portfolio, and helps you make smarter decisions.
+                </p>
+                
+                {/* Mock chat interface */}
+                <div className="bg-muted/30 rounded-xl p-4 border border-border/50">
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                      <Bot className="w-4 h-4 text-white" />
                     </div>
-                    <div className="flex items-center justify-center gap-1.5 text-primary text-xs font-semibold">
-                      <Flame className="w-3.5 h-3.5" />
-                      <span>2X more by starting 10 years earlier</span>
+                    <div className="flex-1 bg-card rounded-xl p-3 text-sm">
+                      <motion.span
+                        initial={{ opacity: 0 }}
+                        whileInView={{ opacity: 1 }}
+                        transition={{ delay: 0.3 }}
+                      >
+                        Great question! A P/E ratio shows how much investors pay per dollar of earnings. 
+                        Lower = potentially undervalued, higher = growth expectations. For teens, focus on companies you understand first! 📊
+                      </motion.span>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* Financial Literacy Card */}
-            <motion.div variants={fadeInUp}>
-              <Card className="border-0 shadow-lg bg-gradient-to-br from-card via-card to-accent/5 overflow-hidden group hover:scale-[1.02] transition-all duration-500 rounded-2xl h-full">
-                <CardContent className="p-6 md:p-8">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-accent via-chart-5 to-primary flex items-center justify-center mb-5 shadow-lg glow-accent group-hover:scale-110 transition-transform duration-500">
-                    <BookOpen className="w-7 h-7 text-white" />
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="text" 
+                      placeholder="Ask about stocks, strategies, anything..."
+                      className="flex-1 bg-background rounded-lg px-4 py-2 text-sm border border-border/50 focus:border-primary/50 focus:outline-none transition-colors"
+                      disabled
+                    />
+                    <Button size="sm" className="rounded-lg">
+                      <MessageCircle className="w-4 h-4" />
+                    </Button>
                   </div>
-                  <h3 className="text-xl md:text-2xl font-bold mb-2 tracking-tight">Level Up Your Brain</h3>
-                  <p className="text-sm text-muted-foreground mb-5">
-                    Skills that separate winners from the rest. This is your cheat code.
-                  </p>
-                  <div className="space-y-2">
-                    {[
-                      { skill: 'Master Your Money', icon: '💰' },
-                      { skill: 'Read Markets Like a Pro', icon: '📈' },
-                      { skill: 'Manage Risk Like a Boss', icon: '🛡️' }
-                    ].map((item, i) => (
-                      <div key={i} className="flex items-center gap-3 bg-gradient-to-r from-accent/15 to-primary/10 rounded-lg p-3 border border-accent/20 hover:border-accent/40 transition-all duration-300 hover:scale-[1.01] cursor-default">
-                        <span className="text-lg">{item.icon}</span>
-                        <span className="font-semibold text-sm">{item.skill}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </motion.div>
-
-          {/* Risk-Free Badge */}
-          <motion.div 
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={scaleIn}
-            className="flex justify-center"
-          >
-            <div className="inline-flex items-center gap-3 bg-gradient-to-r from-chart-3/15 via-primary/15 to-chart-3/15 px-5 py-3 rounded-xl border border-chart-3/20 shadow-lg">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-chart-3 to-primary flex items-center justify-center shadow">
-                <Shield className="w-5 h-5 text-white" />
+                </div>
               </div>
-              <div>
-                <p className="font-bold text-sm">100% Risk-Free</p>
-                <p className="text-muted-foreground text-xs">Paper trade with fake money. Real skills.</p>
+            </BentoCard>
+            
+            {/* Small Cards */}
+            <BentoCard delay={0.1}>
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent to-chart-5 flex items-center justify-center mb-4 shadow-lg">
+                <Target className="w-6 h-6 text-white" />
               </div>
-            </div>
-          </motion.div>
+              <h4 className="text-lg font-bold mb-2">Smart Insights</h4>
+              <p className="text-sm text-muted-foreground">
+                Get personalized recommendations based on your trading style and goals.
+              </p>
+            </BentoCard>
+            
+            <BentoCard delay={0.2}>
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-chart-3 to-primary flex items-center justify-center mb-4 shadow-lg">
+                <Shield className="w-6 h-6 text-white" />
+              </div>
+              <h4 className="text-lg font-bold mb-2">Risk Analysis</h4>
+              <p className="text-sm text-muted-foreground">
+                Understand your portfolio's risk level with easy-to-understand breakdowns.
+              </p>
+            </BentoCard>
+          </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-14 relative bg-gradient-to-b from-background via-secondary/20 to-background">
+      {/* Features Bento Grid */}
+      <section className="py-20 relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent pointer-events-none" />
+        
         <div className="container mx-auto px-4">
-          <motion.div 
+          <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-100px" }}
             variants={fadeInUp}
-            className="text-center mb-10"
+            className="text-center mb-12"
           >
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent mb-2">Your Arsenal</p>
-            <h2 className="text-2xl md:text-3xl font-bold mb-3 tracking-tight">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-accent mb-3">Your Arsenal</p>
+            <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-4">
               Tools That <span className="gradient-text">Dominate</span>
             </h2>
-            <p className="text-sm text-muted-foreground max-w-xl mx-auto">
-              Everything you need to crush it. No fluff, just power.
+            <p className="text-lg text-muted-foreground max-w-xl mx-auto">
+              Everything you need to learn, trade, and compete. No fluff, just power.
             </p>
           </motion.div>
 
-          <motion.div 
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
-            variants={staggerContainer}
-            className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-6xl mx-auto"
-          >
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-7xl mx-auto">
             {[
-              { icon: BarChart3, title: 'Stock Screener', desc: 'Filter stocks like a pro. Price, sector, risk — you control it.', gradient: 'from-primary to-primary-glow' },
-              { icon: Briefcase, title: 'Paper Trading', desc: 'Trade with fake money. Real market vibes, zero losses.', gradient: 'from-accent to-chart-5' },
-              { icon: BookOpen, title: 'Power Lessons', desc: 'Bite-sized wisdom. Get smarter in minutes, not hours.', gradient: 'from-chart-3 to-primary' },
-              { icon: Trophy, title: 'Leaderboards', desc: 'Compete. Dominate. Flex on your friends.', gradient: 'from-warning to-chart-5' }
+              { 
+                icon: BarChart3, 
+                title: 'Stock Screener', 
+                desc: 'Filter 1,500+ stocks by price, sector, and risk. Find your next winner.',
+                gradient: 'from-primary to-primary-glow',
+                span: 'lg:col-span-2'
+              },
+              { 
+                icon: Briefcase, 
+                title: 'Paper Trading', 
+                desc: 'Trade with $10K virtual cash. Real market data, zero losses.',
+                gradient: 'from-accent to-chart-5',
+                span: ''
+              },
+              { 
+                icon: Trophy, 
+                title: 'Leaderboards', 
+                desc: 'Compete globally. Flex on friends.',
+                gradient: 'from-warning to-chart-5',
+                span: ''
+              },
+              { 
+                icon: BookOpen, 
+                title: 'Bite-Sized Lessons', 
+                desc: 'Learn investing in 5-minute lessons. No boring lectures.',
+                gradient: 'from-chart-3 to-primary',
+                span: ''
+              },
+              { 
+                icon: Rocket, 
+                title: 'Level Up System', 
+                desc: 'Earn XP, unlock achievements, and track your progress.',
+                gradient: 'from-chart-5 to-destructive',
+                span: ''
+              },
+              { 
+                icon: Sparkles, 
+                title: 'AI Explanations', 
+                desc: 'Every market move explained in teen-friendly language.',
+                gradient: 'from-primary to-accent',
+                span: 'lg:col-span-2'
+              },
             ].map((feature, i) => (
-              <motion.div key={i} variants={fadeInUp}>
-                <Card className="group border-0 shadow-md bg-gradient-to-br from-card to-card hover:to-primary/5 overflow-hidden hover:scale-[1.03] transition-all duration-500 rounded-xl cursor-default h-full">
-                  <CardContent className="p-5">
-                    <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-500`}>
-                      <feature.icon className="w-5 h-5 text-white" />
-                    </div>
-                    <h3 className="font-bold text-base mb-1.5 tracking-tight">{feature.title}</h3>
-                    <p className="text-muted-foreground text-xs">{feature.desc}</p>
-                  </CardContent>
-                </Card>
-              </motion.div>
+              <BentoCard key={i} delay={i * 0.05} className={feature.span}>
+                <motion.div 
+                  whileHover={{ rotate: 5, scale: 1.1 }}
+                  className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-5 shadow-lg`}
+                >
+                  <feature.icon className="w-7 h-7 text-white" />
+                </motion.div>
+                <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
+                <p className="text-muted-foreground">{feature.desc}</p>
+              </BentoCard>
             ))}
-          </motion.div>
+          </div>
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* Why Start Early */}
+      <section className="py-20 relative overflow-hidden">
+        <div className="container mx-auto px-4">
+          <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-100px" }}
+              variants={slideInLeft}
+            >
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary mb-3">The Math Doesn't Lie</p>
+              <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-6">
+                Time Is Your <span className="gradient-text">Superpower</span>
+              </h2>
+              <p className="text-lg text-muted-foreground mb-8">
+                Every year you wait costs you thousands. Starting at 15 instead of 25 could mean 
+                <span className="text-primary font-bold"> 2X more wealth</span> by retirement.
+              </p>
+              
+              <div className="space-y-4">
+                {[
+                  { emoji: '💰', title: 'Compound Growth', desc: 'Watch your money multiply while you sleep' },
+                  { emoji: '🧠', title: 'Build Skills Early', desc: 'Learn to read markets before your peers' },
+                  { emoji: '🛡️', title: 'Zero Risk Practice', desc: 'Make mistakes with fake money, not real' },
+                ].map((item, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, x: -30 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.1 }}
+                    className="flex items-start gap-4 p-4 rounded-xl bg-card/50 border border-border/50 hover:border-primary/30 transition-colors"
+                  >
+                    <span className="text-2xl">{item.emoji}</span>
+                    <div>
+                      <h4 className="font-bold">{item.title}</h4>
+                      <p className="text-sm text-muted-foreground">{item.desc}</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+            
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-100px" }}
+              variants={slideInRight}
+              className="relative"
+            >
+              {/* Growth comparison chart */}
+              <div className="bg-card rounded-3xl p-8 border border-border/50 shadow-2xl relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5" />
+                <div className="relative">
+                  <h4 className="text-lg font-bold mb-6 text-center">$100/month invested</h4>
+                  <div className="grid grid-cols-2 gap-6 mb-6">
+                    <div className="text-center p-6 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/30">
+                      <p className="text-4xl font-black gradient-text mb-2">$500K+</p>
+                      <p className="text-sm text-muted-foreground">Start at 15</p>
+                      <p className="text-xs text-primary font-semibold mt-1">45 years of growth</p>
+                    </div>
+                    <div className="text-center p-6 rounded-2xl bg-muted/50 border border-border/50">
+                      <p className="text-4xl font-black text-muted-foreground mb-2">$250K</p>
+                      <p className="text-sm text-muted-foreground">Start at 25</p>
+                      <p className="text-xs text-muted-foreground mt-1">35 years of growth</p>
+                    </div>
+                  </div>
+                  <div className="text-center p-4 rounded-xl bg-success/10 border border-success/20">
+                    <p className="text-success font-bold flex items-center justify-center gap-2">
+                      <Flame className="w-4 h-4" />
+                      10 extra years = 2X more money
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA */}
       <motion.section 
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, margin: "-100px" }}
         variants={fadeIn}
-        className="relative py-16 overflow-hidden"
+        className="relative py-24 overflow-hidden"
       >
         <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary-glow to-accent" />
         <div className="absolute inset-0 noise opacity-20" />
-        <div className="absolute top-0 left-0 w-full h-full">
-          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-white/10 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-white/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-        </div>
+        
+        {/* Animated orbs */}
+        <motion.div
+          animate={{ 
+            x: [0, 100, 0],
+            y: [0, -50, 0],
+          }}
+          transition={{ duration: 10, repeat: Infinity }}
+          className="absolute top-1/4 left-1/4 w-64 h-64 bg-white/10 rounded-full blur-3xl"
+        />
+        <motion.div
+          animate={{ 
+            x: [0, -80, 0],
+            y: [0, 60, 0],
+          }}
+          transition={{ duration: 8, repeat: Infinity, delay: 1 }}
+          className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-white/10 rounded-full blur-3xl"
+        />
         
         <motion.div 
-          variants={fadeInUp}
+          variants={staggerContainer}
           className="container mx-auto px-4 text-center relative"
         >
-          <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur px-4 py-1.5 rounded-full mb-5">
-            <Flame className="w-4 h-4 text-white animate-pulse" />
-            <span className="text-white font-semibold uppercase tracking-wider text-xs">Join the Movement</span>
-          </div>
-          <h2 className="text-2xl md:text-4xl font-bold text-white mb-4 tracking-tight">
-            Stop Watching. Start Winning.
-          </h2>
-          <p className="text-white/80 mb-8 max-w-xl mx-auto text-sm md:text-base">
-            Your friends are already building wealth. What are you waiting for?
-          </p>
-          <Link to="/signup">
-            <Button size="default" className="gap-2 bg-white text-primary hover:bg-white/90 font-bold px-8 py-5 rounded-xl shadow-xl hover:scale-105 transition-all duration-300 group">
-              Start Now — It's Free
-              <Rocket className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-            </Button>
-          </Link>
+          <motion.div 
+            variants={fadeInUp}
+            className="inline-flex items-center gap-2 bg-white/20 backdrop-blur px-5 py-2 rounded-full mb-6"
+          >
+            <motion.span
+              animate={{ rotate: 360 }}
+              transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+            >
+              <Rocket className="w-5 h-5 text-white" />
+            </motion.span>
+            <span className="text-white font-bold uppercase tracking-wider text-sm">Your Future Starts Now</span>
+          </motion.div>
+          
+          <motion.h2 
+            variants={fadeInUp}
+            className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tight"
+          >
+            Stop Watching.<br />Start Building.
+          </motion.h2>
+          
+          <motion.p 
+            variants={fadeInUp}
+            className="text-white/80 mb-10 max-w-2xl mx-auto text-lg md:text-xl"
+          >
+            Join 10,000+ teens who are already learning to invest. 
+            100% free, zero risk, infinite potential.
+          </motion.p>
+          
+          <motion.div variants={fadeInUp}>
+            <Link to="/signup">
+              <MagneticButton 
+                size="lg" 
+                className="gap-3 bg-white text-primary hover:bg-white/90 font-black px-10 py-7 rounded-2xl shadow-2xl text-lg group"
+              >
+                Create Free Account
+                <motion.span
+                  animate={{ x: [0, 8, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                >
+                  <ArrowRight className="w-5 h-5" />
+                </motion.span>
+              </MagneticButton>
+            </Link>
+            <p className="text-white/60 text-sm mt-4">No credit card required • Takes 30 seconds</p>
+          </motion.div>
         </motion.div>
       </motion.section>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 py-6 bg-background">
+      <footer className="border-t border-border/50 py-8 bg-background relative">
         <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary via-primary-glow to-accent flex items-center justify-center shadow">
-                <TrendingUp className="w-4 h-4 text-white" />
-              </div>
-              <span className="font-bold text-sm gradient-text">TeenVest</span>
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <motion.div 
+                whileHover={{ scale: 1.1, rotate: 5 }}
+                className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary via-primary-glow to-accent flex items-center justify-center shadow-lg"
+              >
+                <TrendingUp className="w-5 h-5 text-white" />
+              </motion.div>
+              <span className="font-black text-lg gradient-text">TeenVest</span>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               © 2024 TeenVest. Paper trading for educational purposes only.
             </p>
           </div>
         </div>
       </footer>
-    </div>;
+    </div>
+  );
 };
 
 export default LandingPage;
