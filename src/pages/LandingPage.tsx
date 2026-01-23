@@ -2532,8 +2532,8 @@ const LandingPage = () => {
               <span className="text-2xl font-black gradient-text">TeenVest</span>
             </Link>
             
-            <p className="text-sm text-muted-foreground text-center md:text-left">
-              © 2025 TeenVest <span className="font-semibold text-foreground">v1.2</span>. Building the next generation of investors. 🚀
+            <p className="text-sm text-foreground/80 text-center md:text-left whitespace-nowrap">
+              © 2025 TeenVest <span className="font-bold text-primary">v1.2</span>. Building the next generation of investors. 🚀
             </p>
             
             <div className="flex items-center gap-8">
