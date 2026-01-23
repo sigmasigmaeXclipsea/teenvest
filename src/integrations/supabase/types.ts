@@ -173,6 +173,7 @@ export type Database = {
           created_at: string
           display_name: string | null
           id: string
+          profile_public: boolean
           starting_balance: number
           updated_at: string
           user_id: string
@@ -183,6 +184,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          profile_public?: boolean
           starting_balance?: number
           updated_at?: string
           user_id: string
@@ -193,6 +195,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          profile_public?: boolean
           starting_balance?: number
           updated_at?: string
           user_id?: string
@@ -527,6 +530,7 @@ export type Database = {
         }[]
       }
       get_platform_stats: { Args: never; Returns: Json }
+      get_public_profile: { Args: { _user_id: string }; Returns: Json }
       get_recent_platform_trades: {
         Args: { _limit?: number }
         Returns: {

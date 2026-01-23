@@ -44,7 +44,7 @@ const ProfilePage = () => {
   const { data: publicProfile, isLoading: loadingPublic } = useQuery({
     queryKey: ['public-profile', userId],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_public_profile' as any, { _user_id: userId });
+      const { data, error } = await supabase.rpc('get_public_profile', { _user_id: userId });
       if (error) throw error;
       return data as unknown as PublicProfile;
     },
