@@ -235,10 +235,10 @@ const TradePage = () => {
                       <p className="text-sm text-muted-foreground">You own: <span className="font-medium text-foreground">{Number(currentHolding.shares).toFixed(2)} shares</span></p>
                     </div>
                   )}
-                  <Link to={`/stocks/${selectedStock.symbol}`}>
+                  <Link to={`/research?symbol=${selectedStock.symbol}`}>
                     <Button variant="outline" size="sm" className="w-full mt-2">
                       <BarChart3 className="w-4 h-4 mr-2" />
-                      View Full Stock Details & Charts
+                      View Full Charts
                       <ExternalLink className="w-3 h-3 ml-2" />
                     </Button>
                   </Link>

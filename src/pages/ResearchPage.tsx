@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Search, TrendingUp, TrendingDown, Building2, BarChart3, Calendar, Brain, GitCompare, ChevronRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, TrendingUp, TrendingDown, Building2, BarChart3, Calendar, Brain, GitCompare, ChevronRight, ArrowLeft } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useCachedStocks, useRefreshStockCache, isCacheStale } from '@/hooks/useStockCache';
 import { useStockQuote } from '@/hooks/useStockAPI';
 import ResearchCompanyProfile from '@/components/research/ResearchCompanyProfile';
@@ -19,13 +19,25 @@ import ResearchTechnicalIndicators from '@/components/research/ResearchTechnical
 import ResearchAIAssistant from '@/components/research/ResearchAIAssistant';
 import ResearchComparison from '@/components/research/ResearchComparison';
 import StockCandlestickChart from '@/components/StockCandlestickChart';
+import StockLineChart from '@/components/StockLineChart';
 
 const ResearchPage = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const symbolFromUrl = searchParams.get('symbol') || '';
+  
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedStock, setSelectedStock] = useState<string | null>(null);
+  const [selectedStock, setSelectedStock] = useState<string | null>(symbolFromUrl || null);
   const [activeTab, setActiveTab] = useState('overview');
   const { data: cachedStocks, isLoading } = useCachedStocks();
+  
+  // Update selectedStock when URL param changes
+  useEffect(() => {
+    if (symbolFromUrl && symbolFromUrl !== selectedStock) {
+      setSelectedStock(symbolFromUrl);
+      setActiveTab('overview');
+    }
+  }, [symbolFromUrl]);
   
   // Fetch live stock data for candlestick chart
   const { data: liveStockData } = useStockQuote(selectedStock || '');
@@ -36,33 +48,130 @@ const ResearchPage = () => {
     stock.company_name.toLowerCase().includes(searchQuery.toLowerCase())
   ).slice(0, 8) || [];
 
-  // Get top movers for the dashboard
-  const topGainers = [...(cachedStocks || [])].sort((a, b) => b.change_percent - a.change_percent).slice(0, 5);
-  const topLosers = [...(cachedStocks || [])].sort((a, b) => a.change_percent - b.change_percent).slice(0, 5);
 
   const handleStockSelect = (symbol: string) => {
     setSelectedStock(symbol);
     setSearchQuery('');
     setActiveTab('overview'); // Reset to overview when selecting a new stock
+    // Update URL with symbol
+    setSearchParams({ symbol });
   };
 
   const selectedStockData = cachedStocks?.find(s => s.symbol === selectedStock);
 
+  // If no stock selected, show search interface
+  if (!selectedStock) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          {/* Header */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold">Stock Research</h1>
+              <p className="text-muted-foreground">Search for a stock to view detailed analysis and charts</p>
+            </div>
+          </div>
+
+          {/* Search Interface */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Search for a Stock</CardTitle>
+              <CardDescription>Enter a stock symbol or company name to get started</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search stocks by symbol or name (e.g., AAPL, Apple)"
+                  className="pl-10"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && filteredStocks.length > 0) {
+                      handleStockSelect(filteredStocks[0].symbol);
+                    }
+                  }}
+                />
+                
+                {/* Search Dropdown */}
+                {searchQuery && filteredStocks.length > 0 && (
+                  <Card className="absolute top-full mt-2 w-full z-50 shadow-lg">
+                    <div className="py-2 max-h-96 overflow-y-auto">
+                      {filteredStocks.map((stock) => (
+                        <button
+                          key={stock.symbol}
+                          onClick={() => handleStockSelect(stock.symbol)}
+                          className="w-full px-4 py-3 flex items-center justify-between hover:bg-secondary/50 transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <Badge variant="outline" className="font-mono">{stock.symbol}</Badge>
+                            <div className="text-left">
+                              <span className="text-sm font-medium block">{stock.company_name}</span>
+                              <span className="text-xs text-muted-foreground">{stock.sector || 'N/A'}</span>
+                            </div>
+                          </div>
+                          <div className={`text-sm font-medium ${stock.change_percent >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                            {stock.change_percent >= 0 ? '+' : ''}{stock.change_percent.toFixed(2)}%
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </Card>
+                )}
+              </div>
+
+              {/* Popular Stocks Quick Access */}
+              {!searchQuery && (
+                <div className="mt-6">
+                  <h3 className="text-sm font-semibold mb-3">Popular Stocks</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                    {cachedStocks?.slice(0, 12).map(stock => (
+                      <button
+                        key={stock.symbol}
+                        onClick={() => handleStockSelect(stock.symbol)}
+                        className="p-3 rounded-lg border border-border hover:border-primary/50 hover:bg-secondary/30 transition-colors text-left"
+                      >
+                        <p className="font-bold">{stock.symbol}</p>
+                        <p className="text-xs text-muted-foreground truncate">{stock.company_name}</p>
+                        <p className={`text-sm font-medium mt-1 ${stock.change_percent >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                          {stock.change_percent >= 0 ? '+' : ''}{stock.change_percent.toFixed(2)}%
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Stock detail view
   return (
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold">Research Hub</h1>
-            <p className="text-muted-foreground">Deep dive into stocks with professional-grade tools</p>
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => {
+              setSelectedStock(null);
+              setSearchParams({});
+            }}>
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold">Stock Research</h1>
+              <p className="text-muted-foreground">Deep dive into {selectedStock} with professional-grade tools</p>
+            </div>
           </div>
           
           {/* Stock Search */}
           <div className="relative w-full md:w-96">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search stocks by symbol or name..."
+              placeholder="Search for another stock..."
               className="pl-10"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -93,8 +202,8 @@ const ResearchPage = () => {
           </div>
         </div>
 
-        {/* Main Content */}
-        {selectedStock ? (
+        {/* Main Content - Always show stock details */}
+        {selectedStock && (
           /* Stock Research View */
           <div className="space-y-6">
             {/* Stock Header */}
@@ -125,9 +234,6 @@ const ResearchPage = () => {
                       </p>
                     </div>
                     <div className="flex gap-2">
-                      <Button onClick={() => navigate(`/stocks/${selectedStock}`)}>
-                        View Charts
-                      </Button>
                       <Button variant="outline" onClick={() => navigate(`/trade?symbol=${selectedStock}`)}>
                         Trade
                       </Button>
@@ -156,31 +262,53 @@ const ResearchPage = () => {
               </TabsContent>
 
               <TabsContent value="charts" className="space-y-6">
-                {liveStockData ? (
-                  <StockCandlestickChart
-                    symbol={liveStockData.symbol}
-                    currentPrice={liveStockData.price}
-                    previousClose={liveStockData.previousClose}
-                    high={liveStockData.high}
-                    low={liveStockData.low}
-                    open={liveStockData.open}
-                  />
-                ) : selectedStockData ? (
-                  <StockCandlestickChart
-                    symbol={selectedStock}
-                    currentPrice={selectedStockData.price}
-                    previousClose={selectedStockData.price - selectedStockData.change}
-                    high={selectedStockData.high || selectedStockData.price * 1.02}
-                    low={selectedStockData.low || selectedStockData.price * 0.98}
-                    open={selectedStockData.price - selectedStockData.change}
-                  />
-                ) : (
-                  <Card>
-                    <CardContent className="pt-6">
-                      <p className="text-muted-foreground">Loading chart data...</p>
-                    </CardContent>
-                  </Card>
-                )}
+                <div className="grid gap-6 lg:grid-cols-2">
+                  {liveStockData ? (
+                    <>
+                      <StockLineChart
+                        symbol={liveStockData.symbol}
+                        currentPrice={liveStockData.price}
+                        previousClose={liveStockData.previousClose}
+                        high={liveStockData.high}
+                        low={liveStockData.low}
+                        open={liveStockData.open}
+                      />
+                      <StockCandlestickChart
+                        symbol={liveStockData.symbol}
+                        currentPrice={liveStockData.price}
+                        previousClose={liveStockData.previousClose}
+                        high={liveStockData.high}
+                        low={liveStockData.low}
+                        open={liveStockData.open}
+                      />
+                    </>
+                  ) : selectedStockData ? (
+                    <>
+                      <StockLineChart
+                        symbol={selectedStock}
+                        currentPrice={selectedStockData.price}
+                        previousClose={selectedStockData.price - selectedStockData.change}
+                        high={selectedStockData.high || selectedStockData.price * 1.02}
+                        low={selectedStockData.low || selectedStockData.price * 0.98}
+                        open={selectedStockData.price - selectedStockData.change}
+                      />
+                      <StockCandlestickChart
+                        symbol={selectedStock}
+                        currentPrice={selectedStockData.price}
+                        previousClose={selectedStockData.price - selectedStockData.change}
+                        high={selectedStockData.high || selectedStockData.price * 1.02}
+                        low={selectedStockData.low || selectedStockData.price * 0.98}
+                        open={selectedStockData.price - selectedStockData.change}
+                      />
+                    </>
+                  ) : (
+                    <Card>
+                      <CardContent className="pt-6">
+                        <p className="text-muted-foreground">Loading chart data...</p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
               </TabsContent>
 
               <TabsContent value="financials">
@@ -211,233 +339,6 @@ const ResearchPage = () => {
                 <ResearchAIAssistant symbol={selectedStock} />
               </TabsContent>
             </Tabs>
-
-            {/* Back to Dashboard */}
-            <Button variant="ghost" onClick={() => setSelectedStock(null)}>
-              ← Back to Research Dashboard
-            </Button>
-          </div>
-        ) : (
-          /* Dashboard Overview */
-          <div className="grid gap-6 lg:grid-cols-3">
-            {/* Quick Research Cards */}
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5" />
-                  Market Overview
-                </CardTitle>
-                <CardDescription>Today's market movers and trending stocks</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid md:grid-cols-2 gap-6">
-                  {/* Top Gainers */}
-                  <div>
-                    <h3 className="font-semibold text-emerald-500 flex items-center gap-2 mb-3">
-                      <TrendingUp className="w-4 h-4" /> Top Gainers
-                    </h3>
-                    {isLoading ? (
-                      <div className="space-y-2">
-                        {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-10 w-full" />)}
-                      </div>
-                    ) : (
-                      <div className="space-y-1">
-                        {topGainers.map(stock => (
-                          <button
-                            key={stock.symbol}
-                            onClick={() => handleStockSelect(stock.symbol)}
-                            className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-secondary/50 transition-colors"
-                          >
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline" className="font-mono text-xs">{stock.symbol}</Badge>
-                              <span className="text-sm text-muted-foreground truncate max-w-[120px]">{stock.company_name}</span>
-                            </div>
-                            <span className="text-emerald-500 font-medium">+{stock.change_percent.toFixed(2)}%</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Top Losers */}
-                  <div>
-                    <h3 className="font-semibold text-red-500 flex items-center gap-2 mb-3">
-                      <TrendingDown className="w-4 h-4" /> Top Losers
-                    </h3>
-                    {isLoading ? (
-                      <div className="space-y-2">
-                        {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-10 w-full" />)}
-                      </div>
-                    ) : (
-                      <div className="space-y-1">
-                        {topLosers.map(stock => (
-                          <button
-                            key={stock.symbol}
-                            onClick={() => handleStockSelect(stock.symbol)}
-                            className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-secondary/50 transition-colors"
-                          >
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline" className="font-mono text-xs">{stock.symbol}</Badge>
-                              <span className="text-sm text-muted-foreground truncate max-w-[120px]">{stock.company_name}</span>
-                            </div>
-                            <span className="text-red-500 font-medium">{stock.change_percent.toFixed(2)}%</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Quick Access */}
-            <div className="space-y-4">
-              <Card className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => navigate('/screener')}>
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                        <BarChart3 className="w-5 h-5 text-blue-500" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold">Stock Screener</h3>
-                        <p className="text-sm text-muted-foreground">Filter by criteria</p>
-                      </div>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card 
-                className="cursor-pointer hover:border-primary/50 transition-colors"
-                onClick={() => {
-                  // If a stock is selected, switch to compare tab, otherwise navigate to screener
-                  if (selectedStock) {
-                    setSelectedStock(null);
-                    setActiveTab('compare');
-                    // Wait a bit then select a stock to show comparison
-                    setTimeout(() => {
-                      const firstStock = cachedStocks?.[0];
-                      if (firstStock) {
-                        setSelectedStock(firstStock.symbol);
-                        setActiveTab('compare');
-                      }
-                    }, 100);
-                  } else {
-                    navigate('/screener');
-                  }
-                }}
-              >
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                        <GitCompare className="w-5 h-5 text-purple-500" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold">Compare Stocks</h3>
-                        <p className="text-sm text-muted-foreground">Side-by-side analysis</p>
-                      </div>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card 
-                className="cursor-pointer hover:border-primary/50 transition-colors"
-                onClick={() => {
-                  // If a stock is selected, switch to earnings tab, otherwise select first stock and show earnings
-                  if (selectedStock) {
-                    setActiveTab('earnings');
-                  } else {
-                    const firstStock = cachedStocks?.[0];
-                    if (firstStock) {
-                      setSelectedStock(firstStock.symbol);
-                      setActiveTab('earnings');
-                    }
-                  }
-                }}
-              >
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                        <Calendar className="w-5 h-5 text-amber-500" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold">Earnings Calendar</h3>
-                        <p className="text-sm text-muted-foreground">Upcoming reports</p>
-                      </div>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card 
-                className="cursor-pointer hover:border-primary/50 transition-colors"
-                onClick={() => {
-                  // If a stock is selected, switch to AI tab, otherwise select first stock and show AI
-                  if (selectedStock) {
-                    setActiveTab('ai');
-                  } else {
-                    const firstStock = cachedStocks?.[0];
-                    if (firstStock) {
-                      setSelectedStock(firstStock.symbol);
-                      setActiveTab('ai');
-                    }
-                  }
-                }}
-              >
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                        <Brain className="w-5 h-5 text-emerald-500" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold">AI Research Assistant</h3>
-                        <p className="text-sm text-muted-foreground">Ask anything</p>
-                      </div>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Popular Stocks Grid */}
-            <Card className="lg:col-span-3">
-              <CardHeader>
-                <CardTitle>Popular Stocks</CardTitle>
-                <CardDescription>Click on any stock to start researching</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                    {[1,2,3,4,5,6,7,8,9,10,11,12].map(i => <Skeleton key={i} className="h-20" />)}
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                    {cachedStocks?.slice(0, 12).map(stock => (
-                      <button
-                        key={stock.symbol}
-                        onClick={() => handleStockSelect(stock.symbol)}
-                        className="p-3 rounded-lg border border-border hover:border-primary/50 hover:bg-secondary/30 transition-colors text-left"
-                      >
-                        <p className="font-bold">{stock.symbol}</p>
-                        <p className="text-xs text-muted-foreground truncate">{stock.company_name}</p>
-                        <p className={`text-sm font-medium mt-1 ${stock.change_percent >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                          {stock.change_percent >= 0 ? '+' : ''}{stock.change_percent.toFixed(2)}%
-                        </p>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           </div>
         )}
       </div>
