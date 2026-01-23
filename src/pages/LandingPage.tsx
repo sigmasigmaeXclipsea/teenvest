@@ -212,13 +212,17 @@ const ScrambleText = ({ text, className }: { text: string; className?: string })
   );
 };
 
-// Floating interactive orb
-const InteractiveOrb = ({ className, delay = 0 }: { className?: string; delay?: number }) => {
+// Floating interactive orb with 3D support
+const InteractiveOrb = ({ className, delay = 0, style }: { className?: string; delay?: number; style?: React.CSSProperties }) => {
   const [isHovered, setIsHovered] = useState(false);
   
   return (
     <motion.div
       className={`absolute rounded-full cursor-pointer ${className}`}
+      style={{
+        transformStyle: 'preserve-3d',
+        ...style,
+      }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       initial={{ scale: 0, opacity: 0 }}
@@ -227,12 +231,16 @@ const InteractiveOrb = ({ className, delay = 0 }: { className?: string; delay?: 
         opacity: 1,
         y: isHovered ? 0 : [0, -20, 0],
         x: isHovered ? 0 : [0, 10, 0],
+        rotateX: [0, 360],
+        rotateY: [0, 360],
       }}
       transition={{
         scale: { type: 'spring', stiffness: 300 },
         opacity: { delay, duration: 1 },
         y: { duration: 6 + delay, repeat: Infinity, ease: 'easeInOut' },
         x: { duration: 8 + delay, repeat: Infinity, ease: 'easeInOut' },
+        rotateX: { duration: 20, repeat: Infinity, ease: 'linear' },
+        rotateY: { duration: 15, repeat: Infinity, ease: 'linear' },
       }}
     >
       {isHovered && (
@@ -514,30 +522,38 @@ const AnimatedDashboard = () => {
       }));
     }
     
-    // Fallback while loading
+    // Fallback with realistic prices while loading
     return [
-      { symbol: 'AAPL', name: 'Apple Inc.', price: 0, change: '...', color: colors[0] },
-      { symbol: 'TSLA', name: 'Tesla Inc.', price: 0, change: '...', color: colors[1] },
-      { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 0, change: '...', color: colors[2] },
-      { symbol: 'MSFT', name: 'Microsoft', price: 0, change: '...', color: colors[3] },
+      { symbol: 'AAPL', name: 'Apple Inc.', price: 178.25, change: '+2.4%', color: colors[0] },
+      { symbol: 'TSLA', name: 'Tesla Inc.', price: 245.50, change: '+5.1%', color: colors[1] },
+      { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 890.20, change: '+4.5%', color: colors[2] },
+      { symbol: 'MSFT', name: 'Microsoft', price: 378.90, change: '+0.8%', color: colors[3] },
     ];
   }, [stockQuotes]);
   
-  // Calculate portfolio value from real stock prices
+  // Calculate portfolio value from real stock prices with realistic fallback
   const portfolioValue = useMemo(() => {
-    if (error || !stockQuotes || stockQuotes.length === 0) return 11200;
-    try {
-      // Simulate holdings: 15 AAPL, 8 TSLA, 5 NVDA, 12 MSFT (larger portfolio)
-      const holdings = { AAPL: 15, TSLA: 8, NVDA: 5, MSFT: 12 };
-      return stockQuotes.reduce((total, quote) => {
-        if (!quote || !quote.symbol || !quote.price) return total;
-        const shares = holdings[quote.symbol as keyof typeof holdings] || 0;
-        return total + (Number(quote.price) * shares);
-      }, 0);
-    } catch (err) {
-      console.error('Error calculating portfolio value:', err);
-      return 11200;
+    // Simulate holdings: 15 AAPL, 8 TSLA, 5 NVDA, 12 MSFT
+    const holdings = { AAPL: 15, TSLA: 8, NVDA: 5, MSFT: 12 };
+    const fallbackPrices = { AAPL: 178.25, TSLA: 245.50, NVDA: 890.20, MSFT: 378.90 };
+    
+    if (stockQuotes && stockQuotes.length > 0) {
+      try {
+        return stockQuotes.reduce((total, quote) => {
+          if (!quote || !quote.symbol) return total;
+          const shares = holdings[quote.symbol as keyof typeof holdings] || 0;
+          const price = quote.price && quote.price > 0 ? Number(quote.price) : (fallbackPrices[quote.symbol as keyof typeof fallbackPrices] || 0);
+          return total + (price * shares);
+        }, 0);
+      } catch (err) {
+        console.error('Error calculating portfolio value:', err);
+      }
     }
+    
+    // Fallback calculation with realistic prices
+    return Object.entries(holdings).reduce((total, [symbol, shares]) => {
+      return total + (fallbackPrices[symbol as keyof typeof fallbackPrices] * shares);
+    }, 0);
   }, [stockQuotes, error]);
   
   // Starting investment is calculated to always show ~+12% gain for demo
@@ -554,20 +570,28 @@ const AnimatedDashboard = () => {
     return ((portfolioValue - startingInvestment) / startingInvestment) * 100;
   }, [portfolioValue, startingInvestment]);
   
-  // Calculate today's gain from real data
+  // Calculate today's gain from real data with realistic fallback
   const todaysGain = useMemo(() => {
-    if (error || !stockQuotes || stockQuotes.length === 0) return 0;
-    try {
-      const holdings = { AAPL: 15, TSLA: 8, NVDA: 5, MSFT: 12 };
-      return stockQuotes.reduce((total, quote) => {
-        if (!quote || !quote.symbol || quote.change === undefined) return total;
-        const shares = holdings[quote.symbol as keyof typeof holdings] || 0;
-        return total + (Number(quote.change) * shares);
-      }, 0);
-    } catch (err) {
-      console.error('Error calculating today\'s gain:', err);
-      return 0;
+    const holdings = { AAPL: 15, TSLA: 8, NVDA: 5, MSFT: 12 };
+    const fallbackChanges = { AAPL: 4.18, TSLA: 12.25, NVDA: 38.25, MSFT: 2.83 }; // Realistic dollar changes
+    
+    if (stockQuotes && stockQuotes.length > 0) {
+      try {
+        return stockQuotes.reduce((total, quote) => {
+          if (!quote || !quote.symbol) return total;
+          const shares = holdings[quote.symbol as keyof typeof holdings] || 0;
+          const change = quote.change !== undefined ? Number(quote.change) : (fallbackChanges[quote.symbol as keyof typeof fallbackChanges] || 0);
+          return total + (change * shares);
+        }, 0);
+      } catch (err) {
+        console.error('Error calculating today\'s gain:', err);
+      }
     }
+    
+    // Fallback calculation
+    return Object.entries(holdings).reduce((total, [symbol, shares]) => {
+      return total + (fallbackChanges[symbol as keyof typeof fallbackChanges] * shares);
+    }, 0);
   }, [stockQuotes, error]);
   
   useEffect(() => {
@@ -818,7 +842,7 @@ const AnimatedDashboard = () => {
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-semibold">
-                      {stock.price > 0 ? `$${stock.price.toFixed(2)}` : '...'}
+                      ${stock.price.toFixed(2)}
                     </p>
                     <motion.p 
                       className={`text-xs font-bold ${
@@ -934,27 +958,107 @@ const LandingPage = () => {
   };
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-background relative overflow-x-hidden">
+    <div 
+      ref={containerRef} 
+      className="min-h-screen bg-background relative overflow-x-hidden"
+      style={{
+        perspective: '2000px',
+        transformStyle: 'preserve-3d',
+      }}
+    >
       {/* Custom cursor - only on desktop */}
       {typeof window !== 'undefined' && window.innerWidth >= 768 && <CursorFollower />}
       
-      {/* Floating particles */}
-      <FloatingParticles />
-      
-      {/* Interactive grid */}
-      <GridBackground />
-      
-      {/* Morphing background blobs */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <MorphingBlob className="w-[800px] h-[800px] bg-primary/10 -top-[300px] -left-[300px]" />
-        <MorphingBlob className="w-[600px] h-[600px] bg-accent/10 bottom-[-200px] right-[-200px]" />
-        <MorphingBlob className="w-[400px] h-[400px] bg-chart-3/10 top-1/2 left-1/3" />
+      {/* 3D Floating particles with depth */}
+      <div style={{ transformStyle: 'preserve-3d' }}>
+        <FloatingParticles />
       </div>
       
-      {/* Interactive orbs */}
-      <InteractiveOrb className="w-20 h-20 bg-gradient-to-br from-primary/40 to-accent/40 top-[20%] left-[10%] blur-sm" delay={0} />
-      <InteractiveOrb className="w-16 h-16 bg-gradient-to-br from-accent/40 to-chart-3/40 top-[40%] right-[15%] blur-sm" delay={1} />
-      <InteractiveOrb className="w-12 h-12 bg-gradient-to-br from-warning/40 to-destructive/40 bottom-[30%] left-[20%] blur-sm" delay={2} />
+      {/* Interactive grid with 3D depth */}
+      <div style={{ transformStyle: 'preserve-3d' }}>
+        <GridBackground />
+      </div>
+      
+      {/* 3D Morphing background blobs with depth */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ transformStyle: 'preserve-3d' }}>
+        <motion.div
+          style={{
+            transform: 'translateZ(-500px)',
+          }}
+        >
+          <MorphingBlob className="w-[800px] h-[800px] bg-primary/10 -top-[300px] -left-[300px]" />
+        </motion.div>
+        <motion.div
+          style={{
+            transform: 'translateZ(-300px)',
+          }}
+        >
+          <MorphingBlob className="w-[600px] h-[600px] bg-accent/10 bottom-[-200px] right-[-200px]" />
+        </motion.div>
+        <motion.div
+          style={{
+            transform: 'translateZ(-200px)',
+          }}
+        >
+          <MorphingBlob className="w-[400px] h-[400px] bg-chart-3/10 top-1/2 left-1/3" />
+        </motion.div>
+      </div>
+      
+      {/* 3D Interactive orbs that flow around */}
+      <motion.div
+        style={{
+          transformStyle: 'preserve-3d',
+        }}
+        animate={{
+          rotateY: [0, 360],
+        }}
+        transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+      >
+        <InteractiveOrb 
+          className="w-20 h-20 bg-gradient-to-br from-primary/40 to-accent/40 top-[20%] left-[10%] blur-sm" 
+          delay={0}
+          style={{ transform: 'translateZ(100px)' }}
+        />
+        <InteractiveOrb 
+          className="w-16 h-16 bg-gradient-to-br from-accent/40 to-chart-3/40 top-[40%] right-[15%] blur-sm" 
+          delay={1}
+          style={{ transform: 'translateZ(150px)' }}
+        />
+        <InteractiveOrb 
+          className="w-12 h-12 bg-gradient-to-br from-warning/40 to-destructive/40 bottom-[30%] left-[20%] blur-sm" 
+          delay={2}
+          style={{ transform: 'translateZ(80px)' }}
+        />
+      </motion.div>
+      
+      {/* 3D Flowing energy waves in the middle */}
+      {[...Array(8)].map((_, i) => (
+        <motion.div
+          key={`wave-${i}`}
+          className="absolute rounded-full border-2 border-primary/20"
+          style={{
+            width: `${200 + i * 100}px`,
+            height: `${200 + i * 100}px`,
+            top: '50%',
+            left: '50%',
+            transform: `translate(-50%, -50%) translateZ(${-200 + i * 50}px) rotateX(${i * 15}deg) rotateY(${i * 20}deg)`,
+            transformStyle: 'preserve-3d',
+          }}
+          animate={{
+            scale: [1, 1.3, 1],
+            opacity: [0.1, 0.4, 0.1],
+            rotateZ: [0, 360],
+            rotateX: [i * 15, i * 15 + 360],
+            rotateY: [i * 20, i * 20 + 360],
+          }}
+          transition={{
+            duration: 10 + i * 2,
+            repeat: Infinity,
+            ease: 'linear',
+            delay: i * 0.3,
+          }}
+        />
+      ))}
       
       {/* Header */}
       <motion.header 
@@ -1032,9 +1136,15 @@ const LandingPage = () => {
         </div>
       </motion.header>
 
-      {/* Hero Section - ULTRA ENHANCED */}
+      {/* Hero Section - 3D FUTURISTIC */}
       <motion.section 
-        style={{ y: heroY, scale: heroScale, opacity: heroOpacity, rotateX: heroRotate }}
+        style={{ 
+          y: heroY, 
+          scale: heroScale, 
+          opacity: heroOpacity, 
+          rotateX: heroRotate,
+          perspective: '1000px',
+        }}
         className="container mx-auto px-4 pt-12 pb-20 md:pt-16 md:pb-28 relative min-h-[90vh] flex items-center overflow-hidden"
       >
         {/* Animated gradient mesh background */}
@@ -1071,18 +1181,81 @@ const LandingPage = () => {
           />
         </div>
         
-        {/* Floating light beams */}
-        {[...Array(3)].map((_, i) => (
+        {/* 3D Flowing particles that move around elements */}
+        {[...Array(20)].map((_, i) => (
           <motion.div
             key={i}
+            className="absolute w-2 h-2 rounded-full bg-primary/40 blur-sm"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+            }}
+            animate={{
+              x: [
+                Math.random() * 200 - 100,
+                Math.random() * 200 - 100,
+                Math.random() * 200 - 100,
+              ],
+              y: [
+                Math.random() * 200 - 100,
+                Math.random() * 200 - 100,
+                Math.random() * 200 - 100,
+              ],
+              z: [0, Math.random() * 100, 0],
+              scale: [0.5, 1.5, 0.5],
+              opacity: [0.2, 0.8, 0.2],
+              rotateX: [0, 360],
+              rotateY: [0, 360],
+            }}
+            transition={{
+              duration: 8 + Math.random() * 4,
+              repeat: Infinity,
+              ease: 'easeInOut',
+              delay: Math.random() * 2,
+            }}
+          />
+        ))}
+        
+        {/* 3D Flowing energy streams */}
+        {[...Array(5)].map((_, i) => (
+          <motion.div
+            key={`stream-${i}`}
+            className="absolute w-px h-full bg-gradient-to-b from-transparent via-primary/30 to-transparent"
+            style={{
+              left: `${15 + i * 20}%`,
+              transformStyle: 'preserve-3d',
+              transform: `perspective(1000px) rotateY(${i * 20}deg) translateZ(${i * 50}px)`,
+            }}
+            animate={{
+              opacity: [0.2, 0.6, 0.2],
+              scaleY: [0.8, 1.2, 0.8],
+              x: [0, Math.sin(i) * 50, 0],
+              z: [0, Math.cos(i) * 100, 0],
+            }}
+            transition={{
+              duration: 3 + i,
+              repeat: Infinity,
+              ease: 'easeInOut',
+              delay: i * 0.5,
+            }}
+          />
+        ))}
+        
+        {/* Floating light beams with 3D depth */}
+        {[...Array(3)].map((_, i) => (
+          <motion.div
+            key={`beam-${i}`}
             className="absolute w-1 h-full bg-gradient-to-b from-primary/30 via-transparent to-transparent"
             style={{
               left: `${20 + i * 30}%`,
               top: 0,
+              transformStyle: 'preserve-3d',
+              transform: `perspective(1000px) rotateX(${i * 10}deg) translateZ(${i * 30}px)`,
             }}
             animate={{
               opacity: [0, 0.5, 0],
               scaleY: [0.5, 1, 0.5],
+              rotateZ: [0, 5, 0],
             }}
             transition={{
               duration: 4 + i,
@@ -1092,13 +1265,81 @@ const LandingPage = () => {
           />
         ))}
         
-        <div className="grid lg:grid-cols-[1fr_1.3fr] gap-8 lg:gap-12 items-center max-w-[90rem] mx-auto w-full">
-          {/* Left Content */}
+        {/* 3D Container with flowing middle section */}
+        <motion.div 
+          className="grid lg:grid-cols-[1fr_1.3fr] gap-8 lg:gap-12 items-center max-w-[90rem] mx-auto w-full relative"
+          style={{
+            transformStyle: 'preserve-3d',
+            perspective: '1500px',
+          }}
+          animate={{
+            rotateY: [0, 1, 0],
+            rotateX: [0, 0.5, 0],
+          }}
+          transition={{
+            duration: 20,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+        >
+          {/* Flowing particles in the middle gap */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full pointer-events-none hidden lg:block">
+            {[...Array(15)].map((_, i) => (
+              <motion.div
+                key={`flow-${i}`}
+                className="absolute w-3 h-3 rounded-full bg-primary/30 blur-sm"
+                style={{
+                  left: `${40 + Math.random() * 20}%`,
+                  top: `${30 + Math.random() * 40}%`,
+                  transformStyle: 'preserve-3d',
+                }}
+                animate={{
+                  x: [
+                    Math.sin(i) * 100,
+                    Math.sin(i + Math.PI) * 100,
+                    Math.sin(i) * 100,
+                  ],
+                  y: [
+                    Math.cos(i) * 100,
+                    Math.cos(i + Math.PI) * 100,
+                    Math.cos(i) * 100,
+                  ],
+                  z: [0, 200, 0],
+                  rotateX: [0, 360],
+                  rotateY: [0, 360],
+                  rotateZ: [0, 360],
+                  scale: [0.5, 1.5, 0.5],
+                  opacity: [0.2, 0.8, 0.2],
+                }}
+                transition={{
+                  duration: 6 + Math.random() * 4,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                  delay: Math.random() * 2,
+                }}
+              />
+            ))}
+          </div>
+          {/* Left Content - 3D TRANSFORMED */}
           <motion.div 
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, x: -50, rotateY: -20, z: -100 }}
+            animate={{ 
+              opacity: 1, 
+              x: 0, 
+              rotateY: 0,
+              z: 0,
+            }}
             transition={{ duration: 1, type: 'spring' }}
+            style={{
+              transformStyle: 'preserve-3d',
+              perspective: '1000px',
+            }}
             className="relative z-10 lg:col-span-1"
+            whileHover={{
+              rotateY: 5,
+              z: 20,
+              transition: { duration: 0.3 }
+            }}
           >
             {/* Badge */}
             <motion.div 
@@ -1123,19 +1364,43 @@ const LandingPage = () => {
               </motion.span>
             </motion.div>
             
-            {/* Main Headline - ULTRA ENHANCED */}
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black tracking-tighter mb-6 leading-[0.95] relative">
+            {/* Main Headline - 3D FUTURISTIC */}
+            <motion.h1 
+              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black tracking-tighter mb-6 leading-[0.95] relative"
+              style={{
+                transformStyle: 'preserve-3d',
+                perspective: '1200px',
+              }}
+            >
               <motion.span 
                 className="block text-foreground relative z-10"
-                initial={{ opacity: 0, y: 30, scale: 0.9 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
+                initial={{ opacity: 0, y: 30, scale: 0.9, rotateX: -20, z: -50 }}
+                animate={{ 
+                  opacity: 1, 
+                  y: 0, 
+                  scale: 1,
+                  rotateX: 0,
+                  z: 0,
+                }}
                 transition={{ delay: 0.3, type: 'spring', stiffness: 100 }}
+                style={{ transformStyle: 'preserve-3d' }}
+                whileHover={{
+                  rotateY: 5,
+                  z: 30,
+                  scale: 1.02,
+                }}
               >
                 Build Your
-                {/* Glow effect behind text */}
+                {/* 3D Glow effect behind text */}
                 <motion.span
                   className="absolute inset-0 blur-2xl text-primary/30 -z-10"
-                  animate={{ opacity: [0.3, 0.6, 0.3] }}
+                  style={{
+                    transform: 'translateZ(-50px)',
+                  }}
+                  animate={{ 
+                    opacity: [0.3, 0.6, 0.3],
+                    scale: [1, 1.1, 1],
+                  }}
                   transition={{ duration: 3, repeat: Infinity }}
                 >
                   Build Your
@@ -1143,9 +1408,21 @@ const LandingPage = () => {
               </motion.span>
               <motion.span 
                 className="block gradient-text relative z-10"
-                initial={{ opacity: 0, y: 30, scale: 0.9 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
+                initial={{ opacity: 0, y: 30, scale: 0.9, rotateX: -20, z: -50 }}
+                animate={{ 
+                  opacity: 1, 
+                  y: 0, 
+                  scale: 1,
+                  rotateX: 0,
+                  z: 0,
+                }}
                 transition={{ delay: 0.4, type: 'spring', stiffness: 100 }}
+                style={{ transformStyle: 'preserve-3d' }}
+                whileHover={{
+                  rotateY: -5,
+                  z: 30,
+                  scale: 1.02,
+                }}
               >
                 <RevealText text="Financial Empire" className="inline relative z-10" />
                 {/* Animated gradient overlay */}
@@ -1328,12 +1605,30 @@ const LandingPage = () => {
             </motion.div>
           </motion.div>
           
-          {/* Right - Dashboard Preview - ULTRA ENHANCED */}
+          {/* Right - Dashboard Preview - 3D FLOATING */}
           <motion.div
-            initial={{ opacity: 0, x: 80, rotateY: -15, scale: 0.9 }}
-            animate={{ opacity: 1, x: 0, rotateY: 0, scale: 1 }}
+            initial={{ opacity: 0, x: 80, rotateY: -30, rotateX: 10, scale: 0.9, z: -200 }}
+            animate={{ 
+              opacity: 1, 
+              x: 0, 
+              rotateY: 0, 
+              rotateX: 0,
+              scale: 1,
+              z: 0,
+            }}
             transition={{ duration: 1.2, delay: 0.2, type: 'spring', stiffness: 100 }}
+            style={{
+              transformStyle: 'preserve-3d',
+              perspective: '1500px',
+            }}
             className="relative lg:col-span-1"
+            whileHover={{
+              rotateY: 5,
+              rotateX: -2,
+              z: 50,
+              scale: 1.02,
+              transition: { duration: 0.3 }
+            }}
           >
             {/* Multiple glow layers behind dashboard - enhanced */}
             <motion.div 
@@ -1361,39 +1656,70 @@ const LandingPage = () => {
               />
             ))}
             
-            {/* Orbiting elements */}
-            <motion.div
-              className="absolute w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent shadow-lg"
-              animate={{
-                rotate: 360,
-                x: [0, 50, 0, -50, 0],
-                y: [-50, 0, 50, 0, -50],
-              }}
-              transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
-              style={{ top: '10%', left: '5%' }}
-            />
-            <motion.div
-              className="absolute w-6 h-6 rounded-full bg-gradient-to-br from-warning to-destructive shadow-lg"
-              animate={{
-                rotate: -360,
-                x: [0, -40, 0, 40, 0],
-                y: [40, 0, -40, 0, 40],
-              }}
-              transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
-              style={{ bottom: '15%', right: '0%' }}
-            />
+            {/* 3D Orbiting elements that flow around dashboard */}
+            {[...Array(6)].map((_, i) => (
+              <motion.div
+                key={`orb-${i}`}
+                className="absolute rounded-full bg-gradient-to-br from-primary/60 to-accent/60 shadow-lg blur-sm"
+                style={{
+                  width: `${8 + i * 2}px`,
+                  height: `${8 + i * 2}px`,
+                  top: `${10 + i * 15}%`,
+                  left: `${5 + (i % 3) * 30}%`,
+                  transformStyle: 'preserve-3d',
+                }}
+                animate={{
+                  rotate: i % 2 === 0 ? 360 : -360,
+                  x: [
+                    Math.cos(i) * 60,
+                    Math.cos(i + Math.PI) * 60,
+                    Math.cos(i) * 60,
+                  ],
+                  y: [
+                    Math.sin(i) * 60,
+                    Math.sin(i + Math.PI) * 60,
+                    Math.sin(i) * 60,
+                  ],
+                  z: [0, 100, 0],
+                  rotateX: [0, 180, 360],
+                  rotateY: [0, 180, 360],
+                  scale: [0.8, 1.2, 0.8],
+                }}
+                transition={{ 
+                  duration: 8 + i * 2, 
+                  repeat: Infinity, 
+                  ease: 'linear',
+                  delay: i * 0.5,
+                }}
+              />
+            ))}
             
             <motion.div
               animate={{ 
-                y: [0, -12, 0],
-                rotateX: [0, 2, 0],
-                rotateY: [-2, 2, -2],
+                y: [0, -15, 0],
+                rotateX: [0, 5, 0],
+                rotateY: [-3, 3, -3],
+                z: [0, 30, 0],
               }}
               transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-              style={{ perspective: 1200 }}
+              style={{ 
+                perspective: '1500px',
+                transformStyle: 'preserve-3d',
+              }}
               className="w-full hidden lg:block"
             >
-              <AnimatedDashboard />
+              <motion.div
+                style={{
+                  transformStyle: 'preserve-3d',
+                }}
+                animate={{
+                  rotateY: [0, 2, 0],
+                  rotateX: [0, 1, 0],
+                }}
+                transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                <AnimatedDashboard />
+              </motion.div>
             </motion.div>
             
             {/* Mobile-friendly simplified dashboard */}
@@ -1451,7 +1777,7 @@ const LandingPage = () => {
               </div>
             </motion.div>
           </motion.div>
-        </div>
+        </motion.div>
         
         {/* Scroll Indicator */}
         <motion.div 
@@ -2233,7 +2559,7 @@ const LandingPage = () => {
         </div>
       </footer>
       
-      {/* Add enhanced styles */}
+      {/* Add enhanced 3D styles */}
       <style>{`
         .stroke-text {
           -webkit-text-stroke: 2px hsl(var(--primary) / 0.3);
@@ -2257,6 +2583,38 @@ const LandingPage = () => {
         }
         .bg-gradient-radial {
           background: radial-gradient(circle, var(--tw-gradient-stops));
+        }
+        /* 3D Transform utilities */
+        * {
+          transform-style: preserve-3d;
+        }
+        @keyframes float-3d {
+          0%, 100% { 
+            transform: translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg);
+          }
+          25% { 
+            transform: translate3d(10px, -10px, 20px) rotateX(5deg) rotateY(5deg);
+          }
+          50% { 
+            transform: translate3d(-10px, 10px, -20px) rotateX(-5deg) rotateY(-5deg);
+          }
+          75% { 
+            transform: translate3d(5px, -5px, 10px) rotateX(3deg) rotateY(-3deg);
+          }
+        }
+        @keyframes flow-around {
+          0% { 
+            transform: translate3d(0, 0, 0) rotateY(0deg);
+          }
+          33% { 
+            transform: translate3d(50px, -30px, 50px) rotateY(120deg);
+          }
+          66% { 
+            transform: translate3d(-50px, 30px, -50px) rotateY(240deg);
+          }
+          100% { 
+            transform: translate3d(0, 0, 0) rotateY(360deg);
+          }
         }
       `}</style>
     </div>
