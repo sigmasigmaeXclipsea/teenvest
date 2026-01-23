@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { ArrowUpDown, TrendingUp, TrendingDown, Search, Loader2 } from 'lucide-react';
+import { useSearchParams, Link } from 'react-router-dom';
+import { ArrowUpDown, TrendingUp, TrendingDown, Search, Loader2, ExternalLink, BarChart3 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -14,6 +14,7 @@ import { usePortfolio, useHoldings, useExecuteTrade } from '@/hooks/usePortfolio
 import { useToast } from '@/hooks/use-toast';
 import { useStockQuote, useSearchStock, StockQuote } from '@/hooks/useStockAPI';
 import { getUserFriendlyError } from '@/lib/errorMessages';
+import StockLineChart from '@/components/StockLineChart';
 
 const TradePage = () => {
   const [searchParams] = useSearchParams();
@@ -116,7 +117,7 @@ const TradePage = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 max-w-4xl">
+      <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold">Trade</h1>
           <p className="text-muted-foreground">Buy and sell stocks with virtual money</p>
@@ -185,7 +186,7 @@ const TradePage = () => {
 
               {selectedStock && !isLoadingQuote && (
                 <div className="p-4 rounded-lg bg-secondary/50 space-y-3">
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-start">
                     <div>
                       <p className="text-2xl font-bold">{selectedStock.symbol}</p>
                       <p className="text-sm text-muted-foreground">{selectedStock.companyName}</p>
@@ -195,7 +196,7 @@ const TradePage = () => {
                     </div>
                     <div className="text-right">
                       <p className="text-2xl font-bold">${Number(selectedStock.price).toFixed(2)}</p>
-                      <p className={`text-sm flex items-center gap-1 ${selectedStock.change >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                      <p className={`text-sm flex items-center justify-end gap-1 ${selectedStock.change >= 0 ? 'text-primary' : 'text-destructive'}`}>
                         {selectedStock.change >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
                         {Number(selectedStock.changePercent).toFixed(2)}%
                       </p>
@@ -212,6 +213,13 @@ const TradePage = () => {
                       <p className="text-sm text-muted-foreground">You own: <span className="font-medium text-foreground">{Number(currentHolding.shares).toFixed(2)} shares</span></p>
                     </div>
                   )}
+                  <Link to={`/stocks/${selectedStock.symbol}`}>
+                    <Button variant="outline" size="sm" className="w-full mt-2">
+                      <BarChart3 className="w-4 h-4 mr-2" />
+                      View Full Stock Details & Charts
+                      <ExternalLink className="w-3 h-3 ml-2" />
+                    </Button>
+                  </Link>
                 </div>
               )}
             </CardContent>
@@ -269,6 +277,18 @@ const TradePage = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Stock Chart - Shown when stock is selected */}
+        {selectedStock && liveQuote && (
+          <StockLineChart 
+            symbol={selectedStock.symbol}
+            currentPrice={selectedStock.price}
+            previousClose={liveQuote.previousClose}
+            high={liveQuote.high}
+            low={liveQuote.low}
+            open={liveQuote.open}
+          />
+        )}
       </div>
     </DashboardLayout>
   );
