@@ -3,20 +3,25 @@ import { TrendingUp, BookOpen, Trophy, Shield, ArrowRight, BarChart3, Briefcase,
 import { Button } from '@/components/ui/button';
 import { motion, useScroll, useTransform, useSpring, useMotionValue, useVelocity, useAnimationFrame, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
+import { useRef, useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { useMultipleStockQuotes } from '@/hooks/useStockAPI';
 
-// Cursor follower component with trail
-const CursorFollower = () => {
+// Cursor follower component with trail - memoized and throttled for performance
+const CursorFollower = memo(() => {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
   const hoverElementsRef = useRef<Set<Element>>(new Set());
+  const lastUpdateRef = useRef(0);
   
   useEffect(() => {
     // Only enable on desktop
     if (window.innerWidth < 768) return;
     
+    // Throttle mouse moves to 60fps max
     const handleMouseMove = (e: MouseEvent) => {
+      const now = Date.now();
+      if (now - lastUpdateRef.current < 16) return; // ~60fps
+      lastUpdateRef.current = now;
       setMousePos({ x: e.clientX, y: e.clientY });
     };
     
@@ -67,8 +72,8 @@ const CursorFollower = () => {
         }}
         transition={{ type: 'spring', damping: 20 }}
       />
-      {/* Trail particles */}
-      {[...Array(5)].map((_, i) => (
+      {/* Trail particles - reduced for performance */}
+      {[...Array(2)].map((_, i) => (
         <motion.div
           key={i}
           className="fixed w-2 h-2 rounded-full bg-primary/40 pointer-events-none z-[9998] hidden md:block"
@@ -82,7 +87,7 @@ const CursorFollower = () => {
       ))}
     </>
   );
-};
+});
 
 // Infinite scrolling marquee
 const Marquee = ({ children, direction = 'left', speed = 20 }: { children: React.ReactNode; direction?: 'left' | 'right'; speed?: number }) => {
@@ -371,8 +376,8 @@ const RevealText = ({ text, className }: { text: string; className?: string }) =
 };
 
 // Floating particles background - optimized for performance
-const FloatingParticles = () => {
-  const particleCount = typeof window !== 'undefined' && window.innerWidth >= 768 ? 20 : 10; // Reduce on mobile
+const FloatingParticles = memo(() => {
+  const particleCount = typeof window !== 'undefined' && window.innerWidth >= 768 ? 8 : 4; // Further reduced for performance
   const [dimensions, setDimensions] = useState({ width: 1920, height: 1080 });
   
   useEffect(() => {
@@ -408,22 +413,27 @@ const FloatingParticles = () => {
       ))}
     </div>
   );
-};
+});
 
-// Interactive grid background
-const GridBackground = () => {
+// Interactive grid background - throttled for performance
+const GridBackground = memo(() => {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [isVisible, setIsVisible] = useState(false);
+  const lastUpdateRef = useRef(0);
   
   useEffect(() => {
     // Only enable on desktop
     if (window.innerWidth < 768) return;
     
     setIsVisible(true);
+    // Throttle mouse moves to reduce re-renders
     const handleMouseMove = (e: MouseEvent) => {
+      const now = Date.now();
+      if (now - lastUpdateRef.current < 100) return; // Update max 10x per second
+      lastUpdateRef.current = now;
       setMousePos({ x: e.clientX, y: e.clientY });
     };
-    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
   
@@ -435,16 +445,17 @@ const GridBackground = () => {
         className="absolute inset-0"
         style={{
           backgroundImage: `
-            radial-gradient(circle at ${mousePos.x}px ${mousePos.y}px, hsl(var(--primary) / 0.3) 0%, transparent 25%),
-            linear-gradient(hsl(var(--border) / 0.3) 1px, transparent 1px),
-            linear-gradient(90deg, hsl(var(--border) / 0.3) 1px, transparent 1px)
+            radial-gradient(circle at ${mousePos.x}px ${mousePos.y}px, hsl(var(--primary) / 0.2) 0%, transparent 25%),
+            linear-gradient(hsl(var(--border) / 0.2) 1px, transparent 1px),
+            linear-gradient(90deg, hsl(var(--border) / 0.2) 1px, transparent 1px)
           `,
           backgroundSize: '100% 100%, 60px 60px, 60px 60px',
+          willChange: 'background-image',
         }}
       />
     </div>
   );
-};
+});
 
 // Scroll velocity text
 const VelocityText = ({ text }: { text: string }) => {
@@ -968,8 +979,8 @@ const LandingPage = () => {
         transformStyle: 'preserve-3d',
       }}
     >
-      {/* Custom cursor - only on desktop */}
-      {typeof window !== 'undefined' && window.innerWidth >= 768 && <CursorFollower />}
+      {/* Custom cursor - disabled for performance, can re-enable if needed */}
+      {false && typeof window !== 'undefined' && window.innerWidth >= 768 && <CursorFollower />}
       
       {/* 3D Floating particles with depth - reduced on mobile for performance */}
       <div style={{ transformStyle: 'preserve-3d' }}>
@@ -983,60 +994,32 @@ const LandingPage = () => {
         </div>
       )}
       
-      {/* 3D Morphing background blobs with depth */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ transformStyle: 'preserve-3d' }}>
-        <motion.div
-          style={{
-            transform: 'translateZ(-500px)',
-          }}
-        >
-          <MorphingBlob className="w-[800px] h-[800px] bg-primary/10 -top-[300px] -left-[300px]" />
-        </motion.div>
-        <motion.div
-          style={{
-            transform: 'translateZ(-300px)',
-          }}
-        >
-          <MorphingBlob className="w-[600px] h-[600px] bg-accent/10 bottom-[-200px] right-[-200px]" />
-        </motion.div>
-        <motion.div
-          style={{
-            transform: 'translateZ(-200px)',
-          }}
-        >
-          <MorphingBlob className="w-[400px] h-[400px] bg-chart-3/10 top-1/2 left-1/3" />
-        </motion.div>
+      {/* Simplified static gradient background - removed 3D blobs for performance */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
       </div>
       
-      {/* 3D Interactive orbs that flow around */}
-      <motion.div
-        style={{
-          transformStyle: 'preserve-3d',
-        }}
-        animate={{
-          rotateY: [0, 360],
-        }}
-        transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-      >
-        <InteractiveOrb 
-          className="w-20 h-20 bg-gradient-to-br from-primary/40 to-accent/40 top-[20%] left-[10%] blur-sm" 
-          delay={0}
-          style={{ transform: 'translateZ(100px)' }}
-        />
-        <InteractiveOrb 
-          className="w-16 h-16 bg-gradient-to-br from-accent/40 to-chart-3/40 top-[40%] right-[15%] blur-sm" 
-          delay={1}
-          style={{ transform: 'translateZ(150px)' }}
-        />
-        <InteractiveOrb 
-          className="w-12 h-12 bg-gradient-to-br from-warning/40 to-destructive/40 bottom-[30%] left-[20%] blur-sm" 
-          delay={2}
-          style={{ transform: 'translateZ(80px)' }}
-        />
-      </motion.div>
+      {/* Simplified orbs - reduced for performance */}
+      {false && (
+        <motion.div
+          style={{
+            transformStyle: 'preserve-3d',
+          }}
+          animate={{
+            rotateY: [0, 360],
+          }}
+          transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+        >
+          <InteractiveOrb 
+            className="w-20 h-20 bg-gradient-to-br from-primary/40 to-accent/40 top-[20%] left-[10%] blur-sm" 
+            delay={0}
+            style={{ transform: 'translateZ(100px)' }}
+          />
+        </motion.div>
+      )}
       
-      {/* 3D Flowing energy waves in the middle */}
-      {[...Array(8)].map((_, i) => (
+      {/* Simplified energy waves - reduced for performance */}
+      {[...Array(3)].map((_, i) => (
         <motion.div
           key={`wave-${i}`}
           className="absolute rounded-full border-2 border-primary/20"
@@ -1169,24 +1152,21 @@ const LandingPage = () => {
           />
         </div>
         
-        {/* Glowing rings behind hero - enhanced */}
+        {/* Simplified glowing rings - reduced for performance */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-          <GlowingRing size={400} delay={0} />
-          <GlowingRing size={600} delay={1} />
-          <GlowingRing size={800} delay={2} />
+          <GlowingRing size={600} delay={0} />
           <motion.div
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] rounded-full border border-primary/20"
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full border border-primary/10"
             animate={{
-              scale: [1, 1.1, 1],
-              opacity: [0.3, 0.6, 0.3],
-              rotate: [0, 360],
+              scale: [1, 1.05, 1],
+              opacity: [0.2, 0.4, 0.2],
             }}
-            transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
+            transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
           />
         </div>
         
-        {/* 3D Flowing particles that move around elements */}
-        {[...Array(typeof window !== 'undefined' && window.innerWidth >= 768 ? 15 : 8)].map((_, i) => (
+        {/* Simplified particles - reduced for performance */}
+        {[...Array(typeof window !== 'undefined' && window.innerWidth >= 768 ? 6 : 3)].map((_, i) => (
           <motion.div
             key={i}
             className="absolute w-2 h-2 rounded-full bg-primary/40 blur-sm"
@@ -1220,8 +1200,8 @@ const LandingPage = () => {
           />
         ))}
         
-        {/* 3D Flowing energy streams */}
-        {[...Array(5)].map((_, i) => (
+        {/* Simplified energy streams - reduced for performance */}
+        {[...Array(2)].map((_, i) => (
           <motion.div
             key={`stream-${i}`}
             className="absolute w-px h-full bg-gradient-to-b from-transparent via-primary/30 to-transparent"
@@ -1245,8 +1225,8 @@ const LandingPage = () => {
           />
         ))}
         
-        {/* Floating light beams with 3D depth */}
-        {[...Array(3)].map((_, i) => (
+        {/* Simplified light beams - reduced for performance */}
+        {[...Array(1)].map((_, i) => (
           <motion.div
             key={`beam-${i}`}
             className="absolute w-1 h-full bg-gradient-to-b from-primary/30 via-transparent to-transparent"
