@@ -1,8 +1,9 @@
-import { Link } from 'react-router-dom';
-import { TrendingUp, BookOpen, Trophy, Shield, ArrowRight, BarChart3, Briefcase, Target, Bot, MessageCircle, Sparkles, ChevronDown, Zap, Flame, Rocket } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { TrendingUp, BookOpen, Trophy, Shield, ArrowRight, BarChart3, Briefcase, Target, Bot, MessageCircle, Sparkles, ChevronDown, Zap, Flame, Rocket, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { motion, type Variants } from 'framer-motion';
+import { useAuth } from '@/contexts/AuthContext';
 
 const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 30 },
@@ -28,6 +29,14 @@ const scaleIn: Variants = {
 };
 
 const LandingPage = () => {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
+
   return <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Animated background */}
       <div className="fixed inset-0 animated-gradient opacity-60 pointer-events-none" />
@@ -44,26 +53,47 @@ const LandingPage = () => {
           </Link>
           <nav className="hidden md:flex items-center gap-8">
             {[
-              { to: '/learn', label: 'Learn' },
-              { to: '/screener', label: 'Screener' },
-              { to: '/leaderboard', label: 'Leaderboard' }
+              { to: user ? '/learn' : '/login', label: 'Learn' },
+              { to: user ? '/screener' : '/login', label: 'Screener' },
+              { to: user ? '/leaderboard' : '/login', label: 'Leaderboard' }
             ].map((link) => (
-              <Link key={link.to} to={link.to} className="text-sm font-semibold uppercase tracking-wider text-muted-foreground hover:text-primary transition-all duration-300 relative group">
+              <Link key={link.label} to={link.to} className="text-sm font-semibold uppercase tracking-wider text-muted-foreground hover:text-primary transition-all duration-300 relative group">
                 {link.label}
                 <span className="absolute -bottom-1 left-0 w-0 h-[3px] bg-gradient-to-r from-primary to-accent transition-all duration-300 group-hover:w-full rounded-full" />
               </Link>
             ))}
           </nav>
           <div className="flex items-center gap-3">
-            <Link to="/login">
-              <Button variant="ghost" className="font-semibold hover:bg-primary/10 hover:text-primary">Log In</Button>
-            </Link>
-            <Link to="/signup">
-              <Button className="font-bold bg-gradient-to-r from-primary via-primary-glow to-accent hover:scale-105 transition-all duration-300 shadow-xl glow-primary">
-                <Zap className="w-4 h-4 mr-1" />
-                Get Started
-              </Button>
-            </Link>
+            {user ? (
+              <>
+                <Link to="/dashboard">
+                  <Button variant="ghost" className="font-semibold hover:bg-primary/10 hover:text-primary">
+                    <User className="w-4 h-4 mr-1" />
+                    Dashboard
+                  </Button>
+                </Link>
+                <Button 
+                  variant="outline" 
+                  onClick={handleSignOut}
+                  className="font-semibold border-primary/30 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
+                >
+                  <LogOut className="w-4 h-4 mr-1" />
+                  Log Out
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link to="/login">
+                  <Button variant="ghost" className="font-semibold hover:bg-primary/10 hover:text-primary">Log In</Button>
+                </Link>
+                <Link to="/signup">
+                  <Button className="font-bold bg-gradient-to-r from-primary via-primary-glow to-accent hover:scale-105 transition-all duration-300 shadow-xl glow-primary">
+                    <Zap className="w-4 h-4 mr-1" />
+                    Get Started
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -114,13 +144,13 @@ const LandingPage = () => {
             variants={fadeInUp}
             className="flex flex-col sm:flex-row items-center justify-center gap-3"
           >
-            <Link to="/signup">
+            <Link to={user ? "/dashboard" : "/signup"}>
               <Button size="default" className="gap-2 bg-gradient-to-r from-primary via-primary-glow to-accent hover:scale-105 transition-all duration-300 shadow-lg glow-primary font-semibold px-6 py-5 rounded-xl group">
-                Start Trading Now
+                {user ? "Go to Dashboard" : "Start Trading Now"}
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
-            <Link to="/learn">
+            <Link to={user ? "/learn" : "/login"}>
               <Button size="default" variant="outline" className="border border-primary/40 hover:bg-primary/10 hover:border-primary font-semibold px-6 py-5 rounded-xl transition-all duration-300">
                 <BookOpen className="w-4 h-4 mr-2" />
                 Level Up First
