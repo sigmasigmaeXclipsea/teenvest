@@ -11,7 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { formatMarketCap, formatVolume, Stock } from '@/data/mockStocks';
 import { russell5000Tickers, searchTickers, getAllSectors, getTotalTickerCount, getTickerInfo, popularTickers } from '@/data/russell5000Tickers';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { fetchStockQuote, useSearchStock, useMultipleStockQuotes, StockQuote } from '@/hooks/useStockAPI';
 import { useWatchlist, useAddToWatchlist, useRemoveFromWatchlist } from '@/hooks/useWatchlist';
 import { useToast } from '@/hooks/use-toast';
@@ -36,6 +36,7 @@ const ScreenerPage = () => {
   
   const fetchedSymbolsRef = useRef<Set<string>>(new Set());
   
+  const navigate = useNavigate();
   const searchStock = useSearchStock();
   const { toast } = useToast();
   const { data: watchlist } = useWatchlist();
@@ -394,8 +395,18 @@ const ScreenerPage = () => {
     const volume = Number(stock.volume) || 0;
     const hasLiveData = price > 0;
     
+    const handleRowClick = (e: React.MouseEvent) => {
+      // Don't navigate if clicking on interactive elements
+      const target = e.target as HTMLElement;
+      if (target.closest('button') || target.closest('a')) return;
+      navigate(`/stocks/${stock.symbol}`);
+    };
+    
     return (
-      <tr className="border-b last:border-0 hover:bg-secondary/30 transition-colors">
+      <tr 
+        className="border-b last:border-0 hover:bg-secondary/30 transition-colors cursor-pointer"
+        onClick={handleRowClick}
+      >
         <td className="py-3 px-2">
           <div className="flex items-center gap-2">
             <button
