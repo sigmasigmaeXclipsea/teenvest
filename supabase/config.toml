@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.market-news-explained]
 verify_jwt = false
+
+[functions.refresh-stock-cache]
+verify_jwt = false
