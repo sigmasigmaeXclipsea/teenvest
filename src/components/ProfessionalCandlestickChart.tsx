@@ -110,7 +110,32 @@ const ProfessionalCandlestickChart = ({ symbol, currentPrice, previousClose, hig
   }, [open, high, low, currentPrice, previousClose, timePeriod]);
 
   useEffect(() => {
-    if (!chartContainerRef.current || !volumeContainerRef.current || !candleData || candleData.length === 0) return;
+    const chartEl = chartContainerRef.current;
+    const volumeEl = volumeContainerRef.current;
+    if (!chartEl || !volumeEl || !candleData || candleData.length === 0) return;
+
+    // Guard against hidden tabs (width=0) which can cause lightweight-charts to throw.
+    const chartWidth = chartEl.clientWidth;
+    const volumeWidth = volumeEl.clientWidth;
+    if (!chartWidth || chartWidth <= 0 || !volumeWidth || volumeWidth <= 0) return;
+
+    // Clear any previous instances if effect re-runs.
+    if (chartRef.current) {
+      try {
+        chartRef.current.remove();
+      } catch {
+        // ignore
+      }
+      chartRef.current = null;
+    }
+    if (volumeRef.current) {
+      try {
+        volumeRef.current.remove();
+      } catch {
+        // ignore
+      }
+      volumeRef.current = null;
+    }
 
     // Format data for lightweight-charts
     const formattedData = candleData.map((candle) => {
@@ -135,98 +160,103 @@ const ProfessionalCandlestickChart = ({ symbol, currentPrice, previousClose, hig
     });
 
     // Create main candlestick chart
-    const chart = createChart(chartContainerRef.current, {
-      layout: {
-        background: { type: ColorType.Solid, color: "hsl(var(--background))" },
-        textColor: "hsl(var(--foreground))",
-        fontSize: 13,
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      },
-      grid: {
-        vertLines: { 
-          color: "rgba(148, 163, 184, 0.15)",
-          style: 1,
-          visible: true,
+    let chart: any;
+    let volumeChart: any;
+    try {
+      chart = createChart(chartEl, {
+        layout: {
+          background: { type: ColorType.Solid, color: "hsl(var(--background))" },
+          textColor: "hsl(var(--foreground))",
+          fontSize: 13,
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
         },
-        horzLines: { 
-          color: "rgba(148, 163, 184, 0.15)",
-          style: 1,
-          visible: true,
+        grid: {
+          vertLines: {
+            color: "rgba(148, 163, 184, 0.15)",
+            style: 1,
+            visible: true,
+          },
+          horzLines: {
+            color: "rgba(148, 163, 184, 0.15)",
+            style: 1,
+            visible: true,
+          },
         },
-      },
-      width: chartContainerRef.current.clientWidth,
-      height: 600,
-      timeScale: {
-        borderColor: "rgba(148, 163, 184, 0.3)",
-        timeVisible: true,
-        secondsVisible: false,
-        rightOffset: 12,
-        barSpacing: 8,
-        minBarSpacing: 3,
-      },
-      rightPriceScale: {
-        borderColor: "rgba(148, 163, 184, 0.3)",
-        scaleMargins: {
-          top: 0.1,
-          bottom: 0.1,
+        width: chartWidth,
+        height: 600,
+        timeScale: {
+          borderColor: "rgba(148, 163, 184, 0.3)",
+          timeVisible: true,
+          secondsVisible: false,
+          rightOffset: 12,
+          barSpacing: 8,
+          minBarSpacing: 3,
         },
-      },
-      leftPriceScale: {
-        visible: false,
-      },
-      crosshair: {
-        mode: 1,
-        vertLine: {
-          color: "rgba(148, 163, 184, 0.6)",
-          width: 1,
-          style: 2,
-          labelBackgroundColor: "hsl(var(--background))",
+        rightPriceScale: {
+          borderColor: "rgba(148, 163, 184, 0.3)",
+          scaleMargins: {
+            top: 0.1,
+            bottom: 0.1,
+          },
         },
-        horzLine: {
-          color: "rgba(148, 163, 184, 0.6)",
-          width: 1,
-          style: 2,
-          labelBackgroundColor: "hsl(var(--background))",
+        leftPriceScale: {
+          visible: false,
         },
-      },
-      handleScroll: {
-        mouseWheel: true,
-        pressedMouseMove: true,
-        horzTouchDrag: true,
-        vertTouchDrag: true,
-      },
-      handleScale: {
-        axisPressedMouseMove: true,
-        mouseWheel: true,
-        pinch: true,
-      },
-    });
+        crosshair: {
+          mode: 1,
+          vertLine: {
+            color: "rgba(148, 163, 184, 0.6)",
+            width: 1,
+            style: 2,
+            labelBackgroundColor: "hsl(var(--background))",
+          },
+          horzLine: {
+            color: "rgba(148, 163, 184, 0.6)",
+            width: 1,
+            style: 2,
+            labelBackgroundColor: "hsl(var(--background))",
+          },
+        },
+        handleScroll: {
+          mouseWheel: true,
+          pressedMouseMove: true,
+          horzTouchDrag: true,
+          vertTouchDrag: true,
+        },
+        handleScale: {
+          axisPressedMouseMove: true,
+          mouseWheel: true,
+          pinch: true,
+        },
+      });
 
-    // Create volume chart
-    const volumeChart = createChart(volumeContainerRef.current, {
-      layout: {
-        background: { type: ColorType.Solid, color: "transparent" },
-        textColor: "hsl(var(--muted-foreground))",
-        fontSize: 11,
-      },
-      grid: {
-        vertLines: { visible: false },
-        horzLines: { visible: false },
-      },
-      width: volumeContainerRef.current.clientWidth,
-      height: 150,
-      timeScale: {
-        borderColor: "rgba(148, 163, 184, 0.2)",
-        timeVisible: true,
-        visible: true,
-      },
-      rightPriceScale: {
-        visible: false,
-      },
-      leftPriceScale: {
-        visible: false,
-      },
-    });
+      volumeChart = createChart(volumeEl, {
+        layout: {
+          background: { type: ColorType.Solid, color: "transparent" },
+          textColor: "hsl(var(--muted-foreground))",
+          fontSize: 11,
+        },
+        grid: {
+          vertLines: { visible: false },
+          horzLines: { visible: false },
+        },
+        width: volumeWidth,
+        height: 150,
+        timeScale: {
+          borderColor: "rgba(148, 163, 184, 0.2)",
+          timeVisible: true,
+          visible: true,
+        },
+        rightPriceScale: {
+          visible: false,
+        },
+        leftPriceScale: {
+          visible: false,
+        },
+      });
+    } catch {
+      return;
+    }
 
     // Sync time scales
     chart.timeScale().subscribeVisibleTimeRangeChange((timeRange) => {
@@ -279,9 +309,21 @@ const ProfessionalCandlestickChart = ({ symbol, currentPrice, previousClose, hig
     volumeChart.timeScale().fitContent();
 
     const handleResize = () => {
-      if (chartContainerRef.current && volumeContainerRef.current) {
-        chart.applyOptions({ width: chartContainerRef.current.clientWidth });
-        volumeChart.applyOptions({ width: volumeContainerRef.current.clientWidth });
+      const cw = chartContainerRef.current?.clientWidth;
+      const vw = volumeContainerRef.current?.clientWidth;
+      if (cw && cw > 0) {
+        try {
+          chart.applyOptions({ width: cw });
+        } catch {
+          // ignore
+        }
+      }
+      if (vw && vw > 0) {
+        try {
+          volumeChart.applyOptions({ width: vw });
+        } catch {
+          // ignore
+        }
       }
     };
 
@@ -291,8 +333,16 @@ const ProfessionalCandlestickChart = ({ symbol, currentPrice, previousClose, hig
 
     return () => {
       window.removeEventListener("resize", handleResize);
-      chart.remove();
-      volumeChart.remove();
+      try {
+        chart.remove();
+      } catch {
+        // ignore
+      }
+      try {
+        volumeChart.remove();
+      } catch {
+        // ignore
+      }
     };
   }, [candleData, previousClose]);
 
