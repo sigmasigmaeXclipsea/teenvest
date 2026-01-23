@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
-import { TrendingUp, TrendingDown, ExternalLink, ArrowLeft, Star, StarOff, Loader2, Globe, Building2, Calendar, DollarSign, Activity } from 'lucide-react';
+import { TrendingUp, TrendingDown, ExternalLink, ArrowLeft, Star, StarOff, Loader2, Globe, Building2, Calendar, DollarSign, Activity, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,7 @@ import { formatMarketCap, formatVolume } from '@/data/mockStocks';
 import StockLineChart from '@/components/StockLineChart';
 import StockCandlestickChart from '@/components/StockCandlestickChart';
 import StockNews from '@/components/StockNews';
+import { useSettings } from '@/contexts/SettingsContext';
 
 const StockPage = () => {
   const { symbol } = useParams<{ symbol: string }>();
@@ -19,6 +20,9 @@ const StockPage = () => {
   const addToWatchlist = useAddToWatchlist();
   const removeFromWatchlist = useRemoveFromWatchlist();
   const { toast } = useToast();
+  const { settings } = useSettings();
+
+  const isAdvancedMode = settings.advancedMode;
 
   const isInWatchlist = watchlist?.some(w => w.symbol === symbol);
 
@@ -122,14 +126,32 @@ const StockPage = () => {
             low={stock.low}
             open={stock.open}
           />
-          <StockCandlestickChart 
-            symbol={stock.symbol}
-            currentPrice={stock.price}
-            previousClose={stock.previousClose}
-            high={stock.high}
-            low={stock.low}
-            open={stock.open}
-          />
+          
+          {isAdvancedMode ? (
+            <StockCandlestickChart 
+              symbol={stock.symbol}
+              currentPrice={stock.price}
+              previousClose={stock.previousClose}
+              high={stock.high}
+              low={stock.low}
+              open={stock.open}
+            />
+          ) : (
+            <Card className="flex items-center justify-center bg-secondary/30 border-dashed">
+              <CardContent className="text-center py-12">
+                <Lock className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="font-semibold mb-2">Candlestick Chart</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Enable Advanced Mode in Settings to unlock candlestick charts and technical analysis tools.
+                </p>
+                <Link to="/settings">
+                  <Button variant="outline" size="sm">
+                    Go to Settings
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* News Section */}
