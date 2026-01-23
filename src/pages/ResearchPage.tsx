@@ -339,16 +339,18 @@ const ResearchPage = () => {
                           <Badge variant="secondary">{selectedStockData.sector}</Badge>
                         )}
                       </div>
-                      <p className="text-muted-foreground">{selectedStockData?.company_name || 'Loading...'}</p>
+                      <p className="text-muted-foreground">{selectedStockData?.company_name || liveStockData?.companyName || selectedStock || 'Loading...'}</p>
                     </div>
                   </div>
                   
                   <div className="flex items-center gap-6">
                     <div className="text-right">
-                      <p className="text-3xl font-bold">${selectedStockData?.price.toFixed(2) || '--'}</p>
-                      <p className={`text-sm font-medium ${(selectedStockData?.change_percent || 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                        {(selectedStockData?.change_percent || 0) >= 0 ? '+' : ''}
-                        ${selectedStockData?.change.toFixed(2) || '0.00'} ({selectedStockData?.change_percent.toFixed(2) || '0.00'}%)
+                      <p className="text-3xl font-bold">
+                        ${(selectedStockData?.price ?? liveStockData?.price ?? 0).toFixed(2)}
+                      </p>
+                      <p className={`text-sm font-medium ${((selectedStockData?.change_percent ?? liveStockData?.changePercent ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500')}`}>
+                        {((selectedStockData?.change_percent ?? liveStockData?.changePercent ?? 0) >= 0 ? '+' : '')}
+                        ${(selectedStockData?.change ?? liveStockData?.change ?? 0).toFixed(2)} ({(selectedStockData?.change_percent ?? liveStockData?.changePercent ?? 0).toFixed(2)}%)
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -379,73 +381,73 @@ const ResearchPage = () => {
                 <div className="space-y-6">
                   {/* Top: Line and Candlestick Charts */}
                   <div className="grid gap-6 lg:grid-cols-2">
-                    {liveStockData ? (
-                      <>
-                        <StockLineChart
-                          symbol={liveStockData.symbol}
-                          currentPrice={liveStockData.price}
-                          previousClose={liveStockData.previousClose}
-                          high={liveStockData.high}
-                          low={liveStockData.low}
-                          open={liveStockData.open}
-                        />
-                        <StockCandlestickChart
-                          symbol={liveStockData.symbol}
-                          currentPrice={liveStockData.price}
-                          previousClose={liveStockData.previousClose}
-                          high={liveStockData.high}
-                          low={liveStockData.low}
-                          open={liveStockData.open}
-                        />
-                      </>
-                    ) : selectedStockData ? (
-                      <>
-                        <StockLineChart
-                          symbol={selectedStock}
-                          currentPrice={selectedStockData.price}
-                          previousClose={selectedStockData.price - selectedStockData.change}
-                          high={selectedStockData.high || selectedStockData.price * 1.02}
-                          low={selectedStockData.low || selectedStockData.price * 0.98}
-                          open={selectedStockData.price - selectedStockData.change}
-                        />
-                        <StockCandlestickChart
-                          symbol={selectedStock}
-                          currentPrice={selectedStockData.price}
-                          previousClose={selectedStockData.price - selectedStockData.change}
-                          high={selectedStockData.high || selectedStockData.price * 1.02}
-                          low={selectedStockData.low || selectedStockData.price * 0.98}
-                          open={selectedStockData.price - selectedStockData.change}
-                        />
-                      </>
-                    ) : (
-                      <Card>
-                        <CardContent className="pt-6">
-                          <p className="text-muted-foreground">Loading chart data...</p>
-                        </CardContent>
-                      </Card>
-                    )}
+                    {(() => {
+                      const stockData = liveStockData || (selectedStockData ? {
+                        symbol: selectedStock,
+                        price: selectedStockData.price ?? 0,
+                        previousClose: (selectedStockData.price ?? 0) - (selectedStockData.change ?? 0),
+                        high: selectedStockData.high ?? (selectedStockData.price ?? 0) * 1.02,
+                        low: selectedStockData.low ?? (selectedStockData.price ?? 0) * 0.98,
+                        open: (selectedStockData.price ?? 0) - (selectedStockData.change ?? 0),
+                      } : null);
+
+                      if (!stockData || !stockData.symbol) {
+                        return (
+                          <Card>
+                            <CardContent className="pt-6">
+                              <p className="text-muted-foreground">Loading chart data...</p>
+                            </CardContent>
+                          </Card>
+                        );
+                      }
+
+                      return (
+                        <>
+                          <StockLineChart
+                            symbol={stockData.symbol}
+                            currentPrice={stockData.price || 0}
+                            previousClose={stockData.previousClose || stockData.price || 0}
+                            high={stockData.high || stockData.price * 1.02 || 0}
+                            low={stockData.low || stockData.price * 0.98 || 0}
+                            open={stockData.open || stockData.price || 0}
+                          />
+                          <StockCandlestickChart
+                            symbol={stockData.symbol}
+                            currentPrice={stockData.price || 0}
+                            previousClose={stockData.previousClose || stockData.price || 0}
+                            high={stockData.high || stockData.price * 1.02 || 0}
+                            low={stockData.low || stockData.price * 0.98 || 0}
+                            open={stockData.open || stockData.price || 0}
+                          />
+                        </>
+                      );
+                    })()}
                   </div>
 
                   {/* Bottom: Professional Full-Width Candlestick Chart with Volume */}
-                  {liveStockData ? (
-                    <ProfessionalCandlestickChart
-                      symbol={liveStockData.symbol}
-                      currentPrice={liveStockData.price}
-                      previousClose={liveStockData.previousClose}
-                      high={liveStockData.high}
-                      low={liveStockData.low}
-                      open={liveStockData.open}
-                    />
-                  ) : selectedStockData ? (
-                    <ProfessionalCandlestickChart
-                      symbol={selectedStock}
-                      currentPrice={selectedStockData.price}
-                      previousClose={selectedStockData.price - selectedStockData.change}
-                      high={selectedStockData.high || selectedStockData.price * 1.02}
-                      low={selectedStockData.low || selectedStockData.price * 0.98}
-                      open={selectedStockData.price - selectedStockData.change}
-                    />
-                  ) : null}
+                  {(() => {
+                    const stockData = liveStockData || (selectedStockData ? {
+                      symbol: selectedStock,
+                      price: selectedStockData.price ?? 0,
+                      previousClose: (selectedStockData.price ?? 0) - (selectedStockData.change ?? 0),
+                      high: selectedStockData.high ?? (selectedStockData.price ?? 0) * 1.02,
+                      low: selectedStockData.low ?? (selectedStockData.price ?? 0) * 0.98,
+                      open: (selectedStockData.price ?? 0) - (selectedStockData.change ?? 0),
+                    } : null);
+
+                    if (!stockData || !stockData.symbol) return null;
+
+                    return (
+                      <ProfessionalCandlestickChart
+                        symbol={stockData.symbol}
+                        currentPrice={stockData.price || 0}
+                        previousClose={stockData.previousClose || stockData.price || 0}
+                        high={stockData.high || stockData.price * 1.02 || 0}
+                        low={stockData.low || stockData.price * 0.98 || 0}
+                        open={stockData.open || stockData.price || 0}
+                      />
+                    );
+                  })()}
                 </div>
               </TabsContent>
 
