@@ -397,8 +397,6 @@ const ResearchPage = () => {
             )}
 
             {/* Research Tabs - Only show if we have valid data */}
-            {hasValidStockData && (
-
             {/* Research Tabs - Only show if we have valid data */}
             {hasValidStockData && (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
