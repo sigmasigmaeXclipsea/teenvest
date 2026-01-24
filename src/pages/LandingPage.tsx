@@ -105,10 +105,11 @@ const Marquee = ({ children, direction = 'left', speed = 20 }: { children: React
   );
 };
 
-// Dashboard card wrapper - cursor lifts the area it touches
+// Dashboard card wrapper - cursor lifts the area it touches with continuous 3D tilt
 const DashboardCard = ({ children, className }: { children: React.ReactNode; className?: string }) => {
   const ref = useRef<HTMLDivElement>(null);
   const [liftPos, setLiftPos] = useState({ x: 50, y: 50 });
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [isHovered, setIsHovered] = useState(false);
   
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
@@ -117,6 +118,16 @@ const DashboardCard = ({ children, className }: { children: React.ReactNode; cla
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
     setLiftPos({ x, y });
+    // Continuous tilt based on cursor position - subtle effect
+    const tiltX = ((y - 50) / 50) * -8; // -8 to 8 degrees
+    const tiltY = ((x - 50) / 50) * 8; // -8 to 8 degrees
+    setTilt({ x: tiltX, y: tiltY });
+  }, []);
+  
+  const handleMouseLeave = useCallback(() => {
+    setIsHovered(false);
+    setTilt({ x: 0, y: 0 });
+    setLiftPos({ x: 50, y: 50 });
   }, []);
   
   return (
@@ -125,24 +136,30 @@ const DashboardCard = ({ children, className }: { children: React.ReactNode; cla
       className={`relative ${className}`}
       onMouseMove={handleMouseMove}
       onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseLeave={handleMouseLeave}
       animate={{
-        scale: isHovered ? 1.01 : 1,
+        scale: isHovered ? 1.02 : 1,
+        rotateX: tilt.x,
+        rotateY: tilt.y,
       }}
-      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+      style={{
+        transformStyle: 'preserve-3d',
+        perspective: '1000px',
+      }}
     >
       {children}
       {/* Lift glow that follows cursor - raises that area */}
       <motion.div
         className="absolute inset-0 rounded-3xl pointer-events-none"
         animate={{
-          opacity: isHovered ? 0.4 : 0,
+          opacity: isHovered ? 0.5 : 0,
         }}
-        transition={{ duration: 0.2 }}
+        transition={{ duration: 0.15 }}
         style={{
-          background: `radial-gradient(circle 150px at ${liftPos.x}% ${liftPos.y}%, hsl(var(--primary) / 0.25) 0%, transparent 70%)`,
+          background: `radial-gradient(circle 200px at ${liftPos.x}% ${liftPos.y}%, hsl(var(--primary) / 0.35) 0%, hsl(var(--accent) / 0.15) 40%, transparent 70%)`,
           boxShadow: isHovered 
-            ? `0 ${20 - (liftPos.y / 100) * 10}px 40px -10px hsl(var(--primary) / 0.2)` 
+            ? `0 ${25 - (liftPos.y / 100) * 15}px 50px -15px hsl(var(--primary) / 0.3), inset 0 1px 0 hsl(var(--primary) / 0.1)` 
             : 'none',
         }}
       />
@@ -421,6 +438,103 @@ const RevealText = ({ text, className }: { text: string; className?: string }) =
         </motion.span>
       ))}
     </span>
+  );
+};
+
+// Headline with continuous cursor tracking for 3D effect
+const HeadlineWithCursorTracking = () => {
+  const ref = useRef<HTMLHeadingElement>(null);
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const [glowPos, setGlowPos] = useState({ x: 50, y: 50 });
+  
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!ref.current) return;
+      const rect = ref.current.getBoundingClientRect();
+      // Calculate position relative to element center
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      
+      // Distance from center (normalized -1 to 1)
+      const distX = (e.clientX - centerX) / (window.innerWidth / 2);
+      const distY = (e.clientY - centerY) / (window.innerHeight / 2);
+      
+      // Subtle continuous tilt effect
+      setTilt({
+        x: distY * -5, // -5 to 5 degrees
+        y: distX * 5,  // -5 to 5 degrees
+      });
+      
+      // Update glow position
+      const glowX = ((e.clientX - rect.left) / rect.width) * 100;
+      const glowY = ((e.clientY - rect.top) / rect.height) * 100;
+      setGlowPos({ x: Math.max(0, Math.min(100, glowX)), y: Math.max(0, Math.min(100, glowY)) });
+    };
+    
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+  
+  return (
+    <motion.h1 
+      ref={ref}
+      className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black tracking-tighter mb-6 leading-[0.95] relative"
+      style={{
+        transformStyle: 'preserve-3d',
+        perspective: '1200px',
+      }}
+      animate={{
+        rotateX: tilt.x,
+        rotateY: tilt.y,
+      }}
+      transition={{ type: 'spring', stiffness: 150, damping: 20 }}
+    >
+      <motion.span 
+        className="block text-foreground relative z-10"
+        initial={{ opacity: 0, y: 30, scale: 0.9 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ delay: 0.3, type: 'spring', stiffness: 100 }}
+        style={{ transformStyle: 'preserve-3d' }}
+      >
+        Build Your
+        {/* Dynamic glow effect that follows cursor */}
+        <motion.span
+          className="absolute inset-0 blur-2xl -z-10 pointer-events-none"
+          style={{
+            background: `radial-gradient(circle 300px at ${glowPos.x}% ${glowPos.y}%, hsl(var(--primary) / 0.4) 0%, transparent 60%)`,
+            transform: 'translateZ(-30px)',
+          }}
+        />
+      </motion.span>
+      <motion.span 
+        className="block gradient-text relative z-10"
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5, type: 'spring', stiffness: 100 }}
+      >
+        Financial Empire
+        {/* Single sparkle accent */}
+        <motion.span 
+          className="absolute -right-6 sm:-right-8 top-0 sm:-top-2 z-20"
+          animate={{ 
+            rotate: [0, 15, -15, 0],
+            scale: [1, 1.15, 1],
+          }}
+          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+          aria-hidden="true"
+        >
+          <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-warning drop-shadow-lg" />
+        </motion.span>
+        {/* Dynamic glow for Financial Empire */}
+        <motion.span
+          className="absolute inset-0 blur-2xl -z-10 pointer-events-none"
+          style={{
+            background: `radial-gradient(circle 300px at ${glowPos.x}% ${glowPos.y}%, hsl(var(--accent) / 0.3) 0%, transparent 60%)`,
+            transform: 'translateZ(-30px)',
+          }}
+        />
+      </motion.span>
+    </motion.h1>
   );
 };
 
@@ -1024,37 +1138,40 @@ const LandingPage = () => {
         transformStyle: 'preserve-3d',
       }}
     >
-      {/* Custom cursor - disabled for performance, can re-enable if needed */}
-      {false && typeof window !== 'undefined' && window.innerWidth >= 768 && <CursorFollower />}
+      {/* Custom cursor */}
+      {typeof window !== 'undefined' && window.innerWidth >= 768 && <CursorFollower />}
       
-      {/* Floating particles disabled for performance */}
-      {/* Grid background disabled for performance */}
+      {/* Floating star particles */}
+      <FloatingParticles />
       
-      {/* Simplified static gradient background - removed 3D blobs for performance */}
+      {/* Grid background with cursor tracking */}
+      <GridBackground />
+      
+      {/* Gradient background with animated blobs */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
+        <MorphingBlob className="w-[500px] h-[500px] bg-primary/10 top-[10%] -left-[10%]" />
+        <MorphingBlob className="w-[400px] h-[400px] bg-accent/10 bottom-[20%] -right-[10%]" />
       </div>
       
-      {/* Simplified orbs - reduced for performance */}
-      {false && (
-        <motion.div
-          style={{
-            transformStyle: 'preserve-3d',
-          }}
-          animate={{
-            rotateY: [0, 360],
-          }}
-          transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-        >
-          <InteractiveOrb 
-            className="w-20 h-20 bg-gradient-to-br from-primary/40 to-accent/40 top-[20%] left-[10%] blur-sm" 
-            delay={0}
-            style={{ transform: 'translateZ(100px)' }}
-          />
-        </motion.div>
-      )}
-      
-      {/* Energy waves disabled for performance */}
+      {/* Interactive orbs */}
+      <motion.div
+        style={{ transformStyle: 'preserve-3d' }}
+        animate={{ rotateY: [0, 360] }}
+        transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
+        className="hidden md:block"
+      >
+        <InteractiveOrb 
+          className="w-16 h-16 bg-gradient-to-br from-primary/30 to-accent/30 top-[25%] left-[8%] blur-sm" 
+          delay={0}
+          style={{ transform: 'translateZ(80px)' }}
+        />
+        <InteractiveOrb 
+          className="w-12 h-12 bg-gradient-to-br from-accent/30 to-primary/30 top-[60%] right-[5%] blur-sm" 
+          delay={0.5}
+          style={{ transform: 'translateZ(60px)' }}
+        />
+      </motion.div>
       
       {/* Header */}
       <motion.header 
@@ -1214,68 +1331,8 @@ const LandingPage = () => {
               </motion.span>
             </motion.div>
             
-            {/* Main Headline - 3D FUTURISTIC */}
-            <motion.h1 
-              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black tracking-tighter mb-6 leading-[0.95] relative"
-              style={{
-                transformStyle: 'preserve-3d',
-                perspective: '1200px',
-              }}
-            >
-              <motion.span 
-                className="block text-foreground relative z-10"
-                initial={{ opacity: 0, y: 30, scale: 0.9, rotateX: -20, z: -50 }}
-                animate={{ 
-                  opacity: 1, 
-                  y: 0, 
-                  scale: 1,
-                  rotateX: 0,
-                  z: 0,
-                }}
-                transition={{ delay: 0.3, type: 'spring', stiffness: 100 }}
-                style={{ transformStyle: 'preserve-3d' }}
-                whileHover={{
-                  rotateY: 5,
-                  z: 30,
-                  scale: 1.02,
-                }}
-              >
-                Build Your
-                {/* 3D Glow effect behind text */}
-                <motion.span
-                  className="absolute inset-0 blur-2xl text-primary/30 -z-10"
-                  style={{
-                    transform: 'translateZ(-50px)',
-                  }}
-                  animate={{ 
-                    opacity: [0.3, 0.6, 0.3],
-                    scale: [1, 1.1, 1],
-                  }}
-                  transition={{ duration: 3, repeat: Infinity }}
-                >
-                  Build Your
-                </motion.span>
-              </motion.span>
-              <motion.span 
-                className="block gradient-text relative z-10"
-                initial={{ opacity: 1 }}
-                animate={{ opacity: 1 }}
-              >
-                Financial Empire
-                {/* Single sparkle accent */}
-                <motion.span 
-                  className="absolute -right-6 sm:-right-8 top-0 sm:-top-2 z-20"
-                  animate={{ 
-                    rotate: [0, 15, -15, 0],
-                    scale: [1, 1.15, 1],
-                  }}
-                  transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-                  aria-hidden="true"
-                >
-                  <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-warning drop-shadow-lg" />
-                </motion.span>
-              </motion.span>
-            </motion.h1>
+            {/* Main Headline - 3D FUTURISTIC with cursor tracking */}
+            <HeadlineWithCursorTracking />
             
             {/* Subheadline */}
             <motion.p 
