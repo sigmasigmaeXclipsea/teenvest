@@ -198,6 +198,9 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // Apply dark mode to document
   useEffect(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/e2d8d1cd-98b7-48dc-8a2d-9afbbe01d7c6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SettingsContext.tsx:200',message:'Dark mode settings changed',data:{darkMode:settings.darkMode},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
     if (settings.darkMode) {
       document.documentElement.classList.add('dark');
       localStorage.setItem('theme', 'dark');
@@ -215,6 +218,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Initialize theme from localStorage on first load - default to dark
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
+<<<<<<< HEAD
     // Default to dark mode if no preference saved
     if (savedTheme === 'light') {
       setSettings(prev => ({ ...prev, darkMode: false }));
@@ -223,6 +227,34 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       // Default to dark mode
       setSettings(prev => ({ ...prev, darkMode: true }));
       document.documentElement.classList.add('dark');
+=======
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/e2d8d1cd-98b7-48dc-8a2d-9afbbe01d7c6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SettingsContext.tsx:216',message:'Theme initialization check',data:{savedTheme:savedTheme,willApplyDark:savedTheme==='dark'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
+    // Only apply dark mode if explicitly set in settings, not from localStorage 'theme'
+    // This prevents auto-enabling dark mode on landing page
+    const savedSettings = localStorage.getItem('teenvest_settings');
+    if (savedSettings) {
+      try {
+        const parsed = JSON.parse(savedSettings);
+        if (parsed.darkMode === true) {
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/e2d8d1cd-98b7-48dc-8a2d-9afbbe01d7c6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SettingsContext.tsx:225',message:'Applying dark mode from settings',data:{darkMode:parsed.darkMode},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+          // #endregion
+          setSettings(prev => ({ ...prev, darkMode: true }));
+          document.documentElement.classList.add('dark');
+        } else {
+          // Ensure light mode is applied
+          document.documentElement.classList.remove('dark');
+        }
+      } catch (e) {
+        // If parsing fails, ensure light mode
+        document.documentElement.classList.remove('dark');
+      }
+    } else {
+      // No settings found, ensure light mode (default)
+      document.documentElement.classList.remove('dark');
+>>>>>>> 39ba640 (your message)
     }
   }, []);
 

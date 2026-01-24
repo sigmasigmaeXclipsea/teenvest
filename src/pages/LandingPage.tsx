@@ -208,12 +208,27 @@ const FeatureCard = ({ icon: Icon, title, desc, gradient, delay = 0 }: {
 const LandingPage = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+<<<<<<< HEAD
+=======
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end end"]
+  });
+
+  const heroY = useTransform(scrollYProgress, [0, 0.3], [0, -150]);
+  const heroScale = useTransform(scrollYProgress, [0, 0.2], [1, 0.9]);
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.25], [1, 0]);
+  const heroRotate = useTransform(scrollYProgress, [0, 0.3], [0, -5]);
+>>>>>>> 39ba640 (your message)
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
   };
 
+<<<<<<< HEAD
   return (
     <div className="min-h-screen bg-background">
       {/* Background gradient - static for performance */}
@@ -221,6 +236,45 @@ const LandingPage = () => {
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
+=======
+  // #region agent log
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const el = containerRef.current;
+    const computed = window.getComputedStyle(el);
+    const bgColor = computed.backgroundColor;
+    const bgVar = getComputedStyle(document.documentElement).getPropertyValue('--background');
+    const hasDark = document.documentElement.classList.contains('dark');
+    const bodyBg = window.getComputedStyle(document.body).backgroundColor;
+    const htmlBg = window.getComputedStyle(document.documentElement).backgroundColor;
+    const savedTheme = localStorage.getItem('theme');
+    const logData = {containerBg:bgColor,backgroundVar:bgVar,hasDarkClass:hasDark,bodyBg:bodyBg,htmlBg:htmlBg,savedTheme:savedTheme,isBlack:bgColor.includes('0, 0, 0')||bgColor.includes('6%')||bgColor==='rgb(0, 0, 0)'||bgColor==='black'};
+    console.log('[DEBUG] LandingPage dark mode check:', logData);
+    fetch('http://127.0.0.1:7242/ingest/e2d8d1cd-98b7-48dc-8a2d-9afbbe01d7c6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:972',message:'LandingPage render - dark mode check',data:logData,timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+  }, []);
+  // #endregion
+
+  return (
+    <div 
+      ref={containerRef} 
+      className="min-h-screen bg-background relative overflow-x-hidden"
+      style={{
+        perspective: '2000px',
+        transformStyle: 'preserve-3d',
+      }}
+    >
+        {/* Custom cursor - disabled for performance, can re-enable if needed */}
+        {false && typeof window !== 'undefined' && window.innerWidth >= 768 && <CursorFollower />}
+        
+        {/* Floating particles disabled for performance */}
+        {/* Grid background disabled for performance */}
+        
+        {/* Simplified static gradient background - removed 3D blobs for performance */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div 
+          className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5"
+        />
+>>>>>>> 39ba640 (your message)
       </div>
       
       {/* Header */}
