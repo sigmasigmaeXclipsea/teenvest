@@ -97,13 +97,13 @@ serve(async (req) => {
         break;
         
       case '2Y':
-        // 2 Years: Weekly bars for 2 calendar years
+        // 2 Years: Daily bars for 2 calendar years (~500 trading days)
         const twoYearsAgo = new Date(now);
         twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
         from = twoYearsAgo.toISOString().split('T')[0];
         multiplier = 1;
-        resolution = 'week';
-        limit = 110; // ~104 weeks in 2 years + buffer
+        resolution = 'day';
+        limit = 600; // ~500 trading days in 2 years + buffer
         break;
         
       default:
