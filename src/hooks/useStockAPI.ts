@@ -13,9 +13,9 @@ export interface CandlestickData {
   volume: number;
 }
 
-type TimePeriod = '1d' | '5d' | '1m' | 'ytd' | '1y';
+type TimePeriod = '1d' | '5d' | '1m' | 'ytd' | '1y' | '2y';
 
-const periodToBackendTimeframe = (period: TimePeriod): '1D' | '5D' | '1M' | 'YTD' | '1Y' => {
+const periodToBackendTimeframe = (period: TimePeriod): '1D' | '5D' | '1M' | 'YTD' | '1Y' | '2Y' => {
   switch (period) {
     case '1d':
       return '1D';
@@ -27,6 +27,8 @@ const periodToBackendTimeframe = (period: TimePeriod): '1D' | '5D' | '1M' | 'YTD
       return 'YTD';
     case '1y':
       return '1Y';
+    case '2y':
+      return '2Y';
   }
 };
 
