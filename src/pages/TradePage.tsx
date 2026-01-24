@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowUpDown, TrendingUp, TrendingDown, Search, Loader2, ExternalLink, BarChart3, AlertTriangle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -9,18 +9,11 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { Stock } from '@/data/mockStocks';
-import { russell5000Tickers, searchTickers, getTickerInfo, getTotalTickerCount } from '@/data/russell5000Tickers';
+import { searchTickers, getTickerInfo } from '@/data/russell5000Tickers';
 import { usePortfolio, useHoldings, useExecuteTrade } from '@/hooks/usePortfolio';
 import { useToast } from '@/hooks/use-toast';
 import { useStockQuote, useSearchStock, StockQuote } from '@/hooks/useStockAPI';
 import { getUserFriendlyError } from '@/lib/errorMessages';
-import StockLineChart from '@/components/StockLineChart';
-import StockCandlestickChart from '@/components/StockCandlestickChart';
-import { useSettings } from '@/contexts/SettingsContext';
-import { Lock } from 'lucide-react';
-
-// Lazy load line chart for better performance
-const LazyStockLineChart = lazy(() => import('@/components/StockLineChart').then(m => ({ default: m.default })));
 
 const TradePage = () => {
   const [searchParams] = useSearchParams();
@@ -39,9 +32,6 @@ const TradePage = () => {
   const executeTrade = useExecuteTrade();
   const { toast } = useToast();
   const searchStock = useSearchStock();
-  const { settings } = useSettings();
-  
-  const isAdvancedMode = settings.advancedMode;
   
   // Fetch live data for selected symbol - only when symbol changes
   const { data: liveQuote, isLoading: isLoadingQuote, error: quoteError } = useStockQuote(selectedSymbol);
@@ -330,52 +320,6 @@ const TradePage = () => {
           </Card>
         </div>
 
-        {/* Stock Charts - Shown when stock is selected */}
-        {selectedStock && liveQuote && (
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Suspense fallback={
-              <Card>
-                <CardContent className="flex items-center justify-center h-64">
-                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                </CardContent>
-              </Card>
-            }>
-              <LazyStockLineChart 
-                symbol={selectedStock.symbol}
-                currentPrice={selectedStock.price}
-                previousClose={liveQuote.previousClose}
-                high={liveQuote.high}
-                low={liveQuote.low}
-                open={liveQuote.open}
-              />
-            </Suspense>
-            {isAdvancedMode ? (
-              <StockCandlestickChart
-                symbol={selectedStock.symbol}
-                currentPrice={selectedStock.price}
-                previousClose={liveQuote.previousClose}
-                high={liveQuote.high}
-                low={liveQuote.low}
-                open={liveQuote.open}
-              />
-            ) : (
-              <Card className="flex items-center justify-center bg-secondary/30 border-dashed">
-                <CardContent className="text-center py-12">
-                  <Lock className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="font-semibold mb-2">Candlestick Chart</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Enable Advanced Mode in Settings to unlock candlestick charts and technical analysis tools.
-                  </p>
-                  <Link to="/settings">
-                    <Button variant="outline" size="sm">
-                      Go to Settings
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        )}
       </div>
     </DashboardLayout>
   );
