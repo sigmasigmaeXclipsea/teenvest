@@ -10,7 +10,6 @@ import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useCachedStocks, useRefreshStockCache, isCacheStale } from '@/hooks/useStockCache';
 import { useStockQuote } from '@/hooks/useStockAPI';
-import StockCandlestickChart from '@/components/StockCandlestickChart';
 import StockLineChart from '@/components/StockLineChart';
 import ProfessionalCandlestickChart from '@/components/ProfessionalCandlestickChart';
 
@@ -483,17 +482,7 @@ const ResearchPage = () => {
                       </Suspense>
                     </div>
 
-                    {/* Middle: Candlestick Chart (simulated) */}
-                    <StockCandlestickChart
-                      symbol={stockData.symbol}
-                      currentPrice={stockData.price}
-                      previousClose={stockData.previousClose}
-                      high={stockData.high}
-                      low={stockData.low}
-                      open={stockData.open}
-                    />
-
-                    {/* Bottom: Professional Full-Width Candlestick Chart with Volume (real data) */}
+                    {/* Professional Full-Width Candlestick Chart with Volume (real data) */}
                     <ProfessionalCandlestickChart
                       symbol={stockData.symbol}
                       currentPrice={stockData.price}
