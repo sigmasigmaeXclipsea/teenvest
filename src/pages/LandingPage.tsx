@@ -1706,9 +1706,8 @@ const LandingPage = () => {
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
             <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
+              initial={{ opacity: 1, x: 0 }}
+              animate={{ opacity: 1, x: 0 }}
               transition={{ type: 'spring' }}
             >
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary mb-3">The Math Doesn't Lie</p>
@@ -1745,9 +1744,8 @@ const LandingPage = () => {
             </motion.div>
             
               <motion.div
-              initial={{ opacity: 0, x: 50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
+              initial={{ opacity: 1, x: 0 }}
+              animate={{ opacity: 1, x: 0 }}
               transition={{ type: 'spring' }}
               className="relative"
             >
@@ -1811,9 +1809,8 @@ const LandingPage = () => {
         
         <div className="container mx-auto px-4">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            initial={{ opacity: 1, y: 0 }}
+            animate={{ opacity: 1, y: 0 }}
             className="text-center mb-16"
           >
             <motion.p 
@@ -1829,9 +1826,8 @@ const LandingPage = () => {
           </motion.div>
           
           <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
+            initial="visible"
+            animate="visible"
             className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-6xl mx-auto"
           >
             {[
@@ -1842,10 +1838,9 @@ const LandingPage = () => {
             ].map((stat, i) => (
               <motion.div
                 key={i}
-                initial={{ opacity: 0, y: 50, rotateX: -20 }}
-                whileInView={{ opacity: 1, y: 0, rotateX: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.15, type: 'spring', stiffness: 100 }}
+                initial={{ opacity: 1, y: 0, rotateX: 0 }}
+                animate={{ opacity: 1, y: 0, rotateX: 0 }}
+                transition={{ delay: i * 0.1, type: 'spring', stiffness: 100 }}
                 whileHover={{ scale: 1.08, y: -15, rotateY: 5 }}
                 className="relative text-center p-8 rounded-3xl bg-card/60 backdrop-blur-xl border border-border/50 hover:border-primary/50 transition-all duration-500 cursor-pointer group overflow-hidden"
               >
@@ -1883,9 +1878,8 @@ const LandingPage = () => {
         <ParallaxSection speed={0.3}>
           <div className="container mx-auto px-4">
             <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              initial={{ opacity: 1, y: 0 }}
+              animate={{ opacity: 1, y: 0 }}
               className="text-center mb-12"
             >
               <motion.p 
@@ -2362,8 +2356,8 @@ const LandingPage = () => {
         .bg-gradient-radial {
           background: radial-gradient(circle, var(--tw-gradient-stops));
         }
-        /* 3D Transform utilities */
-        * {
+        /* 3D Transform utilities - only apply to specific elements */
+        .preserve-3d {
           transform-style: preserve-3d;
         }
         @keyframes float-3d {
