@@ -45,48 +45,51 @@ serve(async (req) => {
     let resolution: string;
     let limit = 60; // Target ~60 bars like TradingView
     
+    // Note: Polygon free plan only supports daily bars (no intraday)
+    // All timeframes use daily resolution with appropriate date ranges
     switch (timeframe) {
       case '1D':
-        // Intraday: 5-min bars for exactly 1 trading day
-        // Fetch 1 day back, will get today's intraday data
-        from = to; // Same day for intraday
-        multiplier = 5;
-        resolution = 'minute';
-        limit = 78; // 6.5 hours of trading = 78 five-minute bars
+        // For 1D on free plan, show last 5 trading days of daily bars
+        const fiveDaysBack = new Date(now);
+        fiveDaysBack.setDate(fiveDaysBack.getDate() - 7);
+        from = fiveDaysBack.toISOString().split('T')[0];
+        multiplier = 1;
+        resolution = 'day';
+        limit = 5;
         break;
       case '5D':
-        // 5 days: 15-min bars for exactly 5 calendar days
-        const fiveDaysAgo = new Date(now);
-        fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
-        from = fiveDaysAgo.toISOString().split('T')[0];
-        multiplier = 15;
-        resolution = 'minute';
-        limit = 130; // ~5 trading days * 26 bars per day
+        // 5 days: show ~7 calendar days to get 5 trading days
+        const weekAgo = new Date(now);
+        weekAgo.setDate(weekAgo.getDate() - 10);
+        from = weekAgo.toISOString().split('T')[0];
+        multiplier = 1;
+        resolution = 'day';
+        limit = 5;
         break;
       case '1M':
-        // Exactly 1 calendar month: daily bars
+        // Exactly 1 calendar month: daily bars (~22 trading days)
         const oneMonthAgo = new Date(now);
         oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
         from = oneMonthAgo.toISOString().split('T')[0];
         multiplier = 1;
         resolution = 'day';
-        limit = 23; // ~22 trading days in a month
+        limit = 23;
         break;
       case 'YTD':
         // Year to date: daily bars from Jan 1
         from = `${now.getFullYear()}-01-01`;
         multiplier = 1;
         resolution = 'day';
-        limit = 252; // Max trading days in a year
+        limit = 252;
         break;
       case '1Y':
-        // Exactly 1 year: daily bars
+        // Exactly 1 year: daily bars (~252 trading days)
         const oneYearAgo = new Date(now);
         oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
         from = oneYearAgo.toISOString().split('T')[0];
         multiplier = 1;
         resolution = 'day';
-        limit = 252; // ~252 trading days in a year
+        limit = 252;
         break;
       default:
         // Default to 1 month
