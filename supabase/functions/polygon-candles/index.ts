@@ -3,7 +3,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Cache-Control': 'public, max-age=60', // Browser cache for 1 minute
+  'Cache-Control': 'public, max-age=60',
 };
 
 // Server-side cache
@@ -43,67 +43,72 @@ serve(async (req) => {
     let from: string;
     let multiplier: number;
     let resolution: string;
-    let limit = 60; // Target ~60 bars like TradingView
+    let limit: number;
     
-    // Note: Polygon free plan only supports daily bars (no intraday)
-    // All timeframes use daily resolution with appropriate date ranges
+    // With Starter/Advanced plan, we can use intraday minute data
     switch (timeframe) {
       case '1D':
-        // For 1D on free plan, show last 5 trading days of daily bars
-        const fiveDaysBack = new Date(now);
-        fiveDaysBack.setDate(fiveDaysBack.getDate() - 7);
-        from = fiveDaysBack.toISOString().split('T')[0];
-        multiplier = 1;
-        resolution = 'day';
-        limit = 5;
+        // 1 Day: 5-minute bars for the current trading day
+        // Fetch last 2 days to ensure we get today's data
+        const oneDayBack = new Date(now);
+        oneDayBack.setDate(oneDayBack.getDate() - 2);
+        from = oneDayBack.toISOString().split('T')[0];
+        multiplier = 5;
+        resolution = 'minute';
+        limit = 78; // 6.5 hours trading = 78 five-minute bars
         break;
+        
       case '5D':
-        // 5 days: show ~7 calendar days to get 5 trading days
-        const weekAgo = new Date(now);
-        weekAgo.setDate(weekAgo.getDate() - 10);
-        from = weekAgo.toISOString().split('T')[0];
-        multiplier = 1;
-        resolution = 'day';
-        limit = 5;
+        // 5 Days: 15-minute bars
+        const fiveDaysBack = new Date(now);
+        fiveDaysBack.setDate(fiveDaysBack.getDate() - 7); // Extra days for weekends
+        from = fiveDaysBack.toISOString().split('T')[0];
+        multiplier = 15;
+        resolution = 'minute';
+        limit = 130; // ~5 trading days * 26 bars per day
         break;
+        
       case '1M':
-        // Exactly 1 calendar month: daily bars (~22 trading days)
+        // 1 Month: Daily bars for exactly 1 calendar month
         const oneMonthAgo = new Date(now);
         oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
         from = oneMonthAgo.toISOString().split('T')[0];
         multiplier = 1;
         resolution = 'day';
-        limit = 23;
+        limit = 30; // ~22 trading days, get extra to ensure coverage
         break;
+        
       case 'YTD':
-        // Year to date: daily bars from Jan 1
+        // Year to date: Daily bars from January 1st of current year
         from = `${now.getFullYear()}-01-01`;
         multiplier = 1;
         resolution = 'day';
-        limit = 252;
+        limit = 366; // Max possible days in a year
         break;
+        
       case '1Y':
-        // Exactly 1 year: daily bars (~252 trading days)
+        // 1 Year: Daily bars for exactly 1 calendar year
         const oneYearAgo = new Date(now);
         oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
         from = oneYearAgo.toISOString().split('T')[0];
         multiplier = 1;
         resolution = 'day';
-        limit = 252;
+        limit = 366; // Account for leap year
         break;
+        
       default:
-        // Default to 1 month
+        // Default to 1 month of daily bars
         const defaultAgo = new Date(now);
         defaultAgo.setMonth(defaultAgo.getMonth() - 1);
         from = defaultAgo.toISOString().split('T')[0];
         multiplier = 1;
         resolution = 'day';
-        limit = 23;
+        limit = 30;
     }
 
-    const url = `https://api.polygon.io/v2/aggs/ticker/${ticker.toUpperCase()}/range/${multiplier}/${resolution}/${from}/${to}?adjusted=true&sort=asc&limit=1000&apiKey=${apiKey}`;
+    const url = `https://api.polygon.io/v2/aggs/ticker/${ticker.toUpperCase()}/range/${multiplier}/${resolution}/${from}/${to}?adjusted=true&sort=asc&limit=${limit}&apiKey=${apiKey}`;
     
-    console.log(`Fetching ${ticker} ${timeframe}: ${from} to ${to}`);
+    console.log(`Fetching ${ticker} ${timeframe}: ${multiplier} ${resolution} from ${from} to ${to}`);
 
     const response = await fetch(url);
     
@@ -131,10 +136,17 @@ serve(async (req) => {
       }))
       .sort((a: any, b: any) => a.time - b.time);
 
-    // Take the exact number of bars needed (already sorted asc)
-    const candles = allCandles.slice(-limit);
+    // For intraday, filter to just the most recent trading sessions
+    let candles = allCandles;
+    if (timeframe === '1D') {
+      // Get only the last trading day's worth of data
+      candles = allCandles.slice(-78);
+    } else if (timeframe === '5D') {
+      // Get the last 5 trading days worth
+      candles = allCandles.slice(-130);
+    }
 
-    console.log(`Returning ${candles.length} candles for ${ticker}`);
+    console.log(`Returning ${candles.length} candles for ${ticker} (${timeframe})`);
 
     const result = { 
       candles,
