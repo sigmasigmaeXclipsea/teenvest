@@ -84,11 +84,12 @@ const ProfessionalCandlestickChart = ({ symbol, previousClose }: ProfessionalCan
     // Sort and format data
     const sorted = [...candleData].sort((a, b) => a.time - b.time);
 
-    // Use BusinessDay strings for daily+ data, Unix timestamps for intraday
-    const isIntraday = activeTimeframe === '1D' || activeTimeframe === '5D';
+    // Use Unix timestamps for any sub-daily resolution (minute/hour data)
+    // Only use BusinessDay strings for daily/weekly data (6M, 1Y, 2Y)
+    const usesSubDailyResolution = ['1D', '5D', '1M', '3M'].includes(activeTimeframe);
     
     const formattedData = sorted.map((c) => ({
-      time: isIntraday ? c.time : toBusinessDayString(c.time) as any,
+      time: usesSubDailyResolution ? c.time : toBusinessDayString(c.time) as any,
       open: c.open,
       high: c.high,
       low: c.low,
@@ -96,7 +97,7 @@ const ProfessionalCandlestickChart = ({ symbol, previousClose }: ProfessionalCan
     }));
 
     const volumeData = sorted.map((c) => ({
-      time: isIntraday ? c.time : toBusinessDayString(c.time) as any,
+      time: usesSubDailyResolution ? c.time : toBusinessDayString(c.time) as any,
       value: c.volume || 0,
       color: c.close >= c.open ? '#26a69a' : '#ef5350',
     }));
