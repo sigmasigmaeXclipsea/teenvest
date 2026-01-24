@@ -1,8 +1,8 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const API_BASE_URL = "https://finnhub-stock-api-5xrj.onrender.com/api/stock";
-const MASSIVE_API_KEY = "uWZTNdXVOI0ZapBgRtGnw1PtVlPw8XZI";
-const MASSIVE_API_BASE = "https://api.massive.com/v2/aggs/ticker";
+// Candles are fetched via our backend function (keeps API keys server-side)
 
 export interface CandlestickData {
   time: number; // Unix timestamp in seconds
@@ -15,37 +15,27 @@ export interface CandlestickData {
 
 type TimePeriod = '1d' | '5d' | '1m' | 'ytd' | '1y';
 
-// Calculate FROM and TO timestamps for Massive.com API
-const getTimeRange = (period: TimePeriod): { from: number; to: number } => {
-  const now = Date.now();
-  const to = now;
-  let from: number;
-
+const periodToBackendTimeframe = (period: TimePeriod): '1D' | '5D' | '1M' | 'YTD' | '1Y' => {
   switch (period) {
     case '1d':
-      from = now - (1 * 24 * 60 * 60 * 1000); // 1 day ago
-      break;
+      return '1D';
     case '5d':
-      from = now - (5 * 24 * 60 * 60 * 1000); // 5 days ago
-      break;
+      return '5D';
     case '1m':
-      from = now - (30 * 24 * 60 * 60 * 1000); // ~30 days ago
-      break;
+      return '1M';
     case 'ytd':
-      const yearStart = new Date(new Date().getFullYear(), 0, 1);
-      from = yearStart.getTime();
-      break;
+      return 'YTD';
     case '1y':
-      from = now - (365 * 24 * 60 * 60 * 1000); // 1 year ago
-      break;
-    default:
-      from = now - (30 * 24 * 60 * 60 * 1000);
+      return '1Y';
   }
-
-  return { from, to };
 };
 
-// Fetch candlestick data from Massive.com
+const safeNumber = (v: unknown): number | null => {
+  const n = typeof v === 'number' ? v : Number(v);
+  return Number.isFinite(n) ? n : null;
+};
+
+// Fetch candlestick data from backend candles function
 export const fetchCandlestickData = async (
   symbol: string,
   period: TimePeriod
@@ -59,59 +49,46 @@ export const fetchCandlestickData = async (
     throw new Error("Invalid symbol format");
   }
 
-  const { from, to } = getTimeRange(period);
-  const url = `${MASSIVE_API_BASE}/${cleanSymbol}/range/1/day/${from}/${to}?adjusted=true&sort=asc&apiKey=${MASSIVE_API_KEY}`;
+  const timeframe = periodToBackendTimeframe(period);
+  const { data, error } = await supabase.functions.invoke('polygon-candles', {
+    body: { ticker: cleanSymbol, timeframe },
+  });
 
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(`Failed to fetch candlestick data: ${res.statusText}`);
+  if (error) {
+    throw new Error(error.message || 'Failed to load candlestick data');
   }
 
-  const data = await res.json();
+  const candlesRaw = (data as any)?.candles;
+  if (!Array.isArray(candlesRaw) || candlesRaw.length === 0) return [];
 
-  // Handle different possible response formats
-  let results: any[] = [];
-  
-  if (data?.results && Array.isArray(data.results)) {
-    // Polygon.io / Massive.com format: { results: [{ t, o, h, l, c, v }] }
-    results = data.results;
-  } else if (Array.isArray(data)) {
-    // Direct array format: [{ t, o, h, l, c, v }]
-    results = data;
-  } else if (data?.data && Array.isArray(data.data)) {
-    // Alternative format: { data: [...] }
-    results = data.data;
-  } else {
-    throw new Error("Invalid API response format - expected results array");
+  // Normalize + hard-null-safety
+  const normalized: CandlestickData[] = candlesRaw
+    .map((c: any) => {
+      const t = safeNumber(c?.time);
+      const o = safeNumber(c?.open);
+      const h = safeNumber(c?.high);
+      const l = safeNumber(c?.low);
+      const cl = safeNumber(c?.close);
+      const v = safeNumber(c?.volume) ?? 0;
+
+      if (t == null || o == null || h == null || l == null || cl == null) return null;
+      if (t <= 0) return null;
+
+      return { time: Math.floor(t), open: o, high: h, low: l, close: cl, volume: v };
+    })
+    .filter((x: CandlestickData | null): x is CandlestickData => x !== null)
+    .sort((a, b) => a.time - b.time);
+
+  // De-dupe by time (duplicate timestamps collapse into “one stick” in lightweight-charts)
+  const deduped: CandlestickData[] = [];
+  const seen = new Set<number>();
+  for (const c of normalized) {
+    if (seen.has(c.time)) continue;
+    seen.add(c.time);
+    deduped.push(c);
   }
 
-  if (results.length === 0) {
-    return []; // Return empty array if no data
-  }
-
-  return results.map((item: any) => {
-    // Handle different field name formats
-    const timestamp = item.t || item.timestamp || item.time;
-    const open = item.o || item.open;
-    const high = item.h || item.high;
-    const low = item.l || item.low;
-    const close = item.c || item.close;
-    const volume = item.v || item.volume || 0;
-
-    // Convert timestamp to seconds (assume ms if > 1e10, otherwise seconds)
-    const timeInSeconds = timestamp > 1e10 
-      ? Math.floor(timestamp / 1000) 
-      : Math.floor(timestamp);
-
-    return {
-      time: timeInSeconds,
-      open: Number(open) || 0,
-      high: Number(high) || 0,
-      low: Number(low) || 0,
-      close: Number(close) || 0,
-      volume: Number(volume) || 0,
-    };
-  }).filter((candle: CandlestickData) => candle.time > 0 && candle.close > 0);
+  return deduped;
 };
 
 // Hook to fetch candlestick data
