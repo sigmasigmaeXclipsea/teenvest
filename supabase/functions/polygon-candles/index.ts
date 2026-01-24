@@ -96,6 +96,16 @@ serve(async (req) => {
         limit = 366; // Account for leap year
         break;
         
+      case '2Y':
+        // 2 Years: Weekly bars for 2 calendar years
+        const twoYearsAgo = new Date(now);
+        twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+        from = twoYearsAgo.toISOString().split('T')[0];
+        multiplier = 1;
+        resolution = 'week';
+        limit = 110; // ~104 weeks in 2 years + buffer
+        break;
+        
       default:
         // Default to 1 month of daily bars
         const defaultAgo = new Date(now);

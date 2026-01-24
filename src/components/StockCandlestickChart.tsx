@@ -23,7 +23,7 @@ interface StockCandlestickChartProps {
   open: number;
 }
 
-type TimePeriod = '1d' | '5d' | '1m' | 'ytd' | '1y';
+type TimePeriod = '1d' | '5d' | '1m' | 'ytd' | '1y' | '2y';
 
 const isIntraday = (p: TimePeriod) => p === '1d' || p === '5d';
 
@@ -141,6 +141,7 @@ const StockCandlestickChart = ({ symbol, currentPrice, previousClose, high, low,
               <TabsTrigger value="1m" className="text-xs px-2">1M</TabsTrigger>
               <TabsTrigger value="ytd" className="text-xs px-2">YTD</TabsTrigger>
               <TabsTrigger value="1y" className="text-xs px-2">1Y</TabsTrigger>
+              <TabsTrigger value="2y" className="text-xs px-2">2Y</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
