@@ -1,6 +1,130 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 
 const API_BASE_URL = "https://finnhub-stock-api-5xrj.onrender.com/api/stock";
+const MASSIVE_API_KEY = "uWZTNdXVOI0ZapBgRtGnw1PtVlPw8XZI";
+const MASSIVE_API_BASE = "https://api.massive.com/v2/aggs/ticker";
+
+export interface CandlestickData {
+  time: number; // Unix timestamp in seconds
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
+type TimePeriod = '1d' | '5d' | '1m' | 'ytd' | '1y';
+
+// Calculate FROM and TO timestamps for Massive.com API
+const getTimeRange = (period: TimePeriod): { from: number; to: number } => {
+  const now = Date.now();
+  const to = now;
+  let from: number;
+
+  switch (period) {
+    case '1d':
+      from = now - (1 * 24 * 60 * 60 * 1000); // 1 day ago
+      break;
+    case '5d':
+      from = now - (5 * 24 * 60 * 60 * 1000); // 5 days ago
+      break;
+    case '1m':
+      from = now - (30 * 24 * 60 * 60 * 1000); // ~30 days ago
+      break;
+    case 'ytd':
+      const yearStart = new Date(new Date().getFullYear(), 0, 1);
+      from = yearStart.getTime();
+      break;
+    case '1y':
+      from = now - (365 * 24 * 60 * 60 * 1000); // 1 year ago
+      break;
+    default:
+      from = now - (30 * 24 * 60 * 60 * 1000);
+  }
+
+  return { from, to };
+};
+
+// Fetch candlestick data from Massive.com
+export const fetchCandlestickData = async (
+  symbol: string,
+  period: TimePeriod
+): Promise<CandlestickData[]> => {
+  if (!symbol || typeof symbol !== 'string') {
+    throw new Error("Invalid symbol");
+  }
+
+  const cleanSymbol = symbol.trim().toUpperCase();
+  if (!/^[A-Z]{1,5}$/.test(cleanSymbol)) {
+    throw new Error("Invalid symbol format");
+  }
+
+  const { from, to } = getTimeRange(period);
+  const url = `${MASSIVE_API_BASE}/${cleanSymbol}/range/1/day/${from}/${to}?adjusted=true&sort=asc&apiKey=${MASSIVE_API_KEY}`;
+
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch candlestick data: ${res.statusText}`);
+  }
+
+  const data = await res.json();
+
+  // Handle different possible response formats
+  let results: any[] = [];
+  
+  if (data?.results && Array.isArray(data.results)) {
+    // Polygon.io / Massive.com format: { results: [{ t, o, h, l, c, v }] }
+    results = data.results;
+  } else if (Array.isArray(data)) {
+    // Direct array format: [{ t, o, h, l, c, v }]
+    results = data;
+  } else if (data?.data && Array.isArray(data.data)) {
+    // Alternative format: { data: [...] }
+    results = data.data;
+  } else {
+    throw new Error("Invalid API response format - expected results array");
+  }
+
+  if (results.length === 0) {
+    return []; // Return empty array if no data
+  }
+
+  return results.map((item: any) => {
+    // Handle different field name formats
+    const timestamp = item.t || item.timestamp || item.time;
+    const open = item.o || item.open;
+    const high = item.h || item.high;
+    const low = item.l || item.low;
+    const close = item.c || item.close;
+    const volume = item.v || item.volume || 0;
+
+    // Convert timestamp to seconds (assume ms if > 1e10, otherwise seconds)
+    const timeInSeconds = timestamp > 1e10 
+      ? Math.floor(timestamp / 1000) 
+      : Math.floor(timestamp);
+
+    return {
+      time: timeInSeconds,
+      open: Number(open) || 0,
+      high: Number(high) || 0,
+      low: Number(low) || 0,
+      close: Number(close) || 0,
+      volume: Number(volume) || 0,
+    };
+  }).filter((candle: CandlestickData) => candle.time > 0 && candle.close > 0);
+};
+
+// Hook to fetch candlestick data
+export const useCandlestickData = (symbol: string, period: TimePeriod) => {
+  return useQuery({
+    queryKey: ["candlestick", symbol, period],
+    queryFn: () => fetchCandlestickData(symbol, period),
+    enabled: !!symbol && typeof symbol === 'string' && symbol.trim().length > 0,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 15 * 60 * 1000, // 15 minutes
+    retry: 2,
+  });
+};
 
 export interface StockQuote {
   symbol: string;
