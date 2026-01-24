@@ -105,7 +105,23 @@ const Marquee = ({ children, direction = 'left', speed = 20 }: { children: React
   );
 };
 
-// 3D Tilt card component
+// Dashboard card wrapper - no cursor tracking, static lighting
+const DashboardCard = ({ children, className }: { children: React.ReactNode; className?: string }) => {
+  return (
+    <div className={`relative ${className}`}>
+      {children}
+      {/* Static subtle glow - aligned with dashboard, no cursor tracking */}
+      <div
+        className="absolute inset-0 rounded-3xl pointer-events-none opacity-20"
+        style={{
+          background: `radial-gradient(circle at 50% 30%, hsl(var(--primary) / 0.3) 0%, transparent 60%)`,
+        }}
+      />
+    </div>
+  );
+};
+
+// 3D Tilt card component - used for feature cards only
 const TiltCard = ({ children, className }: { children: React.ReactNode; className?: string }) => {
   const ref = useRef<HTMLDivElement>(null);
   const [rotateX, setRotateX] = useState(0);
@@ -618,7 +634,7 @@ const AnimatedDashboard = () => {
   }, []);
   
   return (
-    <TiltCard className="w-full max-w-2xl mx-auto">
+    <DashboardCard className="w-full max-w-2xl mx-auto">
       <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-card via-card to-primary/10 border-2 border-border/60 shadow-[0_20px_80px_-20px_hsl(var(--primary)/0.4)]">
         {/* Animated border glow */}
         <motion.div
@@ -886,7 +902,7 @@ const AnimatedDashboard = () => {
           transition={{ duration: 4, repeat: Infinity }}
         />
       </div>
-    </TiltCard>
+    </DashboardCard>
   );
 };
 
@@ -1229,50 +1245,16 @@ const LandingPage = () => {
                   scale: 1.02,
                 }}
               >
-                <RevealText text="Financial Empire" className="inline relative z-10" />
-                {/* Animated gradient overlay */}
-                <motion.span
-                  className="absolute inset-0 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent opacity-0"
-                  animate={{ opacity: [0, 0.5, 0] }}
-                  transition={{ duration: 3, repeat: Infinity }}
-                  style={{ backgroundSize: '200% 100%' }}
-                >
-                  Financial Empire
-                </motion.span>
-                {/* Sparkle effects */}
-                {[...Array(5)].map((_, i) => (
-                  <motion.span 
-                    key={i}
-                    className="absolute"
-                    style={{
-                      left: `${20 + i * 15}%`,
-                      top: '-10%',
-                    }}
-                    animate={{ 
-                      rotate: [0, 360],
-                      scale: [0, 1, 0],
-                      opacity: [0, 1, 0],
-                      y: [0, -20, 0],
-                    }}
-                    transition={{ 
-                      duration: 2, 
-                      repeat: Infinity, 
-                      delay: i * 0.3,
-                      ease: 'easeInOut'
-                    }}
-                    aria-hidden="true"
-                  >
-                    <Sparkles className="w-4 h-4 sm:w-6 sm:h-6 text-warning" />
-                  </motion.span>
-                ))}
+                {/* Solid text - no flashing */}
+                <span className="inline relative z-10">Financial Empire</span>
+                {/* Single static sparkle */}
                 <motion.span 
                   className="absolute -right-2 sm:-right-4 -top-2 sm:-top-4 z-20"
                   animate={{ 
                     rotate: [0, 20, -20, 0],
-                    scale: [1, 1.3, 1],
-                    y: [0, -10, 0],
+                    scale: [1, 1.2, 1],
                   }}
-                  transition={{ duration: 2, repeat: Infinity }}
+                  transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
                   aria-hidden="true"
                 >
                   <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-warning drop-shadow-lg" />
@@ -1435,71 +1417,18 @@ const LandingPage = () => {
               transition: { duration: 0.3 }
             }}
           >
-            {/* Multiple glow layers behind dashboard - enhanced */}
-            <motion.div 
-              className="absolute -inset-20 bg-gradient-radial from-primary/40 via-primary/15 to-transparent blur-3xl"
-              whileInView={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }}
-              viewport={{ once: true }}
-              transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+            {/* Static glow layers behind dashboard - aligned with dashboard, no cursor tracking */}
+            <div 
+              className="absolute -inset-20 bg-gradient-radial from-primary/30 via-primary/10 to-transparent blur-3xl pointer-events-none"
             />
-            <motion.div 
-              className="absolute -inset-10 bg-gradient-radial from-accent/30 via-transparent to-transparent blur-2xl"
-              whileInView={{ scale: [1.05, 1.15, 1.05], opacity: [0.2, 0.4, 0.2] }}
-              viewport={{ once: true }}
-              transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+            <div 
+              className="absolute -inset-10 bg-gradient-radial from-accent/20 via-transparent to-transparent blur-2xl pointer-events-none"
             />
-            {/* Additional pulsing rings */}
-            {[...Array(3)].map((_, i) => (
-              <motion.div
-                key={i}
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-primary/20"
-                style={{ width: `${300 + i * 200}px`, height: `${300 + i * 200}px` }}
-                animate={{
-                  scale: [1, 1.2, 1],
-                  opacity: [0.2, 0.4, 0.2],
-                  rotate: [0, 180, 360],
-                }}
-                transition={{ duration: 6 + i * 2, repeat: Infinity, ease: 'linear' }}
-              />
-            ))}
-            
-            {/* 3D Orbiting elements that flow around dashboard */}
-            {[...Array(6)].map((_, i) => (
-              <motion.div
-                key={`orb-${i}`}
-                className="absolute rounded-full bg-gradient-to-br from-primary/60 to-accent/60 shadow-lg blur-sm"
-                style={{
-                  width: `${8 + i * 2}px`,
-                  height: `${8 + i * 2}px`,
-                  top: `${10 + i * 15}%`,
-                  left: `${5 + (i % 3) * 30}%`,
-                  transformStyle: 'preserve-3d',
-                }}
-                animate={{
-                  rotate: i % 2 === 0 ? 360 : -360,
-                  x: [
-                    Math.cos(i) * 60,
-                    Math.cos(i + Math.PI) * 60,
-                    Math.cos(i) * 60,
-                  ],
-                  y: [
-                    Math.sin(i) * 60,
-                    Math.sin(i + Math.PI) * 60,
-                    Math.sin(i) * 60,
-                  ],
-                  z: [0, 100, 0],
-                  rotateX: [0, 180, 360],
-                  rotateY: [0, 180, 360],
-                  scale: [0.8, 1.2, 0.8],
-                }}
-                transition={{ 
-                  duration: 8 + i * 2, 
-                  repeat: Infinity, 
-                  ease: 'linear',
-                  delay: i * 0.5,
-                }}
-              />
-            ))}
+            {/* Single static ring for depth */}
+            <div
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-primary/10 pointer-events-none"
+              style={{ width: '500px', height: '500px' }}
+            />
             
             <motion.div
               animate={{ 
