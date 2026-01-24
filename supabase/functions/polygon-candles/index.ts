@@ -43,80 +43,79 @@ serve(async (req) => {
     let from: string;
     let multiplier: number;
     let resolution: string;
-    let limit: number;
+    let targetBars: number = 150; // Target ~150 bars per view like TradingView
     
-    // With Starter/Advanced plan, we can use intraday minute data
+    // TradingView-style: Each timeframe shows ~150 bars with appropriate resolution
     switch (timeframe) {
       case '1D':
-        // 1 Day: 5-minute bars for the current trading day
-        // Fetch last 2 days to ensure we get today's data
+        // 1 Day: 5-minute bars (~78 bars for a full trading day)
         const oneDayBack = new Date(now);
         oneDayBack.setDate(oneDayBack.getDate() - 2);
         from = oneDayBack.toISOString().split('T')[0];
         multiplier = 5;
         resolution = 'minute';
-        limit = 78; // 6.5 hours trading = 78 five-minute bars
+        targetBars = 100; // ~6.5 hours of trading
         break;
         
       case '5D':
-        // 5 Days: 15-minute bars
+        // 5 Days: 15-minute bars (~130 bars for 5 trading days)
         const fiveDaysBack = new Date(now);
-        fiveDaysBack.setDate(fiveDaysBack.getDate() - 7); // Extra days for weekends
+        fiveDaysBack.setDate(fiveDaysBack.getDate() - 7);
         from = fiveDaysBack.toISOString().split('T')[0];
         multiplier = 15;
         resolution = 'minute';
-        limit = 130; // ~5 trading days * 26 bars per day
+        targetBars = 150;
         break;
         
       case '1M':
-        // 1 Month: Daily bars for exactly 1 calendar month
+        // 1 Month: 1-hour bars (~150 bars, ~22 trading days * 6.5 hours)
         const oneMonthAgo = new Date(now);
         oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
         from = oneMonthAgo.toISOString().split('T')[0];
         multiplier = 1;
-        resolution = 'day';
-        limit = 30; // ~22 trading days, get extra to ensure coverage
+        resolution = 'hour';
+        targetBars = 200;
         break;
         
       case 'YTD':
-        // Year to date: Daily bars from January 1st of current year
+        // Year to date: Daily bars
         from = `${now.getFullYear()}-01-01`;
         multiplier = 1;
         resolution = 'day';
-        limit = 366; // Max possible days in a year
+        targetBars = 300;
         break;
         
       case '1Y':
-        // 1 Year: Daily bars for exactly 1 calendar year
+        // 1 Year: Daily bars (~252 trading days, show ~150 with ability to scroll)
         const oneYearAgo = new Date(now);
         oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
         from = oneYearAgo.toISOString().split('T')[0];
         multiplier = 1;
         resolution = 'day';
-        limit = 366; // Account for leap year
+        targetBars = 300;
         break;
         
       case '2Y':
-        // 2 Years: Daily bars for 2 calendar years (~500 trading days)
+        // 2 Years: Weekly bars (~104 weeks, show ~100-150 bars)
         const twoYearsAgo = new Date(now);
         twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
         from = twoYearsAgo.toISOString().split('T')[0];
         multiplier = 1;
-        resolution = 'day';
-        limit = 600; // ~500 trading days in 2 years + buffer
+        resolution = 'week';
+        targetBars = 150;
         break;
         
       default:
-        // Default to 1 month of daily bars
+        // Default to 1 month
         const defaultAgo = new Date(now);
         defaultAgo.setMonth(defaultAgo.getMonth() - 1);
         from = defaultAgo.toISOString().split('T')[0];
         multiplier = 1;
-        resolution = 'day';
-        limit = 30;
+        resolution = 'hour';
+        targetBars = 150;
     }
 
-    const url = `https://api.polygon.io/v2/aggs/ticker/${ticker.toUpperCase()}/range/${multiplier}/${resolution}/${from}/${to}?adjusted=true&sort=asc&limit=${limit}&apiKey=${apiKey}`;
+    const url = `https://api.polygon.io/v2/aggs/ticker/${ticker.toUpperCase()}/range/${multiplier}/${resolution}/${from}/${to}?adjusted=true&sort=asc&limit=${targetBars + 50}&apiKey=${apiKey}`;
     
     console.log(`Fetching ${ticker} ${timeframe}: ${multiplier} ${resolution} from ${from} to ${to}`);
 
