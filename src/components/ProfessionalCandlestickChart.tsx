@@ -101,23 +101,29 @@ const ProfessionalCandlestickChart = ({ symbol, currentPrice, previousClose, hig
       volumeRef.current = null;
     }
 
-    // Format data for lightweight-charts
-    const formattedData = candleData.map((candle) => ({
-      time: candle.time as any,
-      open: candle.open,
-      high: candle.high,
-      low: candle.low,
-      close: candle.close,
-    }));
-
-    const volumeData = candleData.map((candle) => {
-      const isUp = candle.close >= candle.open;
-      return {
+    // Format data for lightweight-charts - sort by time ascending
+    const formattedData = candleData
+      .map((candle) => ({
         time: candle.time as any,
-        value: candle.volume || 0,
-        color: isUp ? '#26a69a' : '#ef5350',
-      };
-    });
+        open: candle.open,
+        high: candle.high,
+        low: candle.low,
+        close: candle.close,
+      }))
+      // CRITICAL: Sort by time ascending to satisfy lightweight-charts requirement
+      .sort((a, b) => (a.time as number) - (b.time as number));
+
+    const volumeData = candleData
+      .map((candle) => {
+        const isUp = candle.close >= candle.open;
+        return {
+          time: candle.time as any,
+          value: candle.volume || 0,
+          color: isUp ? '#26a69a' : '#ef5350',
+        };
+      })
+      // CRITICAL: Sort by time ascending
+      .sort((a, b) => (a.time as number) - (b.time as number));
 
     // Create main candlestick chart
     let chart: any;
