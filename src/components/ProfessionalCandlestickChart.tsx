@@ -248,7 +248,16 @@ const ProfessionalCandlestickChart = ({ symbol, currentPrice, previousClose, hig
       borderVisible: true,
     });
 
-    candlestickSeries.setData(formattedData);
+    // Wrap setData in try-catch to handle data ordering issues gracefully
+    try {
+      candlestickSeries.setData(formattedData);
+    } catch (e) {
+      console.error('Failed to set candlestick data:', e);
+      // Clean up and return early
+      try { chart.remove(); } catch {}
+      try { volumeChart.remove(); } catch {}
+      return;
+    }
 
     // Add volume series
     const volumeSeries = volumeChart.addHistogramSeries({
@@ -259,7 +268,11 @@ const ProfessionalCandlestickChart = ({ symbol, currentPrice, previousClose, hig
       priceScaleId: '',
     });
 
-    volumeSeries.setData(volumeData);
+    try {
+      volumeSeries.setData(volumeData);
+    } catch (e) {
+      console.error('Failed to set volume data:', e);
+    }
 
     // Add previous close line
     if (previousClose && previousClose > 0) {
