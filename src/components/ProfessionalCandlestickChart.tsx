@@ -1,16 +1,17 @@
-import { useMemo, useState, useRef, useEffect, memo } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart3 } from 'lucide-react';
+import { BarChart3, Loader2 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { createChart, ColorType } from "lightweight-charts";
+import { supabase } from '@/integrations/supabase/client';
 
 interface CandleData {
-  date: string;
+  time: number;
   open: number;
   high: number;
   low: number;
   close: number;
-  volume: number;
+  volume?: number;
 }
 
 interface ProfessionalCandlestickChartProps {
@@ -22,92 +23,55 @@ interface ProfessionalCandlestickChartProps {
   open: number;
 }
 
-type TimePeriod = '1d' | '5d' | '1m' | '3m' | '6m' | '1y';
+type TimePeriod = '1D' | '5D' | '1M' | 'YTD' | '1Y';
 
 const ProfessionalCandlestickChart = ({ symbol, currentPrice, previousClose, high, low, open }: ProfessionalCandlestickChartProps) => {
-  const [timePeriod, setTimePeriod] = useState<TimePeriod>('1m');
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>('1M');
+  const [candleData, setCandleData] = useState<CandleData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const volumeContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<any>(null);
   const volumeRef = useRef<any>(null);
 
-  // Generate candlestick data with volume
-  const candleData = useMemo(() => {
-    const candles: CandleData[] = [];
-    const today = new Date();
-    let days = 30;
-    let startDate = new Date(today);
-    
-    switch (timePeriod) {
-      case '1d':
-        days = 1;
-        break;
-      case '5d':
-        days = 5;
-        startDate.setDate(startDate.getDate() - 5);
-        break;
-      case '1m':
-        days = 30;
-        startDate.setMonth(startDate.getMonth() - 1);
-        break;
-      case '3m':
-        days = 90;
-        startDate.setMonth(startDate.getMonth() - 3);
-        break;
-      case '6m':
-        days = 180;
-        startDate.setMonth(startDate.getMonth() - 6);
-        break;
-      case '1y':
-        days = 365;
-        startDate.setFullYear(startDate.getFullYear() - 1);
-        break;
-    }
-    
-    let prevClose = previousClose || currentPrice * 0.95;
-    const totalDays = Math.ceil((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-    
-    for (let i = 0; i <= totalDays; i++) {
-      const date = new Date(startDate);
-      date.setDate(date.getDate() + i);
+  // Fetch candle data from Polygon API via edge function
+  useEffect(() => {
+    const fetchCandles = async () => {
+      if (!symbol) return;
       
-      if (date.getDay() === 0 || date.getDay() === 6) continue; // Skip weekends
-      if (date > today) break;
+      setLoading(true);
+      setError(null);
       
-      const isToday = date.toDateString() === today.toDateString();
-      
-      if (isToday) {
-        candles.push({
-          date: date.toISOString().split('T')[0],
-          open,
-          high,
-          low,
-          close: currentPrice,
-          volume: Math.floor(Math.random() * 50000000 + 10000000),
-        });
-      } else {
-        const volatility = 0.025;
-        const change = (Math.random() - 0.48) * volatility * prevClose;
-        const dailyOpen = prevClose + (Math.random() - 0.5) * volatility * prevClose * 0.3;
-        const dailyClose = prevClose + change;
-        const dailyHigh = Math.max(dailyOpen, dailyClose) * (1 + Math.random() * volatility * 0.5);
-        const dailyLow = Math.min(dailyOpen, dailyClose) * (1 - Math.random() * volatility * 0.5);
-        
-        candles.push({
-          date: date.toISOString().split('T')[0],
-          open: Number(dailyOpen.toFixed(2)),
-          high: Number(dailyHigh.toFixed(2)),
-          low: Number(dailyLow.toFixed(2)),
-          close: Number(dailyClose.toFixed(2)),
-          volume: Math.floor(Math.random() * 50000000 + 10000000),
+      try {
+        const { data, error: fnError } = await supabase.functions.invoke('polygon-candles', {
+          body: { ticker: symbol, timeframe: timePeriod }
         });
         
-        prevClose = dailyClose;
+        if (fnError) {
+          throw new Error(fnError.message);
+        }
+        
+        if (data?.error) {
+          throw new Error(data.error);
+        }
+        
+        if (data?.candles && Array.isArray(data.candles)) {
+          setCandleData(data.candles);
+        } else {
+          setCandleData([]);
+        }
+      } catch (err) {
+        console.error('Failed to fetch candle data:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load chart data');
+        setCandleData([]);
+      } finally {
+        setLoading(false);
       }
-    }
+    };
     
-    return candles;
-  }, [open, high, low, currentPrice, previousClose, timePeriod]);
+    fetchCandles();
+  }, [symbol, timePeriod]);
 
   useEffect(() => {
     const chartEl = chartContainerRef.current;
@@ -138,23 +102,19 @@ const ProfessionalCandlestickChart = ({ symbol, currentPrice, previousClose, hig
     }
 
     // Format data for lightweight-charts
-    const formattedData = candleData.map((candle) => {
-      const date = new Date(candle.date);
-      return {
-        time: Math.floor(date.getTime() / 1000) as any,
-        open: candle.open,
-        high: candle.high,
-        low: candle.low,
-        close: candle.close,
-      };
-    });
+    const formattedData = candleData.map((candle) => ({
+      time: candle.time as any,
+      open: candle.open,
+      high: candle.high,
+      low: candle.low,
+      close: candle.close,
+    }));
 
     const volumeData = candleData.map((candle) => {
-      const date = new Date(candle.date);
       const isUp = candle.close >= candle.open;
       return {
-        time: Math.floor(date.getTime() / 1000) as any,
-        value: candle.volume,
+        time: candle.time as any,
+        value: candle.volume || 0,
         color: isUp ? '#26a69a' : '#ef5350',
       };
     });
@@ -259,13 +219,13 @@ const ProfessionalCandlestickChart = ({ symbol, currentPrice, previousClose, hig
     }
 
     // Sync time scales
-    chart.timeScale().subscribeVisibleTimeRangeChange((timeRange) => {
+    chart.timeScale().subscribeVisibleTimeRangeChange((timeRange: any) => {
       if (timeRange) {
         volumeChart.timeScale().setVisibleRange(timeRange);
       }
     });
 
-    volumeChart.timeScale().subscribeVisibleTimeRangeChange((timeRange) => {
+    volumeChart.timeScale().subscribeVisibleTimeRangeChange((timeRange: any) => {
       if (timeRange) {
         chart.timeScale().setVisibleRange(timeRange);
       }
@@ -296,14 +256,16 @@ const ProfessionalCandlestickChart = ({ symbol, currentPrice, previousClose, hig
     volumeSeries.setData(volumeData);
 
     // Add previous close line
-    const priceLine = candlestickSeries.createPriceLine({
-      price: previousClose,
-      color: 'rgba(148, 163, 184, 0.5)',
-      lineWidth: 1,
-      lineStyle: 2,
-      axisLabelVisible: true,
-      title: 'Prev Close',
-    });
+    if (previousClose && previousClose > 0) {
+      candlestickSeries.createPriceLine({
+        price: previousClose,
+        color: 'rgba(148, 163, 184, 0.5)',
+        lineWidth: 1,
+        lineStyle: 2,
+        axisLabelVisible: true,
+        title: 'Prev Close',
+      });
+    }
 
     chart.timeScale().fitContent();
     volumeChart.timeScale().fitContent();
@@ -346,15 +308,6 @@ const ProfessionalCandlestickChart = ({ symbol, currentPrice, previousClose, hig
     };
   }, [candleData, previousClose]);
 
-  const periodLabels: Record<TimePeriod, string> = {
-    '1d': '1 Day',
-    '5d': '5 Days',
-    '1m': '1 Month',
-    '3m': '3 Months',
-    '6m': '6 Months',
-    '1y': '1 Year'
-  };
-
   return (
     <Card className="w-full">
       <CardHeader className="pb-3">
@@ -365,34 +318,56 @@ const ProfessionalCandlestickChart = ({ symbol, currentPrice, previousClose, hig
           </CardTitle>
           <Tabs value={timePeriod} onValueChange={(v) => setTimePeriod(v as TimePeriod)}>
             <TabsList className="h-9">
-              <TabsTrigger value="1d" className="text-xs px-3">1D</TabsTrigger>
-              <TabsTrigger value="5d" className="text-xs px-3">5D</TabsTrigger>
-              <TabsTrigger value="1m" className="text-xs px-3">1M</TabsTrigger>
-              <TabsTrigger value="3m" className="text-xs px-3">3M</TabsTrigger>
-              <TabsTrigger value="6m" className="text-xs px-3">6M</TabsTrigger>
-              <TabsTrigger value="1y" className="text-xs px-3">1Y</TabsTrigger>
+              <TabsTrigger value="1D" className="text-xs px-3">1D</TabsTrigger>
+              <TabsTrigger value="5D" className="text-xs px-3">5D</TabsTrigger>
+              <TabsTrigger value="1M" className="text-xs px-3">1M</TabsTrigger>
+              <TabsTrigger value="YTD" className="text-xs px-3">YTD</TabsTrigger>
+              <TabsTrigger value="1Y" className="text-xs px-3">1Y</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
       </CardHeader>
       <CardContent className="space-y-0">
-        <div className="relative">
-          <div ref={chartContainerRef} className="w-full h-[600px]" style={{ minHeight: '600px' }} />
-          <div className="absolute top-3 left-3 flex items-center gap-4 text-xs bg-background/95 backdrop-blur-sm px-3 py-1.5 rounded border border-border/50">
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded-sm bg-[#26a69a]"></div>
-              <span className="text-muted-foreground font-medium">Bullish</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded-sm bg-[#ef5350]"></div>
-              <span className="text-muted-foreground font-medium">Bearish</span>
-            </div>
+        {loading ? (
+          <div className="flex items-center justify-center h-[600px]">
+            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+            <span className="ml-2 text-muted-foreground">Loading chart data...</span>
           </div>
-        </div>
-        <div className="border-t border-border/50 pt-2">
-          <div className="text-xs text-muted-foreground mb-2 px-1">Volume</div>
-          <div ref={volumeContainerRef} className="w-full h-[150px]" style={{ minHeight: '150px' }} />
-        </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center h-[600px] text-muted-foreground">
+            <BarChart3 className="w-12 h-12 mb-3 opacity-50" />
+            <p className="text-sm">{error}</p>
+            <p className="text-xs mt-1">Try selecting a different timeframe</p>
+          </div>
+        ) : candleData.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-[600px] text-muted-foreground">
+            <BarChart3 className="w-12 h-12 mb-3 opacity-50" />
+            <p className="text-sm">No chart data available</p>
+          </div>
+        ) : (
+          <>
+            <div className="relative">
+              <div ref={chartContainerRef} className="w-full h-[600px]" style={{ minHeight: '600px' }} />
+              <div className="absolute top-3 left-3 flex items-center gap-4 text-xs bg-background/95 backdrop-blur-sm px-3 py-1.5 rounded border border-border/50">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-sm bg-[#26a69a]"></div>
+                  <span className="text-muted-foreground font-medium">Bullish</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-sm bg-[#ef5350]"></div>
+                  <span className="text-muted-foreground font-medium">Bearish</span>
+                </div>
+                <div className="text-muted-foreground/70">
+                  {candleData.length} bars
+                </div>
+              </div>
+            </div>
+            <div className="border-t border-border/50 pt-2">
+              <div className="text-xs text-muted-foreground mb-2 px-1">Volume</div>
+              <div ref={volumeContainerRef} className="w-full h-[150px]" style={{ minHeight: '150px' }} />
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );

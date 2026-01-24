@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.refresh-stock-cache]
 verify_jwt = false
+
+[functions.polygon-candles]
+verify_jwt = false
