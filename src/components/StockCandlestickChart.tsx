@@ -59,7 +59,7 @@ const CandlestickChartRenderer = ({
     }
 
     // Format data for lightweight-charts - need proper time format
-    const formattedData = candleData.map((candle, index) => {
+    const formattedData = candleData.map((candle) => {
       // Parse date string back to timestamp for lightweight-charts
       let timestamp: number;
       if (candle.date === 'Today') {
@@ -76,7 +76,9 @@ const CandlestickChartRenderer = ({
         low: candle.low,
         close: candle.close,
       };
-    });
+    })
+    // CRITICAL: Sort by time ascending to satisfy lightweight-charts requirement
+    .sort((a, b) => (a.time as number) - (b.time as number));
 
     // Create chart with TradingView-style professional look
     let chart: any;
