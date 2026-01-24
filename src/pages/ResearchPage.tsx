@@ -23,6 +23,7 @@ const ResearchEarningsCalendar = lazy(() => import('@/components/research/Resear
 const ResearchTechnicalIndicators = lazy(() => import('@/components/research/ResearchTechnicalIndicators'));
 const ResearchAIAssistant = lazy(() => import('@/components/research/ResearchAIAssistant'));
 const ResearchComparison = lazy(() => import('@/components/research/ResearchComparison'));
+const ResearchVolumeWidget = lazy(() => import('@/components/research/ResearchVolumeWidget'));
 
 const ResearchPage = () => {
   const navigate = useNavigate();
@@ -460,7 +461,7 @@ const ResearchPage = () => {
               <TabsContent value="charts">
                 {stockData ? (
                   <div className="space-y-6">
-                    {/* Top: Line and Candlestick Charts */}
+                    {/* Top Row: Price Trend and Market Activity */}
                     <div className="grid gap-6 lg:grid-cols-2">
                       <StockLineChart
                         symbol={stockData.symbol}
@@ -470,17 +471,29 @@ const ResearchPage = () => {
                         low={stockData.low}
                         open={stockData.open}
                       />
-                      <StockCandlestickChart
-                        symbol={stockData.symbol}
-                        currentPrice={stockData.price}
-                        previousClose={stockData.previousClose}
-                        high={stockData.high}
-                        low={stockData.low}
-                        open={stockData.open}
-                      />
+                      <Suspense fallback={<Skeleton className="h-[400px]" />}>
+                        <ResearchVolumeWidget
+                          symbol={stockData.symbol}
+                          price={stockData.price}
+                          change={stockData.price - stockData.previousClose}
+                          changePercent={((stockData.price - stockData.previousClose) / stockData.previousClose) * 100}
+                          volume={selectedStockData?.volume || liveStockData?.volume}
+                          marketCap={selectedStockData?.market_cap || liveStockData?.marketCap}
+                        />
+                      </Suspense>
                     </div>
 
-                    {/* Bottom: Professional Full-Width Candlestick Chart with Volume */}
+                    {/* Middle: Candlestick Chart (simulated) */}
+                    <StockCandlestickChart
+                      symbol={stockData.symbol}
+                      currentPrice={stockData.price}
+                      previousClose={stockData.previousClose}
+                      high={stockData.high}
+                      low={stockData.low}
+                      open={stockData.open}
+                    />
+
+                    {/* Bottom: Professional Full-Width Candlestick Chart with Volume (real data) */}
                     <ProfessionalCandlestickChart
                       symbol={stockData.symbol}
                       currentPrice={stockData.price}

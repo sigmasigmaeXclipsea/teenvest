@@ -47,47 +47,55 @@ serve(async (req) => {
     
     switch (timeframe) {
       case '1D':
-        // 5-min bars for last 2 days
-        const twoDaysAgo = new Date(now);
-        twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-        from = twoDaysAgo.toISOString().split('T')[0];
+        // Intraday: 5-min bars for exactly 1 trading day
+        // Fetch 1 day back, will get today's intraday data
+        from = to; // Same day for intraday
         multiplier = 5;
         resolution = 'minute';
+        limit = 78; // 6.5 hours of trading = 78 five-minute bars
         break;
       case '5D':
-        // 30-min bars for ~7 days
-        const weekAgo = new Date(now);
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        from = weekAgo.toISOString().split('T')[0];
-        multiplier = 30;
+        // 5 days: 15-min bars for exactly 5 calendar days
+        const fiveDaysAgo = new Date(now);
+        fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+        from = fiveDaysAgo.toISOString().split('T')[0];
+        multiplier = 15;
         resolution = 'minute';
+        limit = 130; // ~5 trading days * 26 bars per day
         break;
       case '1M':
-        // Daily bars for 3 months
-        const threeMonthsAgo = new Date(now);
-        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-        from = threeMonthsAgo.toISOString().split('T')[0];
+        // Exactly 1 calendar month: daily bars
+        const oneMonthAgo = new Date(now);
+        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+        from = oneMonthAgo.toISOString().split('T')[0];
         multiplier = 1;
         resolution = 'day';
+        limit = 23; // ~22 trading days in a month
         break;
       case 'YTD':
+        // Year to date: daily bars from Jan 1
         from = `${now.getFullYear()}-01-01`;
         multiplier = 1;
         resolution = 'day';
+        limit = 252; // Max trading days in a year
         break;
       case '1Y':
+        // Exactly 1 year: daily bars
         const oneYearAgo = new Date(now);
         oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
         from = oneYearAgo.toISOString().split('T')[0];
         multiplier = 1;
         resolution = 'day';
+        limit = 252; // ~252 trading days in a year
         break;
       default:
+        // Default to 1 month
         const defaultAgo = new Date(now);
-        defaultAgo.setMonth(defaultAgo.getMonth() - 3);
+        defaultAgo.setMonth(defaultAgo.getMonth() - 1);
         from = defaultAgo.toISOString().split('T')[0];
         multiplier = 1;
         resolution = 'day';
+        limit = 23;
     }
 
     const url = `https://api.polygon.io/v2/aggs/ticker/${ticker.toUpperCase()}/range/${multiplier}/${resolution}/${from}/${to}?adjusted=true&sort=asc&limit=1000&apiKey=${apiKey}`;
@@ -108,17 +116,19 @@ serve(async (req) => {
       throw new Error(data.error || 'Polygon API error');
     }
 
-    // Transform data
-    const allCandles = (data.results || []).map((bar: any) => ({
-      time: Math.floor(bar.t / 1000),
-      open: bar.o,
-      high: bar.h,
-      low: bar.l,
-      close: bar.c,
-      volume: bar.v,
-    }));
+    // Transform and sort data chronologically
+    const allCandles = (data.results || [])
+      .map((bar: any) => ({
+        time: Math.floor(bar.t / 1000),
+        open: bar.o,
+        high: bar.h,
+        low: bar.l,
+        close: bar.c,
+        volume: bar.v,
+      }))
+      .sort((a: any, b: any) => a.time - b.time);
 
-    // Take last ~60 bars for consistent display
+    // Take the exact number of bars needed (already sorted asc)
     const candles = allCandles.slice(-limit);
 
     console.log(`Returning ${candles.length} candles for ${ticker}`);
