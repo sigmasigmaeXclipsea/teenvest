@@ -1,9 +1,10 @@
-import { useRef, useEffect, memo, useCallback } from 'react';
+import { useRef, useEffect, memo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart3, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { createChart, ColorType } from "lightweight-charts";
-import { useCandlestickData } from '@/hooks/useStockAPI';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 
 interface ProfessionalCandlestickChartProps {
   symbol: string;
@@ -14,7 +15,16 @@ interface ProfessionalCandlestickChartProps {
   open: number;
 }
 
-type ZoomRange = '1d' | '5d' | '1m' | '3m' | '6m' | '1y' | '2y' | 'all';
+type TimeframeOption = '1D' | '5D' | '1M' | '3M' | '6M' | '1Y' | '2Y';
+
+interface CandleData {
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume?: number;
+}
 
 const toBusinessDayString = (unixSeconds: number) =>
   new Date(unixSeconds * 1000).toISOString().slice(0, 10);
@@ -22,63 +32,36 @@ const toBusinessDayString = (unixSeconds: number) =>
 const isValidTimeRange = (r: any): r is { from: any; to: any } =>
   !!r && r.from != null && r.to != null;
 
+// Custom hook to fetch candlestick data for a specific timeframe
+const useCandlestickDataForTimeframe = (symbol: string, timeframe: TimeframeOption) => {
+  return useQuery({
+    queryKey: ['candlestick', symbol, timeframe],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('polygon-candles', {
+        body: { ticker: symbol, timeframe }
+      });
+      
+      if (error) throw error;
+      return data as { candles: CandleData[]; resolution: string; totalBars: number };
+    },
+    staleTime: 30000,
+    refetchInterval: 60000,
+    enabled: !!symbol,
+  });
+};
+
 const ProfessionalCandlestickChart = ({ symbol, previousClose }: ProfessionalCandlestickChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const volumeContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<any>(null);
   const volumeRef = useRef<any>(null);
-  const candleSeriesRef = useRef<any>(null);
   const syncingRef = useRef(false);
 
-  // Always fetch full 2Y data - we zoom within it
-  const { data: candleData = [], isLoading, error } = useCandlestickData(symbol, '2y');
-
-  // Calculate zoom range from button click
-  const zoomToRange = useCallback((range: ZoomRange) => {
-    if (!chartRef.current || !candleData.length) return;
-
-    const now = new Date();
-    let fromDate: Date;
-
-    switch (range) {
-      case '1d':
-        fromDate = new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000);
-        break;
-      case '5d':
-        fromDate = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000);
-        break;
-      case '1m':
-        fromDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
-        break;
-      case '3m':
-        fromDate = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
-        break;
-      case '6m':
-        fromDate = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
-        break;
-      case '1y':
-        fromDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
-        break;
-      case '2y':
-        fromDate = new Date(now.getFullYear() - 2, now.getMonth(), now.getDate());
-        break;
-      case 'all':
-      default:
-        try { chartRef.current.timeScale().fitContent(); } catch { }
-        try { volumeRef.current?.timeScale().fitContent(); } catch { }
-        return;
-    }
-
-    const fromStr = fromDate.toISOString().slice(0, 10);
-    const toStr = now.toISOString().slice(0, 10);
-
-    try {
-      chartRef.current.timeScale().setVisibleRange({ from: fromStr, to: toStr });
-    } catch {
-      // Fallback to fit
-      try { chartRef.current.timeScale().fitContent(); } catch { }
-    }
-  }, [candleData]);
+  const [activeTimeframe, setActiveTimeframe] = useState<TimeframeOption>('1M');
+  
+  const { data: chartData, isLoading, error } = useCandlestickDataForTimeframe(symbol, activeTimeframe);
+  const candleData = chartData?.candles || [];
+  const resolution = chartData?.resolution || '';
 
   useEffect(() => {
     const chartEl = chartContainerRef.current;
@@ -98,11 +81,14 @@ const ProfessionalCandlestickChart = ({ symbol, previousClose }: ProfessionalCan
       volumeRef.current = null;
     }
 
-    // Sort and format as BusinessDay strings for daily/weekly data
+    // Sort and format data
     const sorted = [...candleData].sort((a, b) => a.time - b.time);
 
+    // Use BusinessDay strings for daily+ data, Unix timestamps for intraday
+    const isIntraday = activeTimeframe === '1D' || activeTimeframe === '5D';
+    
     const formattedData = sorted.map((c) => ({
-      time: toBusinessDayString(c.time) as any,
+      time: isIntraday ? c.time : toBusinessDayString(c.time) as any,
       open: c.open,
       high: c.high,
       low: c.low,
@@ -110,10 +96,13 @@ const ProfessionalCandlestickChart = ({ symbol, previousClose }: ProfessionalCan
     }));
 
     const volumeData = sorted.map((c) => ({
-      time: toBusinessDayString(c.time) as any,
+      time: isIntraday ? c.time : toBusinessDayString(c.time) as any,
       value: c.volume || 0,
       color: c.close >= c.open ? '#26a69a' : '#ef5350',
     }));
+
+    // Calculate appropriate bar spacing based on data density
+    const barSpacing = Math.max(3, Math.min(12, 800 / candleData.length));
 
     let chart: any;
     let volumeChart: any;
@@ -136,7 +125,7 @@ const ProfessionalCandlestickChart = ({ symbol, previousClose }: ProfessionalCan
           timeVisible: true, 
           secondsVisible: false, 
           rightOffset: 10,
-          barSpacing: 6,
+          barSpacing: barSpacing,
           minBarSpacing: 1,
           fixLeftEdge: false,
           fixRightEdge: false,
@@ -169,7 +158,7 @@ const ProfessionalCandlestickChart = ({ symbol, previousClose }: ProfessionalCan
           borderColor: "rgba(42, 46, 57, 0.5)", 
           timeVisible: true, 
           visible: true,
-          barSpacing: 6,
+          barSpacing: barSpacing,
           minBarSpacing: 1,
         },
         rightPriceScale: { visible: false },
@@ -212,7 +201,6 @@ const ProfessionalCandlestickChart = ({ symbol, previousClose }: ProfessionalCan
     });
     try {
       candlestickSeries.setData(formattedData);
-      candleSeriesRef.current = candlestickSeries;
     } catch {
       try { chart.remove(); } catch { }
       try { volumeChart.remove(); } catch { }
@@ -238,7 +226,7 @@ const ProfessionalCandlestickChart = ({ symbol, previousClose }: ProfessionalCan
       title: 'Prev' 
     });
 
-    // Fit content initially to show all 2Y data
+    // Fit content to show all data for the timeframe
     try { chart.timeScale().fitContent(); } catch { }
     try { volumeChart.timeScale().fitContent(); } catch { }
 
@@ -257,17 +245,16 @@ const ProfessionalCandlestickChart = ({ symbol, previousClose }: ProfessionalCan
       try { chart.remove(); } catch { }
       try { volumeChart.remove(); } catch { }
     };
-  }, [candleData, previousClose]);
+  }, [candleData, previousClose, activeTimeframe]);
 
-  const zoomButtons: { label: string; range: ZoomRange }[] = [
-    { label: '1D', range: '1d' },
-    { label: '5D', range: '5d' },
-    { label: '1M', range: '1m' },
-    { label: '3M', range: '3m' },
-    { label: '6M', range: '6m' },
-    { label: '1Y', range: '1y' },
-    { label: '2Y', range: '2y' },
-    { label: 'ALL', range: 'all' },
+  const timeframeButtons: { label: string; value: TimeframeOption }[] = [
+    { label: '1D', value: '1D' },
+    { label: '5D', value: '5D' },
+    { label: '1M', value: '1M' },
+    { label: '3M', value: '3M' },
+    { label: '6M', value: '6M' },
+    { label: '1Y', value: '1Y' },
+    { label: '2Y', value: '2Y' },
   ];
 
   return (
@@ -279,9 +266,11 @@ const ProfessionalCandlestickChart = ({ symbol, previousClose }: ProfessionalCan
               <BarChart3 className="w-6 h-6 text-primary" />
               {symbol}
             </CardTitle>
-            <span className="text-xs px-2 py-0.5 bg-[#2a2e39] text-[#787b86] rounded">
-              Weekly
-            </span>
+            {resolution && (
+              <span className="text-xs px-2 py-0.5 bg-[#2a2e39] text-[#787b86] rounded">
+                {resolution}
+              </span>
+            )}
             {candleData.length > 0 && (
               <span className="text-xs text-[#787b86]">
                 {candleData.length} bars
@@ -289,13 +278,17 @@ const ProfessionalCandlestickChart = ({ symbol, previousClose }: ProfessionalCan
             )}
           </div>
           <div className="flex items-center gap-1">
-            {zoomButtons.map((btn) => (
+            {timeframeButtons.map((btn) => (
               <Button
-                key={btn.range}
+                key={btn.value}
                 variant="ghost"
                 size="sm"
-                onClick={() => zoomToRange(btn.range)}
-                className="text-xs h-7 px-2.5 text-[#787b86] hover:text-[#d1d4dc] hover:bg-[#2a2e39]"
+                onClick={() => setActiveTimeframe(btn.value)}
+                className={`text-xs h-7 px-2.5 ${
+                  activeTimeframe === btn.value
+                    ? 'bg-primary/20 text-primary'
+                    : 'text-[#787b86] hover:text-[#d1d4dc] hover:bg-[#2a2e39]'
+                }`}
               >
                 {btn.label}
               </Button>

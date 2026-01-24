@@ -8,7 +8,68 @@ const corsHeaders = {
 
 // Server-side cache
 const serverCache = new Map<string, { data: any; timestamp: number }>();
-const SERVER_CACHE_TTL = 30000; // 30 second server cache
+const SERVER_CACHE_TTL = 60000; // 60 second server cache
+
+interface PolygonBar {
+  t: number;
+  o: number;
+  h: number;
+  l: number;
+  c: number;
+  v: number;
+}
+
+interface PolygonResponse {
+  status: string;
+  results?: PolygonBar[];
+  next_url?: string;
+  error?: string;
+}
+
+// Recursive function to fetch all paginated data
+async function fetchAllData(initialUrl: string, apiKey: string): Promise<PolygonBar[]> {
+  const allResults: PolygonBar[] = [];
+  let nextUrl: string | null = initialUrl;
+  let pageCount = 0;
+  const maxPages = 10; // Safety limit to prevent infinite loops
+
+  while (nextUrl && pageCount < maxPages) {
+    console.log(`Fetching page ${pageCount + 1}: ${nextUrl.substring(0, 100)}...`);
+    
+    const res: Response = await fetch(nextUrl);
+    
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(`Polygon error: ${res.status} - ${errorText}`);
+      throw new Error(`API error: ${res.status}`);
+    }
+
+    const json: PolygonResponse = await res.json();
+    
+    if (json.status === 'ERROR') {
+      throw new Error(json.error || 'Polygon API error');
+    }
+
+    if (json.results && json.results.length > 0) {
+      allResults.push(...json.results);
+    }
+
+    // Check for next_url for pagination
+    if (json.next_url) {
+      // Polygon returns next_url without the API key, so we need to append it
+      nextUrl = json.next_url.includes('apiKey') 
+        ? json.next_url 
+        : `${json.next_url}&apiKey=${apiKey}`;
+    } else {
+      nextUrl = null;
+    }
+
+    pageCount++;
+  }
+
+  console.log(`Fetched ${allResults.length} total bars across ${pageCount} pages`);
+  return allResults;
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -43,38 +104,59 @@ serve(async (req) => {
     let from: string;
     let multiplier: number;
     let resolution: string;
-    let targetBars: number = 150; // Target ~150 bars per view like TradingView
+    let displayResolution: string;
     
-    // TradingView-style: Each timeframe shows ~150 bars with appropriate resolution
+    // TradingView-style: Each timeframe gets appropriate resolution for ~150-200 visible bars
+    // Full data is fetched, user can scroll through all of it
     switch (timeframe) {
       case '1D':
-        // 1 Day: 5-minute bars (~78 bars for a full trading day)
+        // 1 Day: 5-minute bars for intraday view
         const oneDayBack = new Date(now);
-        oneDayBack.setDate(oneDayBack.getDate() - 2);
+        oneDayBack.setDate(oneDayBack.getDate() - 2); // Extra day to ensure we get full trading day
         from = oneDayBack.toISOString().split('T')[0];
         multiplier = 5;
         resolution = 'minute';
-        targetBars = 100; // ~6.5 hours of trading
+        displayResolution = '5m';
         break;
         
       case '5D':
-        // 5 Days: 15-minute bars (~130 bars for 5 trading days)
+        // 5 Days: 15-minute bars
         const fiveDaysBack = new Date(now);
         fiveDaysBack.setDate(fiveDaysBack.getDate() - 7);
         from = fiveDaysBack.toISOString().split('T')[0];
         multiplier = 15;
         resolution = 'minute';
-        targetBars = 150;
+        displayResolution = '15m';
         break;
         
       case '1M':
-        // 1 Month: 1-hour bars (~150 bars, ~22 trading days * 6.5 hours)
+        // 1 Month: 1-hour bars
         const oneMonthAgo = new Date(now);
         oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
         from = oneMonthAgo.toISOString().split('T')[0];
         multiplier = 1;
         resolution = 'hour';
-        targetBars = 200;
+        displayResolution = '1H';
+        break;
+        
+      case '3M':
+        // 3 Months: 4-hour bars
+        const threeMonthsAgo = new Date(now);
+        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+        from = threeMonthsAgo.toISOString().split('T')[0];
+        multiplier = 4;
+        resolution = 'hour';
+        displayResolution = '4H';
+        break;
+        
+      case '6M':
+        // 6 Months: Daily bars
+        const sixMonthsAgo = new Date(now);
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+        from = sixMonthsAgo.toISOString().split('T')[0];
+        multiplier = 1;
+        resolution = 'day';
+        displayResolution = '1D';
         break;
         
       case 'YTD':
@@ -82,27 +164,27 @@ serve(async (req) => {
         from = `${now.getFullYear()}-01-01`;
         multiplier = 1;
         resolution = 'day';
-        targetBars = 300;
+        displayResolution = '1D';
         break;
         
       case '1Y':
-        // 1 Year: Daily bars (~252 trading days, show ~150 with ability to scroll)
+        // 1 Year: Daily bars
         const oneYearAgo = new Date(now);
         oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
         from = oneYearAgo.toISOString().split('T')[0];
         multiplier = 1;
         resolution = 'day';
-        targetBars = 300;
+        displayResolution = '1D';
         break;
         
       case '2Y':
-        // 2 Years: Weekly bars (~104 weeks, show ~100-150 bars)
+        // 2 Years: Daily bars (will give ~500 trading days)
         const twoYearsAgo = new Date(now);
         twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
         from = twoYearsAgo.toISOString().split('T')[0];
         multiplier = 1;
-        resolution = 'week';
-        targetBars = 150;
+        resolution = 'day';
+        displayResolution = '1D';
         break;
         
       default:
@@ -112,29 +194,19 @@ serve(async (req) => {
         from = defaultAgo.toISOString().split('T')[0];
         multiplier = 1;
         resolution = 'hour';
-        targetBars = 150;
+        displayResolution = '1H';
     }
 
-    const url = `https://api.polygon.io/v2/aggs/ticker/${ticker.toUpperCase()}/range/${multiplier}/${resolution}/${from}/${to}?adjusted=true&sort=asc&limit=${targetBars + 50}&apiKey=${apiKey}`;
+    // Build initial URL with high limit to minimize pagination
+    const initialUrl = `https://api.polygon.io/v2/aggs/ticker/${ticker.toUpperCase()}/range/${multiplier}/${resolution}/${from}/${to}?adjusted=true&sort=asc&limit=50000&apiKey=${apiKey}`;
     
     console.log(`Fetching ${ticker} ${timeframe}: ${multiplier} ${resolution} from ${from} to ${to}`);
 
-    const response = await fetch(url);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Polygon error: ${response.status} - ${errorText}`);
-      throw new Error(`API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    
-    if (data.status === 'ERROR') {
-      throw new Error(data.error || 'Polygon API error');
-    }
+    // Recursively fetch all paginated data
+    const allResults = await fetchAllData(initialUrl, apiKey);
 
     // Transform and sort data chronologically
-    const allCandles = (data.results || [])
+    const candles = allResults
       .map((bar: any) => ({
         time: Math.floor(bar.t / 1000),
         open: bar.o,
@@ -145,23 +217,19 @@ serve(async (req) => {
       }))
       .sort((a: any, b: any) => a.time - b.time);
 
-    // For intraday, filter to just the most recent trading sessions
-    let candles = allCandles;
-    if (timeframe === '1D') {
-      // Get only the last trading day's worth of data
-      candles = allCandles.slice(-78);
-    } else if (timeframe === '5D') {
-      // Get the last 5 trading days worth
-      candles = allCandles.slice(-130);
-    }
+    // Deduplicate by time (in case of overlapping pages)
+    const uniqueCandles = candles.filter((candle: any, index: number, arr: any[]) => 
+      index === 0 || candle.time !== arr[index - 1].time
+    );
 
-    console.log(`Returning ${candles.length} candles for ${ticker} (${timeframe})`);
+    console.log(`Returning ${uniqueCandles.length} unique candles for ${ticker} (${timeframe})`);
 
     const result = { 
-      candles,
+      candles: uniqueCandles,
       ticker: ticker.toUpperCase(),
       timeframe,
-      totalBars: candles.length
+      resolution: displayResolution,
+      totalBars: uniqueCandles.length
     };
 
     // Cache the result
