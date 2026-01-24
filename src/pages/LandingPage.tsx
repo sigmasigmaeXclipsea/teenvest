@@ -105,19 +105,48 @@ const Marquee = ({ children, direction = 'left', speed = 20 }: { children: React
   );
 };
 
-// Dashboard card wrapper - no cursor tracking, static lighting
+// Dashboard card wrapper - cursor lifts the area it touches
 const DashboardCard = ({ children, className }: { children: React.ReactNode; className?: string }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [liftPos, setLiftPos] = useState({ x: 50, y: 50 });
+  const [isHovered, setIsHovered] = useState(false);
+  
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setLiftPos({ x, y });
+  }, []);
+  
   return (
-    <div className={`relative ${className}`}>
+    <motion.div 
+      ref={ref}
+      className={`relative ${className}`}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      animate={{
+        scale: isHovered ? 1.01 : 1,
+      }}
+      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+    >
       {children}
-      {/* Static subtle glow - aligned with dashboard, no cursor tracking */}
-      <div
-        className="absolute inset-0 rounded-3xl pointer-events-none opacity-20"
+      {/* Lift glow that follows cursor - raises that area */}
+      <motion.div
+        className="absolute inset-0 rounded-3xl pointer-events-none"
+        animate={{
+          opacity: isHovered ? 0.4 : 0,
+        }}
+        transition={{ duration: 0.2 }}
         style={{
-          background: `radial-gradient(circle at 50% 30%, hsl(var(--primary) / 0.3) 0%, transparent 60%)`,
+          background: `radial-gradient(circle 150px at ${liftPos.x}% ${liftPos.y}%, hsl(var(--primary) / 0.25) 0%, transparent 70%)`,
+          boxShadow: isHovered 
+            ? `0 ${20 - (liftPos.y / 100) * 10}px 40px -10px hsl(var(--primary) / 0.2)` 
+            : 'none',
         }}
       />
-    </div>
+    </motion.div>
   );
 };
 
@@ -1229,32 +1258,18 @@ const LandingPage = () => {
               </motion.span>
               <motion.span 
                 className="block gradient-text relative z-10"
-                initial={{ opacity: 0, y: 30, scale: 0.9, rotateX: -20, z: -50 }}
-                animate={{ 
-                  opacity: 1, 
-                  y: 0, 
-                  scale: 1,
-                  rotateX: 0,
-                  z: 0,
-                }}
-                transition={{ delay: 0.4, type: 'spring', stiffness: 100 }}
-                style={{ transformStyle: 'preserve-3d' }}
-                whileHover={{
-                  rotateY: -5,
-                  z: 30,
-                  scale: 1.02,
-                }}
+                initial={{ opacity: 1 }}
+                animate={{ opacity: 1 }}
               >
-                {/* Solid text - no flashing */}
-                <span className="inline relative z-10">Financial Empire</span>
-                {/* Single static sparkle */}
+                Financial Empire
+                {/* Single sparkle accent */}
                 <motion.span 
-                  className="absolute -right-2 sm:-right-4 -top-2 sm:-top-4 z-20"
+                  className="absolute -right-6 sm:-right-8 top-0 sm:-top-2 z-20"
                   animate={{ 
-                    rotate: [0, 20, -20, 0],
-                    scale: [1, 1.2, 1],
+                    rotate: [0, 15, -15, 0],
+                    scale: [1, 1.15, 1],
                   }}
-                  transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                  transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
                   aria-hidden="true"
                 >
                   <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-warning drop-shadow-lg" />
@@ -1432,30 +1447,12 @@ const LandingPage = () => {
             
             <motion.div
               animate={{ 
-                y: [0, -15, 0],
-                rotateX: [0, 5, 0],
-                rotateY: [-3, 3, -3],
-                z: [0, 30, 0],
+                y: [0, -4, 0],
               }}
-              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-              style={{ 
-                perspective: '1500px',
-                transformStyle: 'preserve-3d',
-              }}
+              transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
               className="w-full hidden lg:block"
             >
-              <motion.div
-                style={{
-                  transformStyle: 'preserve-3d',
-                }}
-                animate={{
-                  rotateY: [0, 2, 0],
-                  rotateX: [0, 1, 0],
-                }}
-                transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-              >
-                <AnimatedDashboard />
-              </motion.div>
+              <AnimatedDashboard />
             </motion.div>
             
             {/* Mobile-friendly simplified dashboard */}
