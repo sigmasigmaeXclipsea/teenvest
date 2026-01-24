@@ -203,19 +203,55 @@ const ProfessionalCandlestickChart = ({ symbol, currentPrice, previousClose }: P
 
   // Update chart data when candleData changes
   useEffect(() => {
-    if (!candleSeriesRef.current || !volumeSeriesRef.current || candleData.length === 0) return;
+    if (!candleSeriesRef.current || !volumeSeriesRef.current || !chartRef.current || candleData.length === 0) return;
 
+    // For intraday data (1D, 5D), use seconds timestamps directly
+    // For daily data, convert to YYYY-MM-DD format
+    const isIntraday = timePeriod === '1D' || timePeriod === '5D';
+    
     const formattedData = candleData
-      .map((c) => ({ time: c.time as any, open: c.open, high: c.high, low: c.low, close: c.close }))
-      .sort((a, b) => (a.time as number) - (b.time as number));
+      .map((c) => {
+        if (isIntraday) {
+          // Use Unix timestamp in seconds for intraday
+          return { time: c.time as any, open: c.open, high: c.high, low: c.low, close: c.close };
+        } else {
+          // Convert to date string for daily data
+          const date = new Date(c.time * 1000);
+          const dateStr = date.toISOString().split('T')[0];
+          return { time: dateStr as any, open: c.open, high: c.high, low: c.low, close: c.close };
+        }
+      })
+      .sort((a, b) => {
+        if (isIntraday) {
+          return (a.time as number) - (b.time as number);
+        }
+        return a.time.localeCompare(b.time);
+      });
 
     const volumeData = candleData
-      .map((c) => ({
-        time: c.time as any,
-        value: c.volume || 0,
-        color: c.close >= c.open ? 'rgba(38, 166, 154, 0.5)' : 'rgba(239, 83, 80, 0.5)',
-      }))
-      .sort((a, b) => (a.time as number) - (b.time as number));
+      .map((c) => {
+        if (isIntraday) {
+          return {
+            time: c.time as any,
+            value: c.volume || 0,
+            color: c.close >= c.open ? 'rgba(38, 166, 154, 0.5)' : 'rgba(239, 83, 80, 0.5)',
+          };
+        } else {
+          const date = new Date(c.time * 1000);
+          const dateStr = date.toISOString().split('T')[0];
+          return {
+            time: dateStr as any,
+            value: c.volume || 0,
+            color: c.close >= c.open ? 'rgba(38, 166, 154, 0.5)' : 'rgba(239, 83, 80, 0.5)',
+          };
+        }
+      })
+      .sort((a, b) => {
+        if (isIntraday) {
+          return (a.time as number) - (b.time as number);
+        }
+        return a.time.localeCompare(b.time);
+      });
 
     try {
       candleSeriesRef.current.setData(formattedData);
@@ -229,7 +265,7 @@ const ProfessionalCandlestickChart = ({ symbol, currentPrice, previousClose }: P
           lineWidth: 1,
           lineStyle: 2,
           axisLabelVisible: true,
-          title: '',
+          title: 'Prev Close',
         });
       }
       
@@ -237,7 +273,7 @@ const ProfessionalCandlestickChart = ({ symbol, currentPrice, previousClose }: P
     } catch (e) {
       console.error('Chart data error:', e);
     }
-  }, [candleData, previousClose]);
+  }, [candleData, previousClose, timePeriod]);
 
   const timeframes: { key: TimePeriod; label: string }[] = [
     { key: '1D', label: '1D' },
