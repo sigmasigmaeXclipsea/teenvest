@@ -167,7 +167,14 @@ const CandlestickChartRenderer = ({
       borderVisible: true,
     });
 
-    candlestickSeries.setData(formattedData);
+    // Wrap setData in try-catch to handle data ordering issues gracefully
+    try {
+      candlestickSeries.setData(formattedData);
+    } catch (e) {
+      console.error('Failed to set candlestick data:', e);
+      try { chart.remove(); } catch {}
+      return;
+    }
     chart.timeScale().fitContent();
 
     // Add price line at previous close for reference (TradingView style)

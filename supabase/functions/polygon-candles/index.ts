@@ -33,26 +33,26 @@ serve(async (req) => {
     
     switch (timeframe) {
       case '1D':
-        // For 1 day, get 5-minute bars for the last trading day
-        const oneDayAgo = new Date(now);
-        oneDayAgo.setDate(oneDayAgo.getDate() - 1);
-        from = oneDayAgo.toISOString().split('T')[0];
+        // For 1 day, get 5-minute bars for last 2 trading days to ensure ~60 bars
+        const twoDaysAgo = new Date(now);
+        twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+        from = twoDaysAgo.toISOString().split('T')[0];
         multiplier = 5;
         resolution = 'minute';
         break;
       case '5D':
-        // For 5 days, get 15-minute bars
-        const fiveDaysAgo = new Date(now);
-        fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
-        from = fiveDaysAgo.toISOString().split('T')[0];
-        multiplier = 15;
+        // For 5 days, get 30-minute bars for ~60 bars
+        const sevenDaysAgo = new Date(now);
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        from = sevenDaysAgo.toISOString().split('T')[0];
+        multiplier = 30;
         resolution = 'minute';
         break;
       case '1M':
-        // For 1 month, get daily bars
-        const oneMonthAgo = new Date(now);
-        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-        from = oneMonthAgo.toISOString().split('T')[0];
+        // For 1 month view, get ~3 months of daily data to have ~60 trading days
+        const threeMonthsAgo = new Date(now);
+        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+        from = threeMonthsAgo.toISOString().split('T')[0];
         multiplier = 1;
         resolution = 'day';
         break;
@@ -71,9 +71,9 @@ serve(async (req) => {
         resolution = 'day';
         break;
       default:
-        // Default to 1 month
+        // Default to 3 months for ~60 trading days
         const defaultAgo = new Date(now);
-        defaultAgo.setMonth(defaultAgo.getMonth() - 1);
+        defaultAgo.setMonth(defaultAgo.getMonth() - 3);
         from = defaultAgo.toISOString().split('T')[0];
         multiplier = 1;
         resolution = 'day';
