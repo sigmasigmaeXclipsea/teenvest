@@ -376,7 +376,7 @@ const StockCandlestickChart = ({ symbol, currentPrice, previousClose, high, low,
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
             <BarChart3 className="w-5 h-5" />
-            Price History
+            Candlestick Chart
           </CardTitle>
           <Tabs value={timePeriod} onValueChange={(v) => setTimePeriod(v as TimePeriod)}>
             <TabsList className="h-8">
