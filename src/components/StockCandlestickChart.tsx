@@ -1,15 +1,17 @@
-import { useMemo, useState, useRef, useEffect, memo } from 'react';
+import { useMemo, useState, useRef, useEffect, memo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart3 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { createChart, ColorType } from "lightweight-charts";
+import { supabase } from '@/integrations/supabase/client';
 
 interface CandleData {
-  date: string;
+  time: number; // unix seconds
   open: number;
   high: number;
   low: number;
   close: number;
+  volume?: number;
 }
 
 interface StockCandlestickChartProps {
@@ -22,6 +24,27 @@ interface StockCandlestickChartProps {
 }
 
 type TimePeriod = '1d' | '5d' | '1m' | 'ytd' | '1y';
+
+type ApiTimeframe = '1D' | '5D' | '1M' | 'YTD' | '1Y';
+
+const toApiTimeframe = (tp: TimePeriod): ApiTimeframe => {
+  switch (tp) {
+    case '1d':
+      return '1D';
+    case '5d':
+      return '5D';
+    case '1m':
+      return '1M';
+    case 'ytd':
+      return 'YTD';
+    case '1y':
+      return '1Y';
+  }
+};
+
+// Client-side cache for chart candles
+const candleCache = new Map<string, { data: CandleData[]; timestamp: number }>();
+const CACHE_TTL = 60_000;
 
 // Candlestick chart renderer using lightweight-charts
 const CandlestickChartRenderer = ({ 
@@ -58,27 +81,18 @@ const CandlestickChartRenderer = ({
       chartRef.current = null;
     }
 
-    // Format data for lightweight-charts - need proper time format
-    const formattedData = candleData.map((candle) => {
-      // Parse date string back to timestamp for lightweight-charts
-      let timestamp: number;
-      if (candle.date === 'Today') {
-        timestamp = Math.floor(Date.now() / 1000);
-      } else {
-        const date = new Date(candle.date + ', ' + new Date().getFullYear());
-        timestamp = Math.floor(date.getTime() / 1000);
-      }
-      
-      return {
-        time: timestamp as any,
+    // Format data for lightweight-charts
+    // NOTE: We already store unix seconds; just sort and pass through.
+    const formattedData = candleData
+      .map((candle) => ({
+        time: candle.time as any,
         open: candle.open,
         high: candle.high,
         low: candle.low,
         close: candle.close,
-      };
-    })
-    // CRITICAL: Sort by time ascending to satisfy lightweight-charts requirement
-    .sort((a, b) => (a.time as number) - (b.time as number));
+      }))
+      // CRITICAL: Sort by time ascending to satisfy lightweight-charts requirement
+      .sort((a, b) => (a.time as number) - (b.time as number));
 
     // Create chart with TradingView-style professional look
     let chart: any;
@@ -217,150 +231,57 @@ const CandlestickChartRenderer = ({
 
 const StockCandlestickChart = ({ symbol, currentPrice, previousClose, high, low, open }: StockCandlestickChartProps) => {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('1m');
-  
-  // Generate simulated historical daily candles based on time period
-  const candleData = useMemo(() => {
-    const candles: CandleData[] = [];
-    const today = new Date();
-    let days = 20;
-    let startDate = new Date(today);
-    
-    // Calculate days based on time period
-    switch (timePeriod) {
-      case '1d':
-        days = 1;
-        startDate = new Date(today);
-        break;
-      case '5d':
-        days = 5;
-        startDate = new Date(today);
-        startDate.setDate(startDate.getDate() - 5);
-        break;
-      case '1m':
-        days = 30;
-        startDate = new Date(today);
-        startDate.setMonth(startDate.getMonth() - 1);
-        break;
-      case 'ytd':
-        const yearStart = new Date(today.getFullYear(), 0, 1);
-        days = Math.ceil((today.getTime() - yearStart.getTime()) / (1000 * 60 * 60 * 24));
-        startDate = yearStart;
-        break;
-      case '1y':
-        days = 365;
-        startDate = new Date(today);
-        startDate.setFullYear(startDate.getFullYear() - 1);
-        break;
-    }
-    
-    let prevClose = currentPrice * (1 - (Math.random() * 0.15 - 0.05));
-    const totalDays = Math.ceil((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-    const step = timePeriod === '1d' ? 1 : timePeriod === '5d' ? 1 : timePeriod === '1m' ? 1 : timePeriod === 'ytd' ? 1 : 7;
-    
-    for (let i = 0; i <= totalDays; i += step) {
-      const date = new Date(startDate);
-      date.setDate(date.getDate() + i);
-      
-      // Skip weekends for daily data
-      if (timePeriod !== '1y' && (date.getDay() === 0 || date.getDay() === 6)) continue;
-      if (date > today) break;
-      
-      const isToday = date.toDateString() === today.toDateString();
-      const dateStr = isToday ? 'Today' : date.toLocaleDateString('en-US', { 
-        month: timePeriod === '1y' ? 'short' : 'short', 
-        day: 'numeric',
-        ...(timePeriod === '1y' && { year: '2-digit' })
-      });
-      
-      if (isToday) {
-        // Today's candle uses actual data
-        candles.push({
-          date: dateStr,
-          open,
-          high,
-          low,
-          close: currentPrice
-        });
-      } else {
-        // Generate realistic candle
-        const volatility = timePeriod === '1y' ? 0.04 : 0.025;
-        const change = (Math.random() - 0.48) * volatility * prevClose;
-        const dailyOpen = prevClose + (Math.random() - 0.5) * volatility * prevClose * 0.3;
-        const dailyClose = prevClose + change;
-        const dailyHigh = Math.max(dailyOpen, dailyClose) * (1 + Math.random() * volatility * 0.5);
-        const dailyLow = Math.min(dailyOpen, dailyClose) * (1 - Math.random() * volatility * 0.5);
-        
-        candles.push({
-          date: dateStr,
-          open: Number(dailyOpen.toFixed(2)),
-          high: Number(dailyHigh.toFixed(2)),
-          low: Number(dailyLow.toFixed(2)),
-          close: Number(dailyClose.toFixed(2))
-        });
-        
-        prevClose = dailyClose;
-      }
-    }
-    
-    return candles;
-  }, [open, high, low, currentPrice, timePeriod]);
+  const [candleData, setCandleData] = useState<CandleData[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Calculate data for rendering with proper candlestick structure
-  const chartData = useMemo(() => {
-    return candleData.map((candle, index) => {
-      const isGreen = candle.close >= candle.open;
-      const bodyTop = Math.max(candle.open, candle.close);
-      const bodyBottom = Math.min(candle.open, candle.close);
-      const bodyHeight = Math.abs(candle.close - candle.open) || 0.01; // Minimum height for visibility
-      
-      return {
-        date: candle.date,
-        index,
-        // Body data
-        bodyBottom,
-        bodyHeight,
-        bodyTop,
-        // Wick data - we'll use Line components
-        high: candle.high,
-        low: candle.low,
-        open: candle.open,
-        close: candle.close,
-        isGreen,
-        // For wick lines - we need separate points for high and low wicks
-        wickHighTop: candle.high,
-        wickHighBottom: bodyTop,
-        wickLowTop: bodyBottom,
-        wickLowBottom: candle.low,
-      };
+  const fetchCandles = useCallback(async (ticker: string, tp: TimePeriod) => {
+    const tf = toApiTimeframe(tp);
+    const cacheKey = `${ticker}-${tf}`;
+    const cached = candleCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) return cached.data;
+
+    const { data, error: fnError } = await supabase.functions.invoke('polygon-candles', {
+      body: { ticker, timeframe: tf },
     });
-  }, [candleData]);
 
-  const allPrices = candleData.flatMap(c => [c.high, c.low]);
+    if (fnError) throw new Error(fnError.message);
+    if (data?.error) throw new Error(data.error);
+
+    const candles = (data?.candles || []) as CandleData[];
+    candleCache.set(cacheKey, { data: candles, timestamp: Date.now() });
+    return candles;
+  }, []);
+  
+  useEffect(() => {
+    if (!symbol) return;
+    let cancelled = false;
+
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const candles = await fetchCandles(symbol, timePeriod);
+        if (!cancelled) setCandleData(candles);
+      } catch (e) {
+        if (!cancelled) {
+          setCandleData([]);
+          setError(e instanceof Error ? e.message : 'Failed to load candles');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [symbol, timePeriod, fetchCandles]);
+
+  const allPrices = candleData.length ? candleData.flatMap(c => [c.high, c.low]) : [low, high];
   const minPrice = Math.min(...allPrices) * 0.995;
   const maxPrice = Math.max(...allPrices) * 1.005;
-
-  // Custom tooltip
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (!active || !payload?.[0]?.payload) return null;
-    const data = payload[0].payload;
-    return (
-      <div className="bg-card border border-border rounded-lg p-3 shadow-lg text-sm">
-        <p className="font-semibold mb-1">{data.date}</p>
-        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-          <span className="text-muted-foreground">Open:</span>
-          <span>${data.open.toFixed(2)}</span>
-          <span className="text-muted-foreground">High:</span>
-          <span>${data.high.toFixed(2)}</span>
-          <span className="text-muted-foreground">Low:</span>
-          <span>${data.low.toFixed(2)}</span>
-          <span className="text-muted-foreground">Close:</span>
-          <span className={data.isGreen ? 'text-primary' : 'text-destructive'}>
-            ${data.close.toFixed(2)}
-          </span>
-        </div>
-      </div>
-    );
-  };
 
   const periodLabels: Record<TimePeriod, string> = {
     '1d': '1 Day',
@@ -391,6 +312,16 @@ const StockCandlestickChart = ({ symbol, currentPrice, previousClose, high, low,
       </CardHeader>
       <CardContent>
         <div className="relative">
+          {loading && (
+            <div className="absolute top-2 right-2 z-10 text-xs text-muted-foreground bg-background/90 backdrop-blur-sm px-2 py-1 rounded border border-border/50">
+              Loading...
+            </div>
+          )}
+          {error && !loading && candleData.length === 0 && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center text-sm text-muted-foreground bg-background/60 backdrop-blur-sm rounded-md">
+              {error}
+            </div>
+          )}
           <CandlestickChartRenderer 
             candleData={candleData}
             minPrice={minPrice}
