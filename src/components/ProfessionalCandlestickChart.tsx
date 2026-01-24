@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect, memo } from 'react';
+import { useRef, useEffect, memo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart3, Loader2 } from 'lucide-react';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import { createChart, ColorType } from "lightweight-charts";
 import { useCandlestickData } from '@/hooks/useStockAPI';
 
@@ -14,9 +14,7 @@ interface ProfessionalCandlestickChartProps {
   open: number;
 }
 
-type TimePeriod = '1d' | '5d' | '1m' | 'ytd' | '1y' | '2y';
-
-const isIntraday = (p: TimePeriod) => p === '1d' || p === '5d';
+type ZoomRange = '1d' | '5d' | '1m' | '3m' | '6m' | '1y' | '2y' | 'all';
 
 const toBusinessDayString = (unixSeconds: number) =>
   new Date(unixSeconds * 1000).toISOString().slice(0, 10);
@@ -24,16 +22,63 @@ const toBusinessDayString = (unixSeconds: number) =>
 const isValidTimeRange = (r: any): r is { from: any; to: any } =>
   !!r && r.from != null && r.to != null;
 
-const ProfessionalCandlestickChart = ({ symbol, currentPrice, previousClose, high, low, open }: ProfessionalCandlestickChartProps) => {
-  const [timePeriod, setTimePeriod] = useState<TimePeriod>('2y'); // Default to 2Y for TradingView-like experience
+const ProfessionalCandlestickChart = ({ symbol, previousClose }: ProfessionalCandlestickChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const volumeContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<any>(null);
   const volumeRef = useRef<any>(null);
-
+  const candleSeriesRef = useRef<any>(null);
   const syncingRef = useRef(false);
 
-  const { data: candleData = [], isLoading, error } = useCandlestickData(symbol, timePeriod);
+  // Always fetch full 2Y data - we zoom within it
+  const { data: candleData = [], isLoading, error } = useCandlestickData(symbol, '2y');
+
+  // Calculate zoom range from button click
+  const zoomToRange = useCallback((range: ZoomRange) => {
+    if (!chartRef.current || !candleData.length) return;
+
+    const now = new Date();
+    let fromDate: Date;
+
+    switch (range) {
+      case '1d':
+        fromDate = new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000);
+        break;
+      case '5d':
+        fromDate = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000);
+        break;
+      case '1m':
+        fromDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+        break;
+      case '3m':
+        fromDate = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+        break;
+      case '6m':
+        fromDate = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
+        break;
+      case '1y':
+        fromDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+        break;
+      case '2y':
+        fromDate = new Date(now.getFullYear() - 2, now.getMonth(), now.getDate());
+        break;
+      case 'all':
+      default:
+        try { chartRef.current.timeScale().fitContent(); } catch { }
+        try { volumeRef.current?.timeScale().fitContent(); } catch { }
+        return;
+    }
+
+    const fromStr = fromDate.toISOString().slice(0, 10);
+    const toStr = now.toISOString().slice(0, 10);
+
+    try {
+      chartRef.current.timeScale().setVisibleRange({ from: fromStr, to: toStr });
+    } catch {
+      // Fallback to fit
+      try { chartRef.current.timeScale().fitContent(); } catch { }
+    }
+  }, [candleData]);
 
   useEffect(() => {
     const chartEl = chartContainerRef.current;
@@ -53,14 +98,11 @@ const ProfessionalCandlestickChart = ({ symbol, currentPrice, previousClose, hig
       volumeRef.current = null;
     }
 
-    const intraday = isIntraday(timePeriod);
-    // Always sort using the numeric unix timestamp first.
+    // Sort and format as BusinessDay strings for daily/weekly data
     const sorted = [...candleData].sort((a, b) => a.time - b.time);
 
-    // lightweight-charts is picky: intraday can be unix seconds (UTCTimestamp),
-    // but daily is best represented as a BusinessDay (YYYY-MM-DD).
     const formattedData = sorted.map((c) => ({
-      time: (intraday ? c.time : toBusinessDayString(c.time)) as any,
+      time: toBusinessDayString(c.time) as any,
       open: c.open,
       high: c.high,
       low: c.low,
@@ -68,33 +110,17 @@ const ProfessionalCandlestickChart = ({ symbol, currentPrice, previousClose, hig
     }));
 
     const volumeData = sorted.map((c) => ({
-      time: (intraday ? c.time : toBusinessDayString(c.time)) as any,
+      time: toBusinessDayString(c.time) as any,
       value: c.volume || 0,
       color: c.close >= c.open ? '#26a69a' : '#ef5350',
     }));
-
-    // Calculate bar spacing based on data density for optimal viewing
-    // Longer timeframes = more bars = smaller spacing to fit more on screen
-    let barSpacing = 8;
-    let minBarSpacing = 3;
-    
-    if (timePeriod === '2y') {
-      barSpacing = 6; // Weekly bars - fit all 2 years nicely
-      minBarSpacing = 2;
-    } else if (timePeriod === '1y') {
-      barSpacing = 4; // Daily bars for a full year
-      minBarSpacing = 2;
-    } else if (timePeriod === 'ytd') {
-      barSpacing = 5;
-      minBarSpacing = 2;
-    }
 
     let chart: any;
     let volumeChart: any;
     try {
       chart = createChart(chartEl, {
         layout: { 
-          background: { type: ColorType.Solid, color: "#131722" }, // TradingView dark
+          background: { type: ColorType.Solid, color: "#131722" },
           textColor: "#d1d4dc", 
           fontSize: 12, 
           fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' 
@@ -104,14 +130,14 @@ const ProfessionalCandlestickChart = ({ symbol, currentPrice, previousClose, hig
           horzLines: { color: "rgba(42, 46, 57, 0.5)", style: 1, visible: true } 
         },
         width: chartWidth,
-        height: 700, // BIG chart like TradingView
+        height: 700,
         timeScale: { 
           borderColor: "rgba(42, 46, 57, 0.8)", 
           timeVisible: true, 
           secondsVisible: false, 
           rightOffset: 10,
-          barSpacing,
-          minBarSpacing,
+          barSpacing: 6,
+          minBarSpacing: 1,
           fixLeftEdge: false,
           fixRightEdge: false,
         },
@@ -143,24 +169,24 @@ const ProfessionalCandlestickChart = ({ symbol, currentPrice, previousClose, hig
           borderColor: "rgba(42, 46, 57, 0.5)", 
           timeVisible: true, 
           visible: true,
-          barSpacing,
-          minBarSpacing,
+          barSpacing: 6,
+          minBarSpacing: 1,
         },
         rightPriceScale: { visible: false },
         leftPriceScale: { visible: false },
+        handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: true },
+        handleScale: { axisPressedMouseMove: true, mouseWheel: true, pinch: true },
       });
     } catch { return; }
 
-    // Sync charts safely.
+    // Sync charts safely
     chart.timeScale().subscribeVisibleTimeRangeChange((timeRange: any) => {
       if (syncingRef.current) return;
       if (!isValidTimeRange(timeRange)) return;
       syncingRef.current = true;
       try {
         volumeChart.timeScale().setVisibleRange(timeRange);
-      } catch {
-        // ignore transient range issues
-      } finally {
+      } catch { } finally {
         syncingRef.current = false;
       }
     });
@@ -170,9 +196,7 @@ const ProfessionalCandlestickChart = ({ symbol, currentPrice, previousClose, hig
       syncingRef.current = true;
       try {
         chart.timeScale().setVisibleRange(timeRange);
-      } catch {
-        // ignore transient range issues
-      } finally {
+      } catch { } finally {
         syncingRef.current = false;
       }
     });
@@ -188,6 +212,7 @@ const ProfessionalCandlestickChart = ({ symbol, currentPrice, previousClose, hig
     });
     try {
       candlestickSeries.setData(formattedData);
+      candleSeriesRef.current = candlestickSeries;
     } catch {
       try { chart.remove(); } catch { }
       try { volumeChart.remove(); } catch { }
@@ -201,11 +226,9 @@ const ProfessionalCandlestickChart = ({ symbol, currentPrice, previousClose, hig
     });
     try {
       volumeSeries.setData(volumeData);
-    } catch {
-      // If volume fails, still keep the main chart alive
-    }
+    } catch { }
 
-    // Add previous close line
+    // Previous close line
     candlestickSeries.createPriceLine({ 
       price: previousClose, 
       color: 'rgba(255, 152, 0, 0.5)', 
@@ -215,7 +238,7 @@ const ProfessionalCandlestickChart = ({ symbol, currentPrice, previousClose, hig
       title: 'Prev' 
     });
 
-    // Fit content to show all data initially
+    // Fit content initially to show all 2Y data
     try { chart.timeScale().fitContent(); } catch { }
     try { volumeChart.timeScale().fitContent(); } catch { }
 
@@ -234,20 +257,18 @@ const ProfessionalCandlestickChart = ({ symbol, currentPrice, previousClose, hig
       try { chart.remove(); } catch { }
       try { volumeChart.remove(); } catch { }
     };
-  }, [candleData, previousClose, timePeriod]);
+  }, [candleData, previousClose]);
 
-  // Resolution labels for each timeframe
-  const getResolutionLabel = () => {
-    switch (timePeriod) {
-      case '1d': return '5min';
-      case '5d': return '15min';
-      case '1m': return 'Daily';
-      case 'ytd': return 'Daily';
-      case '1y': return 'Daily';
-      case '2y': return 'Weekly';
-      default: return '';
-    }
-  };
+  const zoomButtons: { label: string; range: ZoomRange }[] = [
+    { label: '1D', range: '1d' },
+    { label: '5D', range: '5d' },
+    { label: '1M', range: '1m' },
+    { label: '3M', range: '3m' },
+    { label: '6M', range: '6m' },
+    { label: '1Y', range: '1y' },
+    { label: '2Y', range: '2y' },
+    { label: 'ALL', range: 'all' },
+  ];
 
   return (
     <Card className="w-full bg-[#131722] border-[#2a2e39]">
@@ -259,7 +280,7 @@ const ProfessionalCandlestickChart = ({ symbol, currentPrice, previousClose, hig
               {symbol}
             </CardTitle>
             <span className="text-xs px-2 py-0.5 bg-[#2a2e39] text-[#787b86] rounded">
-              {getResolutionLabel()}
+              Weekly
             </span>
             {candleData.length > 0 && (
               <span className="text-xs text-[#787b86]">
@@ -267,16 +288,19 @@ const ProfessionalCandlestickChart = ({ symbol, currentPrice, previousClose, hig
               </span>
             )}
           </div>
-          <Tabs value={timePeriod} onValueChange={(v) => setTimePeriod(v as TimePeriod)}>
-            <TabsList className="h-8 bg-[#2a2e39] border-0">
-              <TabsTrigger value="1d" className="text-xs px-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">1D</TabsTrigger>
-              <TabsTrigger value="5d" className="text-xs px-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">5D</TabsTrigger>
-              <TabsTrigger value="1m" className="text-xs px-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">1M</TabsTrigger>
-              <TabsTrigger value="ytd" className="text-xs px-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">YTD</TabsTrigger>
-              <TabsTrigger value="1y" className="text-xs px-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">1Y</TabsTrigger>
-              <TabsTrigger value="2y" className="text-xs px-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">2Y</TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <div className="flex items-center gap-1">
+            {zoomButtons.map((btn) => (
+              <Button
+                key={btn.range}
+                variant="ghost"
+                size="sm"
+                onClick={() => zoomToRange(btn.range)}
+                className="text-xs h-7 px-2.5 text-[#787b86] hover:text-[#d1d4dc] hover:bg-[#2a2e39]"
+              >
+                {btn.label}
+              </Button>
+            ))}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="p-0">
@@ -296,7 +320,6 @@ const ProfessionalCandlestickChart = ({ symbol, currentPrice, previousClose, hig
           <div className="bg-[#131722]">
             <div className="relative">
               <div ref={chartContainerRef} className="w-full" style={{ height: '700px' }} />
-              {/* Legend overlay */}
               <div className="absolute top-2 left-2 flex items-center gap-3 text-xs bg-[#131722]/90 backdrop-blur-sm px-3 py-1.5 rounded border border-[#2a2e39]">
                 <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-[#26a69a]" /><span className="text-[#787b86]">Bullish</span></div>
                 <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-[#ef5350]" /><span className="text-[#787b86]">Bearish</span></div>
