@@ -32,7 +32,7 @@ interface SettingsContextType {
 
 const defaultSettings: UserSettings = {
   advancedMode: false,
-  darkMode: false,
+  darkMode: true, // Default to dark mode for the app's aesthetic
   notifications: {
     priceAlerts: true,
     tradeConfirmations: true,
@@ -212,10 +212,15 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     loadSettings();
   }, [loadSettings]);
 
-  // Initialize theme from localStorage on first load
+  // Initialize theme from localStorage on first load - default to dark
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark') {
+    // Default to dark mode if no preference saved
+    if (savedTheme === 'light') {
+      setSettings(prev => ({ ...prev, darkMode: false }));
+      document.documentElement.classList.remove('dark');
+    } else {
+      // Default to dark mode
       setSettings(prev => ({ ...prev, darkMode: true }));
       document.documentElement.classList.add('dark');
     }
