@@ -16,12 +16,22 @@ interface ProfessionalCandlestickChartProps {
 
 type TimePeriod = '1d' | '5d' | '1m' | 'ytd' | '1y';
 
+const isIntraday = (p: TimePeriod) => p === '1d' || p === '5d';
+
+const toBusinessDayString = (unixSeconds: number) =>
+  new Date(unixSeconds * 1000).toISOString().slice(0, 10);
+
+const isValidTimeRange = (r: any): r is { from: any; to: any } =>
+  !!r && r.from != null && r.to != null;
+
 const ProfessionalCandlestickChart = ({ symbol, currentPrice, previousClose, high, low, open }: ProfessionalCandlestickChartProps) => {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('1m');
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const volumeContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<any>(null);
   const volumeRef = useRef<any>(null);
+
+  const syncingRef = useRef(false);
 
   const { data: candleData = [], isLoading, error } = useCandlestickData(symbol, timePeriod);
 
@@ -43,17 +53,25 @@ const ProfessionalCandlestickChart = ({ symbol, currentPrice, previousClose, hig
       volumeRef.current = null;
     }
 
-    const formattedData = candleData
-      .map((c) => ({ time: c.time as any, open: c.open, high: c.high, low: c.low, close: c.close }))
-      .sort((a, b) => (a.time as number) - (b.time as number));
+    const intraday = isIntraday(timePeriod);
+    // Always sort using the numeric unix timestamp first.
+    const sorted = [...candleData].sort((a, b) => a.time - b.time);
 
-    const volumeData = candleData
-      .map((c) => ({
-        time: c.time as any,
-        value: c.volume || 0,
-        color: c.close >= c.open ? '#26a69a' : '#ef5350',
-      }))
-      .sort((a, b) => (a.time as number) - (b.time as number));
+    // lightweight-charts is picky: intraday can be unix seconds (UTCTimestamp),
+    // but daily is best represented as a BusinessDay (YYYY-MM-DD).
+    const formattedData = sorted.map((c) => ({
+      time: (intraday ? c.time : toBusinessDayString(c.time)) as any,
+      open: c.open,
+      high: c.high,
+      low: c.low,
+      close: c.close,
+    }));
+
+    const volumeData = sorted.map((c) => ({
+      time: (intraday ? c.time : toBusinessDayString(c.time)) as any,
+      value: c.volume || 0,
+      color: c.close >= c.open ? '#26a69a' : '#ef5350',
+    }));
 
     let chart: any;
     let volumeChart: any;
@@ -82,25 +100,56 @@ const ProfessionalCandlestickChart = ({ symbol, currentPrice, previousClose, hig
       });
     } catch { return; }
 
+    // Sync charts safely.
+    // The previous implementation used setVisibleRange() directly; when charts briefly
+    // report an incomplete range (from/to null) lightweight-charts throws "Value is null".
     chart.timeScale().subscribeVisibleTimeRangeChange((timeRange: any) => {
-      if (timeRange) volumeChart.timeScale().setVisibleRange(timeRange);
+      if (syncingRef.current) return;
+      if (!isValidTimeRange(timeRange)) return;
+      syncingRef.current = true;
+      try {
+        volumeChart.timeScale().setVisibleRange(timeRange);
+      } catch {
+        // ignore transient range issues
+      } finally {
+        syncingRef.current = false;
+      }
     });
     volumeChart.timeScale().subscribeVisibleTimeRangeChange((timeRange: any) => {
-      if (timeRange) chart.timeScale().setVisibleRange(timeRange);
+      if (syncingRef.current) return;
+      if (!isValidTimeRange(timeRange)) return;
+      syncingRef.current = true;
+      try {
+        chart.timeScale().setVisibleRange(timeRange);
+      } catch {
+        // ignore transient range issues
+      } finally {
+        syncingRef.current = false;
+      }
     });
 
     const candlestickSeries = chart.addCandlestickSeries({
       upColor: "#26a69a", downColor: "#ef5350", borderUpColor: "#26a69a", borderDownColor: "#ef5350", wickUpColor: "#26a69a", wickDownColor: "#ef5350", borderVisible: true,
     });
-    candlestickSeries.setData(formattedData);
+    try {
+      candlestickSeries.setData(formattedData);
+    } catch {
+      try { chart.remove(); } catch { }
+      try { volumeChart.remove(); } catch { }
+      return;
+    }
 
     const volumeSeries = volumeChart.addHistogramSeries({ color: '#26a69a', priceFormat: { type: 'volume' }, priceScaleId: '' });
-    volumeSeries.setData(volumeData);
+    try {
+      volumeSeries.setData(volumeData);
+    } catch {
+      // If volume fails, still keep the main chart alive
+    }
 
     candlestickSeries.createPriceLine({ price: previousClose, color: 'rgba(148, 163, 184, 0.5)', lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: 'Prev Close' });
 
-    chart.timeScale().fitContent();
-    volumeChart.timeScale().fitContent();
+    try { chart.timeScale().fitContent(); } catch { }
+    try { volumeChart.timeScale().fitContent(); } catch { }
 
     const handleResize = () => {
       const cw = chartContainerRef.current?.clientWidth;
@@ -117,7 +166,7 @@ const ProfessionalCandlestickChart = ({ symbol, currentPrice, previousClose, hig
       try { chart.remove(); } catch { }
       try { volumeChart.remove(); } catch { }
     };
-  }, [candleData, previousClose]);
+  }, [candleData, previousClose, timePeriod]);
 
   return (
     <Card className="w-full">

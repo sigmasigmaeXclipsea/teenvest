@@ -25,6 +25,11 @@ interface StockCandlestickChartProps {
 
 type TimePeriod = '1d' | '5d' | '1m' | 'ytd' | '1y';
 
+const isIntraday = (p: TimePeriod) => p === '1d' || p === '5d';
+
+const toBusinessDayString = (unixSeconds: number) =>
+  new Date(unixSeconds * 1000).toISOString().slice(0, 10);
+
 const CandlestickChartRenderer = ({
   candleData,
   minPrice,
@@ -53,9 +58,15 @@ const CandlestickChartRenderer = ({
       chartRef.current = null;
     }
 
-    const formattedData = candleData
-      .map((c) => ({ time: c.time as any, open: c.open, high: c.high, low: c.low, close: c.close }))
-      .sort((a, b) => (a.time as number) - (b.time as number));
+    const intraday = isIntraday(timePeriod);
+    const sorted = [...candleData].sort((a, b) => a.time - b.time);
+    const formattedData = sorted.map((c) => ({
+      time: (intraday ? c.time : toBusinessDayString(c.time)) as any,
+      open: c.open,
+      high: c.high,
+      low: c.low,
+      close: c.close,
+    }));
 
     let chart: any;
     try {
@@ -88,7 +99,7 @@ const CandlestickChartRenderer = ({
       try { chart.remove(); } catch { }
       return;
     }
-    chart.timeScale().fitContent();
+    try { chart.timeScale().fitContent(); } catch { }
 
     candlestickSeries.createPriceLine({ price: previousClose, color: 'rgba(148, 163, 184, 0.4)', lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: 'Prev Close' });
 
