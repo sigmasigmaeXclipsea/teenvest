@@ -80,6 +80,16 @@
       ]
     }
     </script>
+    <!-- Apply dark mode immediately to prevent flash of light mode -->
+    <script>
+      (function() {
+        var theme = localStorage.getItem('theme');
+        // Default to dark mode unless explicitly set to light
+        if (theme !== 'light') {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
   </head>
 
   <body>
