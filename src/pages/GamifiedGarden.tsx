@@ -241,7 +241,7 @@ export default function GamifiedGarden() {
   const isDark = settings.darkMode;
 
   return (
-    <div className="min-h-screen bg-background p-4">
+    <div className="p-6">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="bg-card rounded-xl shadow-sm p-4 border flex items-center justify-between">
