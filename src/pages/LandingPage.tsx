@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { motion, useSpring } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useState, useEffect, useMemo, memo, useRef, useCallback, type ReactNode, type ElementType, type FC, type MouseEvent } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 // Simple marquee for stock ticker
 const Marquee = ({ children, direction = 'left', speed = 25 }: { children: ReactNode; direction?: 'left' | 'right'; speed?: number }) => (
@@ -91,7 +92,65 @@ const FloatingParticles = memo(() => {
 });
 
 // Dashboard preview with smooth cursor tracking and pulsing glow
-const DashboardPreview = memo(() => {
+const DashboardPreview: FC = () => {
+  const [stocks, setStocks] = useState<any[]>([]);
+  const [portfolioValue, setPortfolioValue] = useState(15847);
+  const [totalGain, setTotalGain] = useState(1847);
+  const [todayChange, setTodayChange] = useState(2.8);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch real stock data
+  useEffect(() => {
+    const fetchStockData = async () => {
+      try {
+        const symbols = ['AAPL', 'TSLA', 'NVDA', 'MSFT'];
+        const colors = ['from-blue-500 to-blue-600', 'from-red-500 to-red-600', 'from-green-500 to-green-600', 'from-cyan-500 to-cyan-600'];
+        
+        const stockPromises = symbols.map(async (symbol, index) => {
+          const { data, error } = await supabase.functions.invoke('finnhub-quote', {
+            body: { ticker: symbol }
+          });
+          
+          if (error) throw error;
+          
+          return {
+            symbol: data.symbol,
+            name: data.name,
+            price: data.price,
+            change: data.changePercent + '%',
+            color: colors[index],
+            isPositive: data.isPositive
+          };
+        });
+
+        const fetchedStocks = await Promise.all(stockPromises);
+        setStocks(fetchedStocks);
+        
+        // Calculate portfolio metrics based on real data
+        const totalValue = fetchedStocks.reduce((sum, stock) => sum + (stock.price * 10), 0); // Assume 10 shares each
+        const avgChange = fetchedStocks.reduce((sum, stock) => sum + parseFloat(stock.changePercent), 0) / fetchedStocks.length;
+        
+        setPortfolioValue(Math.round(totalValue));
+        setTodayChange(Math.abs(avgChange));
+        setTotalGain(Math.round(totalValue * 0.12)); // Approximate 12% total gain
+        
+      } catch (error) {
+        console.error('Failed to fetch stock data:', error);
+        // Fallback to default data
+        setStocks([
+          { symbol: 'AAPL', name: 'Apple Inc.', price: 178.25, change: '+2.4%', color: 'from-blue-500 to-blue-600', isPositive: true },
+          { symbol: 'TSLA', name: 'Tesla Inc.', price: 245.50, change: '+5.1%', color: 'from-red-500 to-red-600', isPositive: true },
+          { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 890.20, change: '+4.5%', color: 'from-green-500 to-green-600', isPositive: true },
+          { symbol: 'MSFT', name: 'Microsoft', price: 378.90, change: '+0.8%', color: 'from-cyan-500 to-cyan-600', isPositive: true },
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStockData();
+  }, []);
+  
   const containerRef = useRef<HTMLDivElement>(null);
   const [isHovering, setIsHovering] = useState(false);
   const [pulsePhase, setPulsePhase] = useState(0);
@@ -156,20 +215,6 @@ const DashboardPreview = memo(() => {
     []
   );
 
-  const stocks = useMemo(
-    () => [
-      { symbol: 'AAPL', name: 'Apple Inc.', price: 178.25, change: '+2.4%', color: colors[0], isPositive: true },
-      { symbol: 'TSLA', name: 'Tesla Inc.', price: 245.50, change: '+5.1%', color: colors[1], isPositive: true },
-      { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 890.20, change: '+4.5%', color: colors[2], isPositive: true },
-      { symbol: 'MSFT', name: 'Microsoft', price: 378.90, change: '+0.8%', color: colors[3], isPositive: true },
-    ],
-    [colors]
-  );
-
-  const portfolioValue = 15847;
-  const totalGain = 1847;
-  const todayChange = 2.8;
-  
   // Calculate pulsing glow intensity
   const pulseIntensity = Math.sin(pulsePhase * Math.PI / 180) * 0.3 + 0.7;
   
@@ -400,6 +445,50 @@ const FeatureCard: FC<FeatureCardProps> = ({ icon: Icon, title, desc, gradient, 
 const LandingPage = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const [tickerStocks, setTickerStocks] = useState<any[]>([]);
+
+  // Fetch ticker data
+  useEffect(() => {
+    const fetchTickerData = async () => {
+      try {
+        const symbols = ['AAPL', 'TSLA', 'GOOGL', 'MSFT', 'AMZN', 'NVDA', 'META', 'NFLX', 'AMD', 'DIS'];
+        
+        const stockPromises = symbols.map(async (symbol) => {
+          const { data, error } = await supabase.functions.invoke('finnhub-quote', {
+            body: { ticker: symbol }
+          });
+          
+          if (error) throw error;
+          
+          return {
+            symbol: data.symbol,
+            price: `$${data.price.toFixed(2)}`,
+            change: data.changePercent + '%'
+          };
+        });
+
+        const fetchedStocks = await Promise.all(stockPromises);
+        setTickerStocks(fetchedStocks);
+      } catch (error) {
+        console.error('Failed to fetch ticker data:', error);
+        // Fallback to static data
+        setTickerStocks([
+          { symbol: 'AAPL', price: '$178.25', change: '+2.4%' },
+          { symbol: 'TSLA', price: '$245.50', change: '+5.1%' },
+          { symbol: 'GOOGL', price: '$140.80', change: '+1.2%' },
+          { symbol: 'MSFT', price: '$378.90', change: '+0.8%' },
+          { symbol: 'AMZN', price: '$185.30', change: '+3.2%' },
+          { symbol: 'NVDA', price: '$890.20', change: '+4.5%' },
+          { symbol: 'META', price: '$505.60', change: '+2.8%' },
+          { symbol: 'NFLX', price: '$485.40', change: '-1.1%' },
+          { symbol: 'AMD', price: '$125.80', change: '+3.7%' },
+          { symbol: 'DIS', price: '$92.15', change: '+0.5%' },
+        ]);
+      }
+    };
+
+    fetchTickerData();
+  }, []);
 
   const handleSignOut = async () => {
     await signOut();
@@ -537,18 +626,7 @@ const LandingPage = () => {
       {/* Stock Ticker */}
       <section className="py-6 border-y border-border/30 bg-card/30 backdrop-blur-sm">
         <Marquee speed={30}>
-          {[
-            { symbol: 'AAPL', change: '+2.4%', price: '$178.25' },
-            { symbol: 'TSLA', change: '+5.1%', price: '$245.50' },
-            { symbol: 'GOOGL', change: '+1.2%', price: '$140.80' },
-            { symbol: 'MSFT', change: '+0.8%', price: '$378.90' },
-            { symbol: 'AMZN', change: '+3.2%', price: '$185.30' },
-            { symbol: 'NVDA', change: '+4.5%', price: '$890.20' },
-            { symbol: 'META', change: '+2.8%', price: '$505.60' },
-            { symbol: 'NFLX', change: '-1.1%', price: '$485.40' },
-            { symbol: 'AMD', change: '+3.7%', price: '$125.80' },
-            { symbol: 'DIS', change: '+0.5%', price: '$92.15' },
-          ].map((stock, i) => (
+          {tickerStocks.map((stock, i) => (
             <div key={i} className="mx-4 flex items-center gap-2 px-4 py-2 rounded-lg bg-card/50 border border-border/30">
               <span className="font-bold">{stock.symbol}</span>
               <span className="text-sm text-muted-foreground">{stock.price}</span>
