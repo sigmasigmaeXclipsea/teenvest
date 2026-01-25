@@ -450,7 +450,7 @@ const LandingPage = () => {
             {[
               { value: 10, suffix: 'K', label: 'Virtual Cash', icon: '💰', prefix: '$' },
               { value: 5000, suffix: '+', label: 'Real Stocks', icon: '📈' },
-              { value: 0, suffix: '', label: 'Real Risk', icon: '🛡️' },
+              { value: 500, suffix: '', label: 'Real Risk', icon: '🛡️' },
               { value: 100, suffix: '%', label: 'Free Forever', icon: '⭐' },
             ].map((stat, i) => (
               <motion.div
