@@ -109,7 +109,7 @@ const DashboardPreview: FC = () => {
   const [todayChange, setTodayChange] = useState(1.1);
   const [loading, setLoading] = useState(false);
 
-  // Fetch real stock data using Supabase edge function
+  // Fetch real stock data using Render proxy
   useEffect(() => {
     const fetchStockData = async () => {
       setLoading(true);
@@ -119,27 +119,26 @@ const DashboardPreview: FC = () => {
         
         const stockPromises = symbols.map(async (symbol, index) => {
           try {
-            const { data, error } = await supabase.functions.invoke('finnhub-quote', {
-              body: { ticker: symbol }
-            });
+            const response = await fetch(`https://finnhub-stock-api-5xrj.onrender.com/api/stock/${symbol}`);
+            if (!response.ok) throw new Error('API request failed');
+            const data = await response.json();
             
-            if (error) throw error;
-            if (!data || data.error) throw new Error(data?.error || 'No data received');
+            if (data.error) throw new Error(data.error);
             
             return {
-              symbol: data.symbol,
-              name: data.name,
-              price: data.price,
-              change: data.changePercent + '%',
+              symbol: data.symbol || symbol,
+              name: data.name || symbol,
+              price: data.price || 0,
+              change: (data.changePercent != null ? data.changePercent : data.change) + '%',
               color: colors[index],
-              isPositive: data.isPositive
+              isPositive: data.isPositive ?? (data.change >= 0)
             };
           } catch (err) {
             console.warn(`Failed to fetch ${symbol}, using fallback`);
             const fallbackData: Record<string, { symbol: string; name: string; price: number; change: string; isPositive: boolean }> = {
               'AAPL': { symbol: 'AAPL', name: 'Apple Inc.', price: 248.00, change: '+1.2%', isPositive: true },
               'TSLA': { symbol: 'TSLA', name: 'Tesla Inc.', price: 242.84, change: '-0.8%', isPositive: false },
-              'NVDA': { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 875.28, change: '+3.4%', isPositive: true },
+              'NVDA': { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 140.00, change: '+3.4%', isPositive: true },
               'MSFT': { symbol: 'MSFT', name: 'Microsoft', price: 429.63, change: '+0.6%', isPositive: true }
             };
             return { ...fallbackData[symbol], color: colors[index] };
@@ -479,7 +478,7 @@ const LandingPage = () => {
     { symbol: 'DIS', price: '$91.45', change: '+0.2%' }
   ]);
 
-  // Fetch ticker data using Supabase edge function
+  // Fetch ticker data using Render proxy
   useEffect(() => {
     const fetchTickerData = async () => {
       try {
@@ -487,17 +486,19 @@ const LandingPage = () => {
         
         const stockPromises = symbols.map(async (symbol) => {
           try {
-            const { data, error } = await supabase.functions.invoke('finnhub-quote', {
-              body: { ticker: symbol }
-            });
+            const response = await fetch(`https://finnhub-stock-api-5xrj.onrender.com/api/stock/${symbol}`);
+            if (!response.ok) throw new Error('API request failed');
+            const data = await response.json();
             
-            if (error) throw error;
-            if (!data || data.error) throw new Error(data?.error || 'No data received');
+            if (data.error) throw new Error(data.error);
+            
+            const price = data.price || 0;
+            const changePercent = data.changePercent != null ? data.changePercent : data.change;
             
             return {
-              symbol: data.symbol,
-              price: `$${data.price.toFixed(2)}`,
-              change: data.changePercent + '%'
+              symbol: data.symbol || symbol,
+              price: `$${price.toFixed(2)}`,
+              change: `${changePercent >= 0 ? '+' : ''}${changePercent}%`
             };
           } catch (err) {
             console.warn(`Failed to fetch ${symbol} for ticker, using fallback`);
@@ -507,7 +508,7 @@ const LandingPage = () => {
               'GOOGL': { price: '$168.50', change: '+0.5%' },
               'MSFT': { price: '$429.63', change: '+0.6%' },
               'AMZN': { price: '$178.35', change: '+1.1%' },
-              'NVDA': { price: '$875.28', change: '+3.4%' },
+              'NVDA': { price: '$140.00', change: '+3.4%' },
               'META': { price: '$512.75', change: '+0.9%' },
               'NFLX': { price: '$486.23', change: '-0.3%' },
               'AMD': { price: '$124.58', change: '+2.1%' },
@@ -528,7 +529,7 @@ const LandingPage = () => {
           { symbol: 'GOOGL', price: '$168.50', change: '+0.5%' },
           { symbol: 'MSFT', price: '$429.63', change: '+0.6%' },
           { symbol: 'AMZN', price: '$178.35', change: '+1.1%' },
-          { symbol: 'NVDA', price: '$875.28', change: '+3.4%' },
+          { symbol: 'NVDA', price: '$140.00', change: '+3.4%' },
           { symbol: 'META', price: '$512.75', change: '+0.9%' },
           { symbol: 'NFLX', price: '$486.23', change: '-0.3%' },
           { symbol: 'AMD', price: '$124.58', change: '+2.1%' },
