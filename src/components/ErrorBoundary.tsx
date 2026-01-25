@@ -28,6 +28,17 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   private handleRetry = () => {
+    const message = this.state.error?.message ?? '';
+    const shouldReload =
+      /Failed to fetch dynamically imported module/i.test(message) ||
+      /ChunkLoadError/i.test(message) ||
+      /Loading chunk/i.test(message);
+
+    if (shouldReload && typeof window !== 'undefined') {
+      window.location.reload();
+      return;
+    }
+
     this.setState({ hasError: false, error: null });
   };
 

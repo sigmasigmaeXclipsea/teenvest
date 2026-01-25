@@ -1,12 +1,12 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { TrendingUp, BookOpen, Trophy, Shield, ArrowRight, BarChart3, Briefcase, Target, Bot, Sparkles, Zap, Flame, Rocket, User, LogOut, Play, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { motion, useMotionValue, useSpring } from 'framer-motion';
+import { motion, useSpring } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
-import { useState, useEffect, useMemo, memo, useRef, useCallback } from 'react';
+import { useState, useEffect, useMemo, memo, useRef, useCallback, type ReactNode, type ElementType, type FC, type MouseEvent } from 'react';
 
 // Simple marquee for stock ticker
-const Marquee = ({ children, direction = 'left', speed = 25 }: { children: React.ReactNode; direction?: 'left' | 'right'; speed?: number }) => (
+const Marquee = ({ children, direction = 'left', speed = 25 }: { children: ReactNode; direction?: 'left' | 'right'; speed?: number }) => (
   <div className="overflow-hidden whitespace-nowrap">
     <motion.div
       className="inline-flex"
@@ -117,7 +117,7 @@ const DashboardPreview = memo(() => {
     return () => clearInterval(interval);
   }, [isHovering]);
 
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+  const handleMouseMove = useCallback((e: MouseEvent<HTMLDivElement>) => {
     if (!containerRef.current) return;
     
     const rect = containerRef.current.getBoundingClientRect();
@@ -369,14 +369,16 @@ const DashboardPreview = memo(() => {
   );
 });
 
-
-const FeatureCard = ({ icon: Icon, title, desc, gradient, delay = 0 }: { 
-  icon: React.ElementType; 
-  title: string; 
-  desc: string; 
+// Feature card - simplified
+type FeatureCardProps = {
+  icon: ElementType;
+  title: string;
+  desc: string;
   gradient: string;
   delay?: number;
-}) => (
+};
+
+const FeatureCard: FC<FeatureCardProps> = ({ icon: Icon, title, desc, gradient, delay = 0 }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     whileInView={{ opacity: 1, y: 0 }}
