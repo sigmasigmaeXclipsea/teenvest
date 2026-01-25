@@ -125,21 +125,26 @@ const DashboardPreview: FC = () => {
             
             if (data.error) throw new Error(data.error);
             
+            // API returns nested structure: { quote: { c, d, dp }, profile: { name } }
+            const price = data.quote?.c || 0;
+            const changePercent = data.quote?.dp || 0;
+            const name = data.profile?.name || symbol;
+            
             return {
-              symbol: data.symbol || symbol,
-              name: data.name || symbol,
-              price: data.price || 0,
-              change: (data.changePercent != null ? data.changePercent : data.change) + '%',
+              symbol: data.profile?.ticker || symbol,
+              name: name,
+              price: price,
+              change: `${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%`,
               color: colors[index],
-              isPositive: data.isPositive ?? (data.change >= 0)
+              isPositive: changePercent >= 0
             };
           } catch (err) {
             console.warn(`Failed to fetch ${symbol}, using fallback`);
             const fallbackData: Record<string, { symbol: string; name: string; price: number; change: string; isPositive: boolean }> = {
               'AAPL': { symbol: 'AAPL', name: 'Apple Inc.', price: 248.00, change: '+1.2%', isPositive: true },
-              'TSLA': { symbol: 'TSLA', name: 'Tesla Inc.', price: 242.84, change: '-0.8%', isPositive: false },
-              'NVDA': { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 140.00, change: '+3.4%', isPositive: true },
-              'MSFT': { symbol: 'MSFT', name: 'Microsoft', price: 429.63, change: '+0.6%', isPositive: true }
+              'TSLA': { symbol: 'TSLA', name: 'Tesla Inc.', price: 449.00, change: '-0.1%', isPositive: false },
+              'NVDA': { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 187.00, change: '+1.5%', isPositive: true },
+              'MSFT': { symbol: 'MSFT', name: 'Microsoft', price: 465.00, change: '+3.3%', isPositive: true }
             };
             return { ...fallbackData[symbol], color: colors[index] };
           }
@@ -492,27 +497,28 @@ const LandingPage = () => {
             
             if (data.error) throw new Error(data.error);
             
-            const price = data.price || 0;
-            const changePercent = data.changePercent != null ? data.changePercent : data.change;
+            // API returns nested structure: { quote: { c, d, dp }, profile: { name } }
+            const price = data.quote?.c || 0;
+            const changePercent = data.quote?.dp || 0;
             
             return {
-              symbol: data.symbol || symbol,
+              symbol: data.profile?.ticker || symbol,
               price: `$${price.toFixed(2)}`,
-              change: `${changePercent >= 0 ? '+' : ''}${changePercent}%`
+              change: `${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%`
             };
           } catch (err) {
             console.warn(`Failed to fetch ${symbol} for ticker, using fallback`);
             const fallbackData: Record<string, { price: string; change: string }> = {
               'AAPL': { price: '$248.00', change: '+1.2%' },
-              'TSLA': { price: '$242.84', change: '-0.8%' },
-              'GOOGL': { price: '$168.50', change: '+0.5%' },
-              'MSFT': { price: '$429.63', change: '+0.6%' },
-              'AMZN': { price: '$178.35', change: '+1.1%' },
-              'NVDA': { price: '$140.00', change: '+3.4%' },
-              'META': { price: '$512.75', change: '+0.9%' },
-              'NFLX': { price: '$486.23', change: '-0.3%' },
-              'AMD': { price: '$124.58', change: '+2.1%' },
-              'DIS': { price: '$91.45', change: '+0.2%' }
+              'TSLA': { price: '$449.00', change: '-0.1%' },
+              'GOOGL': { price: '$327.00', change: '-0.8%' },
+              'MSFT': { price: '$465.00', change: '+3.3%' },
+              'AMZN': { price: '$260.00', change: '+1.1%' },
+              'NVDA': { price: '$187.00', change: '+1.5%' },
+              'META': { price: '$740.00', change: '+0.9%' },
+              'NFLX': { price: '$1050.00', change: '+0.5%' },
+              'AMD': { price: '$259.00', change: '+2.3%' },
+              'DIS': { price: '$110.00', change: '-2.0%' }
             };
             return { symbol, ...fallbackData[symbol] };
           }
@@ -522,18 +528,17 @@ const LandingPage = () => {
         setTickerStocks(fetchedStocks);
       } catch (error) {
         console.error('Failed to fetch ticker data:', error);
-        // Fallback to static data
         setTickerStocks([
           { symbol: 'AAPL', price: '$248.00', change: '+1.2%' },
-          { symbol: 'TSLA', price: '$242.84', change: '-0.8%' },
-          { symbol: 'GOOGL', price: '$168.50', change: '+0.5%' },
-          { symbol: 'MSFT', price: '$429.63', change: '+0.6%' },
-          { symbol: 'AMZN', price: '$178.35', change: '+1.1%' },
-          { symbol: 'NVDA', price: '$140.00', change: '+3.4%' },
-          { symbol: 'META', price: '$512.75', change: '+0.9%' },
-          { symbol: 'NFLX', price: '$486.23', change: '-0.3%' },
-          { symbol: 'AMD', price: '$124.58', change: '+2.1%' },
-          { symbol: 'DIS', price: '$91.45', change: '+0.2%' },
+          { symbol: 'TSLA', price: '$449.00', change: '-0.1%' },
+          { symbol: 'GOOGL', price: '$327.00', change: '-0.8%' },
+          { symbol: 'MSFT', price: '$465.00', change: '+3.3%' },
+          { symbol: 'AMZN', price: '$260.00', change: '+1.1%' },
+          { symbol: 'NVDA', price: '$187.00', change: '+1.5%' },
+          { symbol: 'META', price: '$740.00', change: '+0.9%' },
+          { symbol: 'NFLX', price: '$1050.00', change: '+0.5%' },
+          { symbol: 'AMD', price: '$259.00', change: '+2.3%' },
+          { symbol: 'DIS', price: '$110.00', change: '-2.0%' },
         ]);
       }
     };
