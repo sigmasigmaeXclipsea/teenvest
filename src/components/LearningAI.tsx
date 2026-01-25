@@ -65,11 +65,15 @@ const LearningAI = ({ quizResults, completedModules, allModules }: LearningAIPro
   };
 
   const renderFormattedRecommendations = (text: string) => {
-    const lines = text.split('\n');
+    // Clean up stray markdown artifacts from Gemini
+    const cleaned = text
+      .replace(/^#{1,6}\s*/gm, '') // Remove ### headers
+      .replace(/\*\*/g, ''); // Remove ** bold markers
+    const lines = cleaned.split('\n');
     return lines.map((line, i) => {
-      // Handle bold headers with **
-      if (line.includes('**') && (line.includes(':') || line.match(/^\d+\./))) {
-        const cleanLine = line.replace(/\*\*/g, '');
+      // Handle bold headers (already stripped ** above)
+      if (line.includes(':') || line.match(/^\d+\./)) {
+        const cleanLine = line;
         if (cleanLine.toLowerCase().includes('progress')) {
           return (
             <motion.div 
@@ -176,7 +180,7 @@ const LearningAI = ({ quizResults, completedModules, allModules }: LearningAIPro
               {num}
             </span>
             <p className="text-foreground/90 text-sm pt-0.5">
-              {line.replace(/^\d+\.\s*/, '').replace(/\*\*/g, '')}
+              {line.replace(/^\d+\.\s*/, '')}
             </p>
           </motion.div>
         );
@@ -184,7 +188,7 @@ const LearningAI = ({ quizResults, completedModules, allModules }: LearningAIPro
       
       // Regular paragraph
       if (line.trim()) {
-        return <p key={i} className="mb-2 text-foreground/80 text-sm">{line.replace(/\*\*/g, '')}</p>;
+        return <p key={i} className="mb-2 text-foreground/80 text-sm">{line}</p>;
       }
       
       return null;

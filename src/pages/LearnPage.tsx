@@ -16,6 +16,7 @@ import { useLearningModules, useUserProgress } from '@/hooks/useLearning';
 import { useQuizResults } from '@/hooks/useQuiz';
 import LearningAI from '@/components/LearningAI';
 import AIAssistantCard from '@/components/AIAssistantCard';
+import XPStore from '@/components/XPStore';
 
 const container = {
   hidden: { opacity: 0 },
@@ -91,18 +92,18 @@ const LearnPage = () => {
   const totalModules = modules?.length || 0;
   const progressPercent = totalModules > 0 ? (completedCount / totalModules) * 100 : 0;
   
+  // Calculate streak & XP from completed modules
+  const baseXP = completedCount * 100 + (quizResults?.reduce((acc, r) => acc + (r.score * 20), 0) || 0);
+  const [xp, setXp] = useState(baseXP);
+  const level = Math.floor(xp / 500) + 1;
+
   // Get dynamic categories based on total modules; filter applies within categories
   const categories = getCategories(totalModules);
-  
-  // Calculate streak & XP from completed modules
-  const totalXP = completedCount * 100 + (quizResults?.reduce((acc, r) => acc + (r.score * 20), 0) || 0);
-  const level = Math.floor(totalXP / 500) + 1;
 
-  // Check if module is locked (previous not completed)
-  const isLocked = (index: number) => {
-    if (index === 0) return false;
-    const prevModuleId = modules?.[index - 1]?.id;
-    return prevModuleId ? !isCompleted(prevModuleId) : false;
+  // All lessons are now accessible; no locking logic
+
+  const handlePurchase = (cost: number) => {
+    setXp(prev => Math.max(0, prev - cost));
   };
 
   if (modulesLoading || progressLoading) {
@@ -157,7 +158,7 @@ const LearnPage = () => {
                 <Zap className="w-5 h-5 text-primary" />
                 <div>
                   <p className="text-xs text-muted-foreground">XP Earned</p>
-                  <p className="font-bold">{totalXP}</p>
+                  <p className="font-bold">{xp}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 bg-card/80 backdrop-blur px-4 py-2 rounded-xl border shadow-sm">
@@ -249,42 +250,32 @@ const LearnPage = () => {
                       const globalIndex = modules?.findIndex((x) => x.id === module.id) ?? category.startIndex + localIndex;
                       const completed = isCompleted(module.id);
                       const quizScore = getQuizScore(module.id);
-                      const locked = isLocked(globalIndex);
+                      const locked = false; // No locking: all lessons accessible
                       const difficulty = getDifficulty(globalIndex, totalModules);
                       const isPerfectScore = quizScore && quizScore.score === quizScore.total_questions;
                       
                       return (
-                        <Link 
-                          key={module.id} 
-                          to={locked ? '#' : `/learn/${module.id}`}
-                          onClick={(e) => locked && e.preventDefault()}
-                        >
+                        <Link to={`/learn/${module.id}`}>
                           <motion.div
-                            whileHover={locked ? {} : { scale: 1.01, x: 4 }}
-                            whileTap={locked ? {} : { scale: 0.99 }}
+                            whileHover={{ scale: 1.01, x: 4 }}
+                            whileTap={{ scale: 0.99 }}
                           >
                             <Card 
                               className={`transition-all cursor-pointer ${
-                                locked 
-                                  ? 'opacity-60 cursor-not-allowed' 
-                                  : completed 
-                                    ? 'border-primary/50 bg-gradient-to-r from-primary/5 to-transparent hover:shadow-lg hover:border-primary' 
-                                    : 'hover:shadow-lg hover:border-primary/30'
+                                completed 
+                                  ? 'border-primary/50 bg-gradient-to-r from-primary/5 to-transparent hover:shadow-lg hover:border-primary' 
+                                  : 'hover:shadow-lg hover:border-primary/30'
                               }`}
                             >
                               <CardContent className="p-5">
                                 <div className="flex items-center gap-4">
                                   {/* Status Icon */}
                                   <div className={`relative w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 text-lg font-bold transition-all ${
-                                    locked 
-                                      ? 'bg-muted text-muted-foreground'
-                                      : completed 
-                                        ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20' 
-                                        : 'bg-secondary text-foreground'
+                                    completed 
+                                      ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20' 
+                                      : 'bg-secondary text-foreground'
                                   }`}>
-                                    {locked ? (
-                                      <Lock className="w-6 h-6" />
-                                    ) : completed ? (
+                                    {completed ? (
                                       <CheckCircle className="w-7 h-7" />
                                     ) : (
                                       globalIndex + 1
@@ -331,9 +322,7 @@ const LearnPage = () => {
                                         +100 XP
                                       </Badge>
                                     )}
-                                    {!locked && (
-                                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                                    )}
+                                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
                                   </div>
                                 </div>
                               </CardContent>
@@ -433,10 +422,15 @@ const LearnPage = () => {
                     <Zap className="w-4 h-4 text-primary" />
                     <span className="text-sm">Total XP</span>
                   </div>
-                  <span className="font-bold">{totalXP}</span>
+                  <span className="font-bold">{xp}</span>
                 </div>
               </CardContent>
             </Card>
+          </motion.div>
+
+          {/* XP Store */}
+          <motion.div variants={item}>
+            <XPStore currentXP={xp} onPurchase={handlePurchase} />
           </motion.div>
         </div>
       </motion.div>
