@@ -126,8 +126,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       </header>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:fixed lg:top-14 lg:inset-y-0 lg:left-0 lg:z-40 lg:block group">
-        <div className="w-16 group-hover:w-56 bg-card border-r border-border transition-all duration-300 ease-in-out overflow-hidden flex flex-col">
+      <aside className="hidden lg:fixed lg:top-14 lg:bottom-0 lg:left-0 lg:z-40 lg:block group">
+        <div className="h-full w-16 group-hover:w-52 bg-card border-r border-border transition-[width] duration-200 ease-out overflow-hidden flex flex-col">
           {/* Navigation */}
           <nav className="flex-1 flex flex-col">
             {/* Core */}
