@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Droplets, Sprout, Coins, Clock, Package, Wrench, Trees, Star, Zap } from 'lucide-react';
+import { Droplets, Sprout, Coins, Clock, Package, Wrench, Trees, Star, Zap, Lightbulb } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { useSettings } from '@/contexts/SettingsContext';
 
 // Types
 interface Plant {
@@ -42,17 +44,17 @@ const WILT_THRESHOLD = 10 * 60 * 1000; // 10 minutes without water
 const WATER_REDUCTION = 0.5; // watering cuts remaining time by 50%
 
 const SEED_TEMPLATES: Omit<Seed, 'id'>[] = [
-  { name: 'Tomato', rarity: 'common', baseGrowthTime: 5, baseSizeKg: 1.2, price: 10, sellPrice: 15 },
-  { name: 'Carrot', rarity: 'common', baseGrowthTime: 4, baseSizeKg: 0.8, price: 8, sellPrice: 12 },
-  { name: 'Corn', rarity: 'rare', baseGrowthTime: 8, baseSizeKg: 2.0, price: 25, sellPrice: 45 },
-  { name: 'Pumpkin', rarity: 'rare', baseGrowthTime: 12, baseSizeKg: 4.5, price: 40, sellPrice: 80 },
-  { name: 'Dragon Fruit', rarity: 'mythic', baseGrowthTime: 20, baseSizeKg: 3.0, price: 120, sellPrice: 250 },
+  { name: 'Tomato', rarity: 'common', baseGrowthTime: 5, baseSizeKg: 1.2, price: 100, sellPrice: 150 },
+  { name: 'Carrot', rarity: 'common', baseGrowthTime: 4, baseSizeKg: 0.8, price: 80, sellPrice: 120 },
+  { name: 'Corn', rarity: 'rare', baseGrowthTime: 8, baseSizeKg: 2.0, price: 250, sellPrice: 450 },
+  { name: 'Pumpkin', rarity: 'rare', baseGrowthTime: 12, baseSizeKg: 4.5, price: 400, sellPrice: 800 },
+  { name: 'Dragon Fruit', rarity: 'mythic', baseGrowthTime: 20, baseSizeKg: 3.0, price: 1200, sellPrice: 2500 },
 ];
 
 const GEAR_TEMPLATES: Omit<Gear, 'id'>[] = [
-  { name: 'Watering Can', type: 'wateringCan', effect: 'Reduces growth time by 50%', price: 30 },
-  { name: 'Sprinkler', type: 'sprinkler', effect: 'Increases golden/rainbow chance', price: 150 },
-  { name: 'Plot Upgrade', type: 'plotUpgrade', effect: 'Expands garden grid', price: 200 },
+  { name: 'Watering Can', type: 'wateringCan', effect: 'Reduces growth time by 50%', price: 300 },
+  { name: 'Sprinkler', type: 'sprinkler', effect: 'Increases golden/rainbow chance', price: 1500 },
+  { name: 'Plot Upgrade', type: 'plotUpgrade', effect: 'Expands garden grid', price: 2000 },
 ];
 
 // Utility
@@ -79,8 +81,9 @@ function calculateSize(base: number): number {
 }
 
 export default function GamifiedGarden() {
+  const { theme } = useSettings();
+  const { toast } = useToast();
   const [xp, setXp] = useState(0);
-  const [money, setMoney] = useState(50);
   const [gridSize, setGridSize] = useState(GRID_SIZE);
   const [plots, setPlots] = useState<Plot[]>(() => Array.from({ length: GRID_SIZE * GRID_SIZE }, (_, i) => ({ id: `plot-${i}` })));
   const [inventory, setInventory] = useState({ seeds: [] as Seed[], gear: [] as Gear[] });
@@ -95,7 +98,6 @@ export default function GamifiedGarden() {
     if (saved) {
       const parsed = JSON.parse(saved);
       setXp(parsed.xp ?? 0);
-      setMoney(parsed.money ?? 50);
       setGridSize(parsed.gridSize ?? GRID_SIZE);
       setPlots(parsed.plots ?? Array.from({ length: (parsed.gridSize ?? GRID_SIZE) * (parsed.gridSize ?? GRID_SIZE) }, (_, i) => ({ id: `plot-${i}` })));
       setInventory(parsed.inventory ?? { seeds: [], gear: [] });
@@ -105,9 +107,9 @@ export default function GamifiedGarden() {
 
   // Save to localStorage
   useEffect(() => {
-    const state = { xp, money, gridSize, plots, inventory, hasSprinkler };
+    const state = { xp, gridSize, plots, inventory, hasSprinkler };
     localStorage.setItem('garden-state', JSON.stringify(state));
-  }, [xp, money, gridSize, plots, inventory, hasSprinkler]);
+  }, [xp, gridSize, plots, inventory, hasSprinkler]);
 
   // Initialize shops
   useEffect(() => {
@@ -133,14 +135,6 @@ export default function GamifiedGarden() {
       return { ...template, id: generateId() };
     });
     setShopGear(gear);
-  }
-
-  // Study button
-  function handleStudy() {
-    setXp(x => x + 100);
-    const template = SEED_TEMPLATES[Math.floor(Math.random() * SEED_TEMPLATES.length)];
-    const newSeed: Seed = { ...template, id: generateId() };
-    setInventory(inv => ({ ...inv, seeds: [...inv.seeds, newSeed] }));
   }
 
   // Plant seed
@@ -196,22 +190,25 @@ export default function GamifiedGarden() {
     const finalVariant = plant.variant === 'normal' ? calculateVariant(hasSprinkler) : plant.variant;
     const multiplier = finalVariant === 'rainbow' ? 5 : finalVariant === 'golden' ? 2 : 1;
     const seedTemplate = SEED_TEMPLATES.find(s => s.name === plant.seedType);
-    const sellPrice = (seedTemplate?.sellPrice || 10) * multiplier * (plant.sizeKg / (seedTemplate?.baseSizeKg || 1));
-    setMoney(m => m + Math.round(sellPrice));
-    setXp(x => x + 20);
+    const xpGain = Math.round((seedTemplate?.sellPrice || 100) * multiplier * (plant.sizeKg / (seedTemplate?.baseSizeKg || 1)));
+    setXp(x => x + xpGain);
+    toast({ title: 'Harvested!', description: `+${xpGain} XP` });
     setPlots(p => p.map(pl => (pl.id === plotId ? { ...pl, plant: undefined } : pl)));
   }
 
   // Buy from shop
   function buySeed(seed: Seed) {
-    if (money >= seed.price) {
-      setMoney(m => m - seed.price);
+    if (xp >= seed.price) {
+      setXp(x => x - seed.price);
       setInventory(inv => ({ ...inv, seeds: [...inv.seeds, seed] }));
+      toast({ title: 'Purchased', description: `${seed.name} seed` });
+    } else {
+      toast({ title: 'Not enough XP', description: `Need ${seed.price} XP` });
     }
   }
   function buyGear(gear: Gear) {
-    if (money >= gear.price) {
-      setMoney(m => m - gear.price);
+    if (xp >= gear.price) {
+      setXp(x => x - gear.price);
       if (gear.type === 'sprinkler') setHasSprinkler(true);
       if (gear.type === 'plotUpgrade' && gridSize < 6) {
         const newSize = gridSize + 1;
@@ -219,6 +216,9 @@ export default function GamifiedGarden() {
         setPlots(Array.from({ length: newSize * newSize }, (_, i) => ({ id: `plot-${i}` })));
       }
       setInventory(inv => ({ ...inv, gear: [...inv.gear, gear] }));
+      toast({ title: 'Purchased', description: gear.name });
+    } else {
+      toast({ title: 'Not enough XP', description: `Need ${gear.price} XP` });
     }
   }
 
@@ -238,34 +238,38 @@ export default function GamifiedGarden() {
     return () => clearInterval(interval);
   }, []);
 
+  const isDark = theme === 'dark';
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4">
+    <div className="min-h-screen bg-background p-4">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
-        <div className="bg-white rounded-xl shadow-sm p-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-green-800 flex items-center gap-2"><Sprout className="w-7 h-7" /> Learning Garden</h1>
+        <div className="bg-card rounded-xl shadow-sm p-4 border flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2"><Sprout className="w-7 h-7 text-green-600" /> Learning Garden</h1>
           <div className="flex gap-4">
-            <div className="flex items-center gap-1"><Zap className="w-5 h-5 text-yellow-500" /><span className="font-semibold">{xp} XP</span></div>
-            <div className="flex items-center gap-1"><Coins className="w-5 h-5 text-amber-500" /><span className="font-semibold">${money}</span></div>
+            <div className="flex items-center gap-1"><Zap className="w-5 h-5 text-yellow-500" /><span className="font-semibold text-foreground">{xp} XP</span></div>
           </div>
         </div>
 
-        {/* Study Button */}
-        <button onClick={handleStudy} className="w-full bg-blue-500 text-white py-3 rounded-lg font-semibold hover:bg-blue-600 transition">Study (+100 XP + Random Seed)</button>
+        {/* Tip */}
+        <div className="bg-muted/50 rounded-lg p-3 flex items-center gap-2 border">
+          <Lightbulb className="w-5 h-5 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">Study lessons to earn XP and buy seeds!</span>
+        </div>
 
         {/* Garden Grid */}
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <h2 className="text-xl font-bold mb-4 text-green-700">Garden ({gridSize}x{gridSize})</h2>
+        <div className="bg-card rounded-xl shadow-sm p-6 border">
+          <h2 className="text-xl font-bold mb-4 text-foreground">Garden ({gridSize}x{gridSize})</h2>
           <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))` }}>
             {plots.map(plot => {
               const plant = plot.plant;
               const isReady = plant && Date.now() - plant.plantedAt >= plant.growthTimeMs;
               const timeLeft = plant ? Math.max(0, plant.growthTimeMs - (Date.now() - plant.plantedAt)) : 0;
-              const color = plant ? (plant.variant === 'rainbow' ? 'bg-gradient-to-br from-red-400 via-yellow-400 to-blue-400' : plant.variant === 'golden' ? 'bg-gradient-to-br from-yellow-300 to-amber-400' : 'green') : 'bg-amber-700';
+              const color = plant ? (plant.variant === 'rainbow' ? 'bg-gradient-to-br from-red-400 via-yellow-400 to-blue-400' : plant.variant === 'golden' ? 'bg-gradient-to-br from-yellow-300 to-amber-400' : 'bg-green-600') : 'bg-muted';
               return (
                 <div
                   key={plot.id}
-                  className={`aspect-square rounded-lg border-2 border-dashed border-amber-600 flex flex-col items-center justify-center cursor-pointer hover:border-green-500 transition ${plant ? (isReady ? color : 'bg-green-600') : 'bg-amber-700'}`}
+                  className={`aspect-square rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center cursor-pointer hover:border-green-500 transition ${plant ? (isReady ? color : 'bg-green-600') : 'bg-muted'}`}
                   onClick={() => {
                     if (!plant && selectedSeed) plantSeed(plot.id, selectedSeed);
                     if (plant && !isReady) waterPlant(plot.id);
@@ -282,7 +286,7 @@ export default function GamifiedGarden() {
                       <span className="text-xs text-white">{plant.sizeKg}kg</span>
                     </>
                   ) : (
-                    <span className="text-amber-100 text-xs">Empty</span>
+                    <span className={isDark ? 'text-muted-foreground' : 'text-gray-600'}>Empty</span>
                   )}
                 </div>
               );
@@ -291,14 +295,14 @@ export default function GamifiedGarden() {
         </div>
 
         {/* Seed Inventory */}
-        <div className="bg-white rounded-xl shadow-sm p-4">
-          <h3 className="font-bold mb-2 flex items-center gap-2"><Package className="w-5 h-5" /> Seeds</h3>
+        <div className="bg-card rounded-xl shadow-sm p-4 border">
+          <h3 className="font-bold mb-2 flex items-center gap-2 text-foreground"><Package className="w-5 h-5" /> Seeds</h3>
           <div className="flex gap-2 flex-wrap">
             {inventory.seeds.map(seed => (
               <button
                 key={seed.id}
                 onClick={() => setSelectedSeed(seed)}
-                className={`px-3 py-1 rounded border text-xs ${selectedSeed?.id === seed.id ? 'bg-green-100 border-green-500' : 'bg-gray-100'}`}
+                className={`px-3 py-1 rounded border text-xs ${selectedSeed?.id === seed.id ? 'bg-green-100 border-green-500 dark:bg-green-900 dark:border-green-400' : 'bg-secondary'}`}
               >
                 {seed.name} ({seed.rarity})
               </button>
@@ -309,32 +313,32 @@ export default function GamifiedGarden() {
         {/* Shops */}
         <div className="grid md:grid-cols-2 gap-4">
           {/* Seed Shop */}
-          <div className="bg-white rounded-xl shadow-sm p-4">
-            <h3 className="font-bold mb-2 flex items-center gap-2"><Package className="w-5 h-5" /> Seed Shop (restocks hourly)</h3>
+          <div className="bg-card rounded-xl shadow-sm p-4 border">
+            <h3 className="font-bold mb-2 flex items-center gap-2 text-foreground"><Package className="w-5 h-5" /> Seed Shop (restocks hourly)</h3>
             <div className="space-y-2">
               {shopSeeds.map(seed => (
                 <div key={seed.id} className="flex items-center justify-between p-2 border rounded">
                   <div>
-                    <div className="font-semibold text-sm">{seed.name} ({seed.rarity})</div>
-                    <div className="text-xs text-gray-500">Growth: {seed.baseGrowthTime}m | Size: {seed.baseSizeKg}kg</div>
+                    <div className="font-semibold text-sm text-foreground">{seed.name} ({seed.rarity})</div>
+                    <div className="text-xs text-muted-foreground">Growth: {seed.baseGrowthTime}m | Size: {seed.baseSizeKg}kg</div>
                   </div>
-                  <button onClick={() => buySeed(seed)} disabled={money < seed.price} className="px-2 py-1 bg-green-500 text-white rounded text-xs disabled:opacity-50">${seed.price}</button>
+                  <button onClick={() => buySeed(seed)} disabled={xp < seed.price} className="px-2 py-1 bg-green-600 text-white rounded text-xs disabled:opacity-50">{seed.price} XP</button>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Gear Shop */}
-          <div className="bg-white rounded-xl shadow-sm p-4">
-            <h3 className="font-bold mb-2 flex items-center gap-2"><Wrench className="w-5 h-5" /> Gear Shop (restocks 15m)</h3>
+          <div className="bg-card rounded-xl shadow-sm p-4 border">
+            <h3 className="font-bold mb-2 flex items-center gap-2 text-foreground"><Wrench className="w-5 h-5" /> Gear Shop (restocks 15m)</h3>
             <div className="space-y-2">
               {shopGear.map(gear => (
                 <div key={gear.id} className="flex items-center justify-between p-2 border rounded">
                   <div>
-                    <div className="font-semibold text-sm">{gear.name}</div>
-                    <div className="text-xs text-gray-500">{gear.effect}</div>
+                    <div className="font-semibold text-sm text-foreground">{gear.name}</div>
+                    <div className="text-xs text-muted-foreground">{gear.effect}</div>
                   </div>
-                  <button onClick={() => buyGear(gear)} disabled={money < gear.price || (gear.type === 'sprinkler' && hasSprinkler)} className="px-2 py-1 bg-blue-500 text-white rounded text-xs disabled:opacity-50">${gear.price}</button>
+                  <button onClick={() => buyGear(gear)} disabled={xp < gear.price || (gear.type === 'sprinkler' && hasSprinkler)} className="px-2 py-1 bg-blue-600 text-white rounded text-xs disabled:opacity-50">{gear.price} XP</button>
                 </div>
               ))}
             </div>
