@@ -1,7 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Droplets, Sprout, Coins, Clock, Package, Wrench, Trees, Star, Zap, Lightbulb } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Droplets, Sprout, Coins, Clock, Package, Wrench, Trees, Star, Zap, Lightbulb, ArrowRightLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/contexts/SettingsContext';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 // Types
 interface Plant {
@@ -13,6 +16,7 @@ interface Plant {
   isWilted: boolean;
   variant: 'normal' | 'golden' | 'rainbow';
   sizeKg: number;
+  sellPrice: number;
 }
 
 interface Plot {
@@ -23,11 +27,12 @@ interface Plot {
 interface Seed {
   id: string;
   name: string;
-  rarity: 'common' | 'rare' | 'mythic';
+  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'mythic';
   baseGrowthTime: number; // minutes
   baseSizeKg: number;
   price: number;
   sellPrice: number;
+  icon: string;
 }
 
 interface Gear {
@@ -42,32 +47,36 @@ interface Gear {
 const GRID_SIZE = 3;
 const WILT_THRESHOLD = 10 * 60 * 1000; // 10 minutes without water
 const WATER_REDUCTION = 0.5; // watering cuts remaining time by 50%
+const XP_TO_MONEY_RATE = 10; // 1 XP = 10 coins
 
+// 10 different seeds with correct prices and rarities
 const SEED_TEMPLATES: Omit<Seed, 'id'>[] = [
-  { name: 'Tomato', rarity: 'common', baseGrowthTime: 5, baseSizeKg: 1.2, price: 50, sellPrice: 75 },
-  { name: 'Carrot', rarity: 'common', baseGrowthTime: 4, baseSizeKg: 0.8, price: 40, sellPrice: 60 },
-  { name: 'Lettuce', rarity: 'common', baseGrowthTime: 3, baseSizeKg: 0.6, price: 30, sellPrice: 45 },
-  { name: 'Potato', rarity: 'common', baseGrowthTime: 6, baseSizeKg: 1.5, price: 60, sellPrice: 90 },
-  { name: 'Strawberry', rarity: 'common', baseGrowthTime: 4, baseSizeKg: 0.5, price: 45, sellPrice: 68 },
-  { name: 'Corn', rarity: 'rare', baseGrowthTime: 8, baseSizeKg: 2.0, price: 120, sellPrice: 180 },
-  { name: 'Pumpkin', rarity: 'rare', baseGrowthTime: 10, baseSizeKg: 3.5, price: 150, sellPrice: 225 },
-  { name: 'Watermelon', rarity: 'rare', baseGrowthTime: 12, baseSizeKg: 5.0, price: 200, sellPrice: 300 },
-  { name: 'Blueberry', rarity: 'rare', baseGrowthTime: 7, baseSizeKg: 0.8, price: 110, sellPrice: 165 },
-  { name: 'Pineapple', rarity: 'mythic', baseGrowthTime: 15, baseSizeKg: 2.5, price: 350, sellPrice: 525 },
+  { name: 'Lettuce', rarity: 'common', baseGrowthTime: 2, baseSizeKg: 0.3, price: 25, sellPrice: 40, icon: '🥬' },
+  { name: 'Carrot', rarity: 'common', baseGrowthTime: 3, baseSizeKg: 0.5, price: 40, sellPrice: 65, icon: '🥕' },
+  { name: 'Tomato', rarity: 'common', baseGrowthTime: 4, baseSizeKg: 0.8, price: 60, sellPrice: 100, icon: '🍅' },
+  { name: 'Potato', rarity: 'uncommon', baseGrowthTime: 5, baseSizeKg: 1.0, price: 100, sellPrice: 180, icon: '🥔' },
+  { name: 'Corn', rarity: 'uncommon', baseGrowthTime: 6, baseSizeKg: 1.5, price: 150, sellPrice: 280, icon: '🌽' },
+  { name: 'Pumpkin', rarity: 'rare', baseGrowthTime: 8, baseSizeKg: 4.0, price: 300, sellPrice: 550, icon: '🎃' },
+  { name: 'Watermelon', rarity: 'rare', baseGrowthTime: 10, baseSizeKg: 6.0, price: 450, sellPrice: 850, icon: '🍉' },
+  { name: 'Strawberry', rarity: 'epic', baseGrowthTime: 12, baseSizeKg: 0.4, price: 600, sellPrice: 1200, icon: '🍓' },
+  { name: 'Golden Apple', rarity: 'epic', baseGrowthTime: 15, baseSizeKg: 0.5, price: 1000, sellPrice: 2000, icon: '🍎' },
+  { name: 'Dragon Fruit', rarity: 'mythic', baseGrowthTime: 20, baseSizeKg: 2.0, price: 2000, sellPrice: 5000, icon: '🐉' },
 ];
 
 const GEAR_TEMPLATES: Omit<Gear, 'id'>[] = [
-  { name: 'Watering Can', type: 'wateringCan', effect: 'Reduces growth time by 50%', price: 150 },
-  { name: 'Sprinkler', type: 'sprinkler', effect: 'Increases golden/rainbow chance', price: 500 },
-  { name: 'Plot Upgrade', type: 'plotUpgrade', effect: 'Expands garden grid', price: 750 },
+  { name: 'Watering Can', type: 'wateringCan', effect: 'Reduces growth time by 50%', price: 500 },
+  { name: 'Sprinkler', type: 'sprinkler', effect: 'Increases golden/rainbow chance', price: 2500 },
+  { name: 'Plot Upgrade', type: 'plotUpgrade', effect: 'Expands garden grid', price: 3000 },
 ];
 
 // Utility
 function generateId() { return Math.random().toString(36).slice(2); }
 function formatTime(ms: number) {
   if (ms <= 0) return 'Ready!';
-  const minutes = Math.floor(ms / 60000);
+  const hours = Math.floor(ms / 3600000);
+  const minutes = Math.floor((ms % 3600000) / 60000);
   const seconds = Math.floor((ms % 60000) / 1000);
+  if (hours > 0) return `${hours}h ${minutes}m`;
   return `${minutes}m ${seconds}s`;
 }
 function calculateVariant(sprinklerActive: boolean): 'normal' | 'golden' | 'rainbow' {
@@ -85,10 +94,22 @@ function calculateSize(base: number): number {
   return Math.round(base * factor * 10) / 10;
 }
 
+function getRarityColor(rarity: string) {
+  switch (rarity) {
+    case 'common': return 'text-gray-500 bg-gray-100 dark:bg-gray-800';
+    case 'uncommon': return 'text-green-600 bg-green-100 dark:bg-green-900';
+    case 'rare': return 'text-blue-600 bg-blue-100 dark:bg-blue-900';
+    case 'epic': return 'text-purple-600 bg-purple-100 dark:bg-purple-900';
+    case 'mythic': return 'text-orange-500 bg-orange-100 dark:bg-orange-900';
+    default: return 'text-gray-500 bg-gray-100';
+  }
+}
+
 export default function GamifiedGarden() {
   const { settings } = useSettings();
   const { toast } = useToast();
   const [xp, setXp] = useState(0);
+  const [money, setMoney] = useState(500); // Start with 500 coins
   const [gridSize, setGridSize] = useState(GRID_SIZE);
   const [plots, setPlots] = useState<Plot[]>(() => Array.from({ length: GRID_SIZE * GRID_SIZE }, (_, i) => ({ id: `plot-${i}` })));
   const [inventory, setInventory] = useState({ seeds: [] as Seed[], gear: [] as Gear[] });
@@ -96,47 +117,72 @@ export default function GamifiedGarden() {
   const [shopGear, setShopGear] = useState<Gear[]>([]);
   const [hasSprinkler, setHasSprinkler] = useState(false);
   const [selectedSeed, setSelectedSeed] = useState<Seed | null>(null);
+  
+  // Restock timers
+  const [seedRestockTime, setSeedRestockTime] = useState(Date.now() + 60 * 60 * 1000);
+  const [gearRestockTime, setGearRestockTime] = useState(Date.now() + 15 * 60 * 1000);
+  const [now, setNow] = useState(Date.now());
+  
+  // XP exchange
+  const [exchangeAmount, setExchangeAmount] = useState('');
 
   // Load from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem('garden-state');
+    const saved = localStorage.getItem('garden-state-v2');
     if (saved) {
       const parsed = JSON.parse(saved);
       setXp(parsed.xp ?? 0);
+      setMoney(parsed.money ?? 500);
       setGridSize(parsed.gridSize ?? GRID_SIZE);
       setPlots(parsed.plots ?? Array.from({ length: (parsed.gridSize ?? GRID_SIZE) * (parsed.gridSize ?? GRID_SIZE) }, (_, i) => ({ id: `plot-${i}` })));
       setInventory(parsed.inventory ?? { seeds: [], gear: [] });
       setHasSprinkler(parsed.hasSprinkler ?? false);
+      setSeedRestockTime(parsed.seedRestockTime ?? Date.now() + 60 * 60 * 1000);
+      setGearRestockTime(parsed.gearRestockTime ?? Date.now() + 15 * 60 * 1000);
     }
   }, []);
 
   // Save to localStorage
   useEffect(() => {
-    const state = { xp, gridSize, plots, inventory, hasSprinkler };
-    localStorage.setItem('garden-state', JSON.stringify(state));
-  }, [xp, gridSize, plots, inventory, hasSprinkler]);
+    const state = { xp, money, gridSize, plots, inventory, hasSprinkler, seedRestockTime, gearRestockTime };
+    localStorage.setItem('garden-state-v2', JSON.stringify(state));
+  }, [xp, money, gridSize, plots, inventory, hasSprinkler, seedRestockTime, gearRestockTime]);
 
-  // Initialize shops
+  // Timer tick for countdowns
   useEffect(() => {
-    restockShops();
-    const seedInterval = setInterval(restockShops, 60 * 60 * 1000); // 1 hour
-    const gearInterval = (() => {
-      restockGear();
-      return setInterval(restockGear, 15 * 60 * 1000); // 15 minutes
-    })();
-    return () => { clearInterval(seedInterval); clearInterval(gearInterval); };
+    const interval = setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+    return () => clearInterval(interval);
   }, []);
 
-  function restockShops() {
-    // Show all 10 unique seeds, no repeats
-    const seeds = SEED_TEMPLATES.map(template => ({ ...template, id: generateId() }));
+  // Initialize and manage shop restocks
+  useEffect(() => {
+    restockSeeds();
+    restockGear();
+  }, []);
+
+  // Check for restock
+  useEffect(() => {
+    if (now >= seedRestockTime) {
+      restockSeeds();
+      setSeedRestockTime(Date.now() + 60 * 60 * 1000); // 1 hour
+    }
+    if (now >= gearRestockTime) {
+      restockGear();
+      setGearRestockTime(Date.now() + 15 * 60 * 1000); // 15 minutes
+    }
+  }, [now, seedRestockTime, gearRestockTime]);
+
+  function restockSeeds() {
+    // Pick 5 random seeds from the 10 templates
+    const shuffled = [...SEED_TEMPLATES].sort(() => Math.random() - 0.5);
+    const seeds = shuffled.slice(0, 5).map(template => ({ ...template, id: generateId() }));
     setShopSeeds(seeds);
   }
+  
   function restockGear() {
-    const gear = Array.from({ length: 3 }, () => {
-      const template = GEAR_TEMPLATES[Math.floor(Math.random() * GEAR_TEMPLATES.length)];
-      return { ...template, id: generateId() };
-    });
+    const gear = GEAR_TEMPLATES.map(template => ({ ...template, id: generateId() }));
     setShopGear(gear);
   }
 
@@ -153,6 +199,7 @@ export default function GamifiedGarden() {
           isWilted: false,
           variant: 'normal',
           sizeKg: calculateSize(seed.baseSizeKg),
+          sellPrice: seed.sellPrice,
         };
         setInventory(inv => ({ ...inv, seeds: inv.seeds.filter(s => s.id !== seed.id) }));
         return { ...plot, plant };
@@ -184,34 +231,41 @@ export default function GamifiedGarden() {
     }));
   }
 
-  // Harvest plant
+  // Harvest plant - now gives money instead of XP
   function harvestPlant(plotId: string) {
     const plot = plots.find(p => p.id === plotId);
     if (!plot?.plant) return;
     const plant = plot.plant;
     if (Date.now() - plant.plantedAt < plant.growthTimeMs) return;
+    
     const finalVariant = plant.variant === 'normal' ? calculateVariant(hasSprinkler) : plant.variant;
     const multiplier = finalVariant === 'rainbow' ? 5 : finalVariant === 'golden' ? 2 : 1;
     const seedTemplate = SEED_TEMPLATES.find(s => s.name === plant.seedType);
-    const xpGain = Math.round((seedTemplate?.sellPrice || 100) * multiplier * (plant.sizeKg / (seedTemplate?.baseSizeKg || 1)));
-    setXp(x => x + xpGain);
-    toast({ title: 'Harvested!', description: `+${xpGain} XP` });
+    const basePrice = seedTemplate?.sellPrice || plant.sellPrice || 100;
+    const sizeMultiplier = plant.sizeKg / (seedTemplate?.baseSizeKg || 1);
+    const earnings = Math.round(basePrice * multiplier * sizeMultiplier);
+    
+    setMoney(m => m + earnings);
+    
+    const variantText = finalVariant !== 'normal' ? ` (${finalVariant}!)` : '';
+    toast({ title: 'Harvested!', description: `+${earnings} coins${variantText}` });
     setPlots(p => p.map(pl => (pl.id === plotId ? { ...pl, plant: undefined } : pl)));
   }
 
-  // Buy from shop
+  // Buy from shop - uses money
   function buySeed(seed: Seed) {
-    if (xp >= seed.price) {
-      setXp(x => x - seed.price);
+    if (money >= seed.price) {
+      setMoney(m => m - seed.price);
       setInventory(inv => ({ ...inv, seeds: [...inv.seeds, seed] }));
       toast({ title: 'Purchased', description: `${seed.name} seed` });
     } else {
-      toast({ title: 'Not enough XP', description: `Need ${seed.price} XP` });
+      toast({ title: 'Not enough coins', description: `Need ${seed.price} coins`, variant: 'destructive' });
     }
   }
+  
   function buyGear(gear: Gear) {
-    if (xp >= gear.price) {
-      setXp(x => x - gear.price);
+    if (money >= gear.price) {
+      setMoney(m => m - gear.price);
       if (gear.type === 'sprinkler') setHasSprinkler(true);
       if (gear.type === 'plotUpgrade' && gridSize < 6) {
         const newSize = gridSize + 1;
@@ -221,11 +275,26 @@ export default function GamifiedGarden() {
       setInventory(inv => ({ ...inv, gear: [...inv.gear, gear] }));
       toast({ title: 'Purchased', description: gear.name });
     } else {
-      toast({ title: 'Not enough XP', description: `Need ${gear.price} XP` });
+      toast({ title: 'Not enough coins', description: `Need ${gear.price} coins`, variant: 'destructive' });
     }
   }
 
-  // Auto-wilt check and progress update
+  // XP to Money exchange
+  function exchangeXpForMoney() {
+    const amount = parseInt(exchangeAmount) || 0;
+    if (amount <= 0) return;
+    if (amount > xp) {
+      toast({ title: 'Not enough XP', variant: 'destructive' });
+      return;
+    }
+    const coinsReceived = amount * XP_TO_MONEY_RATE;
+    setXp(x => x - amount);
+    setMoney(m => m + coinsReceived);
+    setExchangeAmount('');
+    toast({ title: 'Exchanged!', description: `${amount} XP → ${coinsReceived} coins` });
+  }
+
+  // Auto-wilt check
   useEffect(() => {
     const interval = setInterval(() => {
       setPlots(p => p.map(plot => {
@@ -238,43 +307,78 @@ export default function GamifiedGarden() {
         return plot;
       }));
     }, 5000);
-    
-    // Force re-render for smooth progress bar
-    const progressInterval = setInterval(() => {
-      setPlots(p => [...p]);
-    }, 1000);
-    
-    return () => { clearInterval(interval); clearInterval(progressInterval); };
+    return () => clearInterval(interval);
   }, []);
+
+  const seedRestockRemaining = Math.max(0, seedRestockTime - now);
+  const gearRestockRemaining = Math.max(0, gearRestockTime - now);
 
   const isDark = settings.darkMode;
 
   return (
-    <div className="p-6">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <div className="p-4 md:p-6">
+      <div className="max-w-6xl mx-auto space-y-4">
         {/* Header */}
-        <div className="bg-card rounded-xl shadow-sm p-4 border flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2"><Sprout className="w-7 h-7 text-green-600" /> Learning Garden</h1>
-          <div className="flex gap-4">
-            <div className="flex items-center gap-1"><Zap className="w-5 h-5 text-yellow-500" /><span className="font-semibold text-foreground">{xp} XP</span></div>
+        <div className="bg-card rounded-xl shadow-sm p-4 border flex flex-wrap items-center justify-between gap-4">
+          <h1 className="text-xl md:text-2xl font-bold text-foreground flex items-center gap-2">
+            <Sprout className="w-6 h-6 text-green-600" /> Learning Garden
+          </h1>
+          <div className="flex gap-4 items-center">
+            <div className="flex items-center gap-1 px-3 py-1.5 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
+              <Zap className="w-4 h-4 text-yellow-500" />
+              <span className="font-semibold text-sm text-foreground">{xp} XP</span>
+            </div>
+            <div className="flex items-center gap-1 px-3 py-1.5 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+              <Coins className="w-4 h-4 text-amber-600" />
+              <span className="font-semibold text-sm text-foreground">{money.toLocaleString()}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* XP Exchange */}
+        <div className="bg-card rounded-xl shadow-sm p-4 border">
+          <h3 className="font-bold mb-3 flex items-center gap-2 text-foreground">
+            <ArrowRightLeft className="w-5 h-5" /> XP Exchange
+            <span className="text-xs font-normal text-muted-foreground ml-2">(1 XP = {XP_TO_MONEY_RATE} coins)</span>
+          </h3>
+          <div className="flex gap-2 items-center flex-wrap">
+            <Input
+              type="number"
+              placeholder="Amount of XP"
+              value={exchangeAmount}
+              onChange={(e) => setExchangeAmount(e.target.value)}
+              className="w-32"
+              min="1"
+              max={xp}
+            />
+            <Button 
+              onClick={exchangeXpForMoney} 
+              disabled={!exchangeAmount || parseInt(exchangeAmount) <= 0 || parseInt(exchangeAmount) > xp}
+              size="sm"
+            >
+              Exchange for {(parseInt(exchangeAmount) || 0) * XP_TO_MONEY_RATE} coins
+            </Button>
+            <span className="text-xs text-muted-foreground">Available: {xp} XP</span>
           </div>
         </div>
 
         {/* Tip */}
         <div className="bg-muted/50 rounded-lg p-3 flex items-center gap-2 border">
-          <Lightbulb className="w-5 h-5 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">Study lessons to earn XP and buy seeds!</span>
+          <Lightbulb className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+          <span className="text-sm text-muted-foreground">Complete lessons to earn XP, then exchange for coins to buy seeds!</span>
         </div>
 
         {/* Garden Grid */}
-        <div className="bg-card rounded-xl shadow-sm p-6 border">
-          <h2 className="text-xl font-bold mb-4 text-foreground">Garden ({gridSize}x{gridSize})</h2>
+        <div className="bg-card rounded-xl shadow-sm p-4 md:p-6 border">
+          <h2 className="text-lg font-bold mb-4 text-foreground">Garden ({gridSize}x{gridSize})</h2>
           <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))` }}>
             {plots.map(plot => {
               const plant = plot.plant;
               const isReady = plant && Date.now() - plant.plantedAt >= plant.growthTimeMs;
               const timeLeft = plant ? Math.max(0, plant.growthTimeMs - (Date.now() - plant.plantedAt)) : 0;
+              const progress = plant ? Math.min(100, ((Date.now() - plant.plantedAt) / plant.growthTimeMs) * 100) : 0;
               const color = plant ? (plant.variant === 'rainbow' ? 'bg-gradient-to-br from-red-400 via-yellow-400 to-blue-400' : plant.variant === 'golden' ? 'bg-gradient-to-br from-yellow-300 to-amber-400' : 'bg-green-600') : 'bg-muted';
+              
               return (
                 <div
                   key={plot.id}
@@ -287,23 +391,22 @@ export default function GamifiedGarden() {
                 >
                   {plant ? (
                     <>
-                      <div className="relative w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-full mb-1 overflow-hidden">
-                        <div 
-                          className="absolute left-0 top-0 h-full bg-green-500 rounded-full transition-all duration-1000 ease-linear"
-                          style={{ 
-                            width: isReady ? '100%' : `${Math.max(0, 100 - (timeLeft / plant.growthTimeMs * 100))}%`
-                          }}
-                        />
+                      <div className="w-full px-1">
+                        <div className="relative w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                          <div 
+                            className="absolute left-0 top-0 h-full bg-green-400 rounded-full transition-all duration-1000"
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
                       </div>
-                      <Trees className={`w-6 h-6 ${isReady ? 'text-white' : 'text-green-100'}`} />
-                      <span className="text-xs text-white mt-1 text-center">
+                      <Trees className={`w-5 h-5 mt-1 ${isReady ? 'text-white' : 'text-green-100'}`} />
+                      <span className="text-[10px] text-white text-center leading-tight">
                         {isReady ? 'Harvest!' : formatTime(timeLeft)}
                       </span>
-                      {plant.isWilted && <span className="text-xs text-red-200">Wilted</span>}
-                      <span className="text-xs text-white">{plant.sizeKg}kg</span>
+                      {plant.isWilted && <span className="text-[10px] text-red-200">💧</span>}
                     </>
                   ) : (
-                    <span className={isDark ? 'text-muted-foreground' : 'text-gray-600'}>Empty</span>
+                    <span className="text-xs text-muted-foreground">Empty</span>
                   )}
                 </div>
               );
@@ -313,51 +416,123 @@ export default function GamifiedGarden() {
 
         {/* Seed Inventory */}
         <div className="bg-card rounded-xl shadow-sm p-4 border">
-          <h3 className="font-bold mb-2 flex items-center gap-2 text-foreground"><Package className="w-5 h-5" /> Seeds</h3>
-          <div className="flex gap-2 flex-wrap">
-            {inventory.seeds.map(seed => (
-              <button
-                key={seed.id}
-                onClick={() => setSelectedSeed(seed)}
-                className={`px-3 py-1 rounded border text-xs ${selectedSeed?.id === seed.id ? 'bg-green-100 border-green-500 dark:bg-green-900 dark:border-green-400' : 'bg-secondary'}`}
-              >
-                {seed.name} ({seed.rarity})
-              </button>
-            ))}
-          </div>
+          <h3 className="font-bold mb-2 flex items-center gap-2 text-foreground">
+            <Package className="w-5 h-5" /> My Seeds ({inventory.seeds.length})
+          </h3>
+          {inventory.seeds.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No seeds. Buy some from the shop!</p>
+          ) : (
+            <ScrollArea className="h-20">
+              <div className="flex gap-2 flex-wrap pr-4">
+                {inventory.seeds.map(seed => (
+                  <button
+                    key={seed.id}
+                    onClick={() => setSelectedSeed(seed)}
+                    className={`px-3 py-1.5 rounded border text-xs flex items-center gap-1 transition-colors ${
+                      selectedSeed?.id === seed.id 
+                        ? 'bg-green-100 border-green-500 dark:bg-green-900 dark:border-green-400' 
+                        : 'bg-secondary hover:bg-secondary/80'
+                    }`}
+                  >
+                    <span>{seed.icon}</span>
+                    <span>{seed.name}</span>
+                  </button>
+                ))}
+              </div>
+            </ScrollArea>
+          )}
+          {selectedSeed && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Selected: {selectedSeed.icon} {selectedSeed.name} - Click an empty plot to plant
+            </p>
+          )}
         </div>
 
         {/* Shops */}
         <div className="grid md:grid-cols-2 gap-4">
           {/* Seed Shop */}
           <div className="bg-card rounded-xl shadow-sm p-4 border">
-            <h3 className="font-bold mb-2 flex items-center gap-2 text-foreground"><Package className="w-5 h-5" /> Seed Shop (restocks hourly)</h3>
-            <div className="space-y-2 max-h-80 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
-              {shopSeeds.map(seed => (
-                <div key={seed.id} className="flex items-center justify-between p-2 border rounded">
-                  <div>
-                    <div className="font-semibold text-sm text-foreground">{seed.name} ({seed.rarity})</div>
-                    <div className="text-xs text-muted-foreground">Growth: {seed.baseGrowthTime}m | Size: {seed.baseSizeKg}kg</div>
-                  </div>
-                  <button onClick={() => buySeed(seed)} disabled={xp < seed.price} className="px-2 py-1 bg-green-600 text-white rounded text-xs disabled:opacity-50">{seed.price} XP</button>
-                </div>
-              ))}
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-bold flex items-center gap-2 text-foreground">
+                <Package className="w-5 h-5" /> Seed Shop
+              </h3>
+              <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+                <Clock className="w-3 h-3" />
+                <span>Restocks in {formatTime(seedRestockRemaining)}</span>
+              </div>
             </div>
+            <ScrollArea className="h-64">
+              <div className="space-y-2 pr-4">
+                {shopSeeds.map(seed => (
+                  <div key={seed.id} className="flex items-center justify-between p-2 border rounded bg-secondary/30">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">{seed.icon}</span>
+                      <div>
+                        <div className="font-semibold text-sm text-foreground flex items-center gap-2">
+                          {seed.name}
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full uppercase font-bold ${getRarityColor(seed.rarity)}`}>
+                            {seed.rarity}
+                          </span>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {seed.baseGrowthTime}m • {seed.baseSizeKg}kg • Sells: {seed.sellPrice}
+                        </div>
+                      </div>
+                    </div>
+                    <Button 
+                      onClick={() => buySeed(seed)} 
+                      disabled={money < seed.price} 
+                      size="sm"
+                      variant="secondary"
+                      className="text-xs"
+                    >
+                      <Coins className="w-3 h-3 mr-1" />
+                      {seed.price}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
           </div>
 
           {/* Gear Shop */}
           <div className="bg-card rounded-xl shadow-sm p-4 border">
-            <h3 className="font-bold mb-2 flex items-center gap-2 text-foreground"><Wrench className="w-5 h-5" /> Gear Shop (restocks 15m)</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-bold flex items-center gap-2 text-foreground">
+                <Wrench className="w-5 h-5" /> Gear Shop
+              </h3>
+              <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+                <Clock className="w-3 h-3" />
+                <span>Restocks in {formatTime(gearRestockRemaining)}</span>
+              </div>
+            </div>
             <div className="space-y-2">
-              {shopGear.map(gear => (
-                <div key={gear.id} className="flex items-center justify-between p-2 border rounded">
-                  <div>
-                    <div className="font-semibold text-sm text-foreground">{gear.name}</div>
-                    <div className="text-xs text-muted-foreground">{gear.effect}</div>
+              {shopGear.map(gear => {
+                const isOwned = gear.type === 'sprinkler' && hasSprinkler;
+                const maxGrid = gear.type === 'plotUpgrade' && gridSize >= 6;
+                return (
+                  <div key={gear.id} className="flex items-center justify-between p-2 border rounded bg-secondary/30">
+                    <div>
+                      <div className="font-semibold text-sm text-foreground">{gear.name}</div>
+                      <div className="text-xs text-muted-foreground">{gear.effect}</div>
+                    </div>
+                    <Button 
+                      onClick={() => buyGear(gear)} 
+                      disabled={money < gear.price || isOwned || maxGrid} 
+                      size="sm"
+                      variant="secondary"
+                      className="text-xs"
+                    >
+                      {isOwned ? 'Owned' : maxGrid ? 'Max' : (
+                        <>
+                          <Coins className="w-3 h-3 mr-1" />
+                          {gear.price}
+                        </>
+                      )}
+                    </Button>
                   </div>
-                  <button onClick={() => buyGear(gear)} disabled={xp < gear.price || (gear.type === 'sprinkler' && hasSprinkler)} className="px-2 py-1 bg-blue-600 text-white rounded text-xs disabled:opacity-50">{gear.price} XP</button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
