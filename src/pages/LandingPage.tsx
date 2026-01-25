@@ -107,6 +107,7 @@ const DashboardPreview: FC = () => {
   // Fetch real stock data
   useEffect(() => {
     const fetchStockData = async () => {
+      setLoading(true);
       try {
         const symbols = ['AAPL', 'TSLA', 'NVDA', 'MSFT'];
         const colors = ['from-blue-500 to-blue-600', 'from-red-500 to-red-600', 'from-green-500 to-green-600', 'from-cyan-500 to-cyan-600'];
@@ -143,29 +144,22 @@ const DashboardPreview: FC = () => {
         const fetchedStocks = await Promise.all(stockPromises);
         setStocks(fetchedStocks);
         
-        // Calculate portfolio metrics based on real data
-        const totalValue = fetchedStocks.reduce((sum, stock) => sum + (stock.price * 10), 0); // Assume 10 shares each
-        const avgChange = fetchedStocks.reduce((sum, stock) => {
-          const changeValue = parseFloat(stock.change);
-          return sum + (isNaN(changeValue) ? 0 : changeValue);
-        }, 0) / fetchedStocks.length;
-        
-        setPortfolioValue(Math.round(totalValue));
-        setTodayChange(Math.round(Math.abs(avgChange) * 10) / 10); // Round to 1 decimal place
-        setTotalGain(Math.round(totalValue * 0.12)); // Approximate 12% total gain
+        // Only update portfolio values if we successfully fetched data
+        if (fetchedStocks.length > 0) {
+          const totalValue = fetchedStocks.reduce((sum, stock) => sum + (stock.price * 10), 0); // Assume 10 shares each
+          const avgChange = fetchedStocks.reduce((sum, stock) => {
+            const changeValue = parseFloat(stock.change);
+            return sum + (isNaN(changeValue) ? 0 : changeValue);
+          }, 0) / fetchedStocks.length;
+          
+          setPortfolioValue(Math.round(totalValue));
+          setTodayChange(Math.round(Math.abs(avgChange) * 10) / 10); // Round to 1 decimal place
+          setTotalGain(Math.round(totalValue * 0.12)); // Approximate 12% total gain
+        }
         
       } catch (error) {
         console.error('Failed to fetch stock data:', error);
-        // Fallback to default data
-        setStocks([
-          { symbol: 'AAPL', name: 'Apple Inc.', price: 248.00, change: '+1.2%', color: 'from-blue-500 to-blue-600', isPositive: true },
-          { symbol: 'TSLA', name: 'Tesla Inc.', price: 242.84, change: '-0.8%', color: 'from-red-500 to-red-600', isPositive: false },
-          { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 875.28, change: '+3.4%', color: 'from-green-500 to-green-600', isPositive: true },
-          { symbol: 'MSFT', name: 'Microsoft', price: 429.63, change: '+0.6%', color: 'from-cyan-500 to-cyan-600', isPositive: true },
-        ]);
-        setPortfolioValue(18636);
-        setTodayChange(1.1);
-        setTotalGain(2036);
+        // Don't reset to fallback values, keep the initial ones
       } finally {
         setLoading(false);
       }
