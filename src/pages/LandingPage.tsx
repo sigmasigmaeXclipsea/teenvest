@@ -93,11 +93,16 @@ const FloatingParticles = memo(() => {
 
 // Dashboard preview with smooth cursor tracking and pulsing glow
 const DashboardPreview: FC = () => {
-  const [stocks, setStocks] = useState<any[]>([]);
-  const [portfolioValue, setPortfolioValue] = useState(15847);
-  const [totalGain, setTotalGain] = useState(1847);
-  const [todayChange, setTodayChange] = useState(2.8);
-  const [loading, setLoading] = useState(true);
+  const [stocks, setStocks] = useState<any[]>([
+    { symbol: 'AAPL', name: 'Apple Inc.', price: 248.00, change: '+1.2%', color: 'from-blue-500 to-blue-600', isPositive: true },
+    { symbol: 'TSLA', name: 'Tesla Inc.', price: 242.84, change: '-0.8%', color: 'from-red-500 to-red-600', isPositive: false },
+    { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 875.28, change: '+3.4%', color: 'from-green-500 to-green-600', isPositive: true },
+    { symbol: 'MSFT', name: 'Microsoft', price: 429.63, change: '+0.6%', color: 'from-cyan-500 to-cyan-600', isPositive: true }
+  ]);
+  const [portfolioValue, setPortfolioValue] = useState(17958);
+  const [totalGain, setTotalGain] = useState(2155);
+  const [todayChange, setTodayChange] = useState(1.1);
+  const [loading, setLoading] = useState(false);
 
   // Fetch real stock data
   useEffect(() => {
@@ -140,10 +145,13 @@ const DashboardPreview: FC = () => {
         
         // Calculate portfolio metrics based on real data
         const totalValue = fetchedStocks.reduce((sum, stock) => sum + (stock.price * 10), 0); // Assume 10 shares each
-        const avgChange = fetchedStocks.reduce((sum, stock) => sum + parseFloat(stock.change), 0) / fetchedStocks.length;
+        const avgChange = fetchedStocks.reduce((sum, stock) => {
+          const changeValue = parseFloat(stock.change);
+          return sum + (isNaN(changeValue) ? 0 : changeValue);
+        }, 0) / fetchedStocks.length;
         
         setPortfolioValue(Math.round(totalValue));
-        setTodayChange(Math.abs(avgChange));
+        setTodayChange(Math.round(Math.abs(avgChange) * 10) / 10); // Round to 1 decimal place
         setTotalGain(Math.round(totalValue * 0.12)); // Approximate 12% total gain
         
       } catch (error) {
@@ -460,7 +468,18 @@ const FeatureCard: FC<FeatureCardProps> = ({ icon: Icon, title, desc, gradient, 
 const LandingPage = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [tickerStocks, setTickerStocks] = useState<any[]>([]);
+  const [tickerStocks, setTickerStocks] = useState<any[]>([
+    { symbol: 'AAPL', price: '$248.00', change: '+1.2%' },
+    { symbol: 'TSLA', price: '$242.84', change: '-0.8%' },
+    { symbol: 'GOOGL', price: '$168.50', change: '+0.5%' },
+    { symbol: 'MSFT', price: '$429.63', change: '+0.6%' },
+    { symbol: 'AMZN', price: '$178.35', change: '+1.1%' },
+    { symbol: 'NVDA', price: '$875.28', change: '+3.4%' },
+    { symbol: 'META', price: '$512.75', change: '+0.9%' },
+    { symbol: 'NFLX', price: '$486.23', change: '-0.3%' },
+    { symbol: 'AMD', price: '$124.58', change: '+2.1%' },
+    { symbol: 'DIS', price: '$91.45', change: '+0.2%' }
+  ]);
 
   // Fetch ticker data
   useEffect(() => {
