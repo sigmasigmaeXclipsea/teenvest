@@ -167,6 +167,8 @@ const DashboardPreview = memo(() => {
   );
 
   const portfolioValue = 15847;
+  const totalGain = 1847;
+  const todayChange = 2.8;
   
   // Calculate pulsing glow intensity
   const pulseIntensity = Math.sin(pulsePhase * Math.PI / 180) * 0.3 + 0.7;
@@ -301,12 +303,12 @@ const DashboardPreview = memo(() => {
             <div className="grid grid-cols-3 gap-3">
               <div className="p-3 rounded-xl bg-muted/30 border border-border/30">
                 <p className="text-xs text-muted-foreground mb-1">Portfolio Value</p>
-                <p className="text-lg font-bold">${Math.round(portfolioValue).toLocaleString()}</p>
-                <p className="text-xs text-success font-medium">+12.0%</p>
+                <p className="text-lg font-bold">${portfolioValue.toLocaleString()}</p>
+                <p className="text-xs text-success font-medium">+{todayChange}%</p>
               </div>
               <div className="p-3 rounded-xl bg-muted/30 border border-border/30">
                 <p className="text-xs text-muted-foreground mb-1">Total Gain</p>
-                <p className="text-lg font-bold text-success">+$1,847</p>
+                <p className="text-lg font-bold text-success">+${totalGain.toLocaleString()}</p>
                 <p className="text-xs text-muted-foreground">📈 Today</p>
               </div>
               <div className="p-3 rounded-xl bg-muted/30 border border-border/30">
@@ -543,12 +545,15 @@ const LandingPage = () => {
             { symbol: 'AMZN', change: '+3.2%', price: '$185.30' },
             { symbol: 'NVDA', change: '+4.5%', price: '$890.20' },
             { symbol: 'META', change: '+2.8%', price: '$505.60' },
+            { symbol: 'NFLX', change: '-1.1%', price: '$485.40' },
+            { symbol: 'AMD', change: '+3.7%', price: '$125.80' },
+            { symbol: 'DIS', change: '+0.5%', price: '$92.15' },
           ].map((stock, i) => (
             <div key={i} className="mx-4 flex items-center gap-2 px-4 py-2 rounded-lg bg-card/50 border border-border/30">
               <span className="font-bold">{stock.symbol}</span>
               <span className="text-sm text-muted-foreground">{stock.price}</span>
-              <span className="text-sm font-medium text-success flex items-center gap-1">
-                <TrendingUp className="w-3 h-3" />
+              <span className={`text-sm font-medium flex items-center gap-1 ${stock.change.startsWith('+') ? 'text-success' : 'text-destructive'}`}>
+                {stock.change.startsWith('+') ? <TrendingUp className="w-3 h-3" /> : <TrendingUp className="w-3 h-3 rotate-180" />}
                 {stock.change}
               </span>
             </div>
