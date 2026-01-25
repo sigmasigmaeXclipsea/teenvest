@@ -81,7 +81,7 @@ function calculateSize(base: number): number {
 }
 
 export default function GamifiedGarden() {
-  const { theme } = useSettings();
+  const { settings } = useSettings();
   const { toast } = useToast();
   const [xp, setXp] = useState(0);
   const [gridSize, setGridSize] = useState(GRID_SIZE);
@@ -238,7 +238,7 @@ export default function GamifiedGarden() {
     return () => clearInterval(interval);
   }, []);
 
-  const isDark = theme === 'dark';
+  const isDark = settings.darkMode;
 
   return (
     <div className="min-h-screen bg-background p-4">
