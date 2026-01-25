@@ -15,7 +15,8 @@ import {
   Award,
   User,
   Lightbulb,
-  Search
+  Search,
+  Sprout
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
@@ -35,6 +36,7 @@ const navItems = [
   { path: '/history', icon: History, label: 'History' },
   { path: '/insights', icon: Lightbulb, label: 'Insights' },
   { path: '/learn', icon: BookOpen, label: 'Learn' },
+  { path: '/garden', icon: Sprout, label: 'Garden' },
   { path: '/profile', icon: User, label: 'Profile' },
   { path: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
   { path: '/settings', icon: Settings, label: 'Settings' },
@@ -135,9 +137,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 {navItems.slice(0, 4).map((item) => {
                   const isActive = location.pathname === item.path;
                   return (
-                    <Link
+                    <button
                       key={item.path}
-                      to={item.path}
+                      onClick={() => navigate(item.path)}
                       className={cn(
                         "flex items-center justify-center w-12 h-12 rounded-lg transition-colors",
                         isActive
@@ -147,7 +149,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                       title={item.label}
                     >
                       <item.icon className="w-5 h-5" />
-                    </Link>
+                    </button>
                   );
                 })}
               </div>
@@ -157,9 +159,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 {navItems.slice(4, 8).map((item) => {
                   const isActive = location.pathname === item.path;
                   return (
-                    <Link
+                    <button
                       key={item.path}
-                      to={item.path}
+                      onClick={() => navigate(item.path)}
                       className={cn(
                         "flex items-center justify-center w-12 h-12 rounded-lg transition-colors",
                         isActive
@@ -169,7 +171,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                       title={item.label}
                     >
                       <item.icon className="w-5 h-5" />
-                    </Link>
+                    </button>
                   );
                 })}
               </div>
@@ -179,9 +181,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 {navItems.slice(8).map((item) => {
                   const isActive = location.pathname === item.path;
                   return (
-                    <Link
+                    <button
                       key={item.path}
-                      to={item.path}
+                      onClick={() => navigate(item.path)}
                       className={cn(
                         "flex items-center justify-center w-12 h-12 rounded-lg transition-colors",
                         isActive
@@ -191,7 +193,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                       title={item.label}
                     >
                       <item.icon className="w-5 h-5" />
-                    </Link>
+                    </button>
                   );
                 })}
               </div>
@@ -223,11 +225,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                   {navItems.slice(0, 4).map((item) => {
                     const isActive = location.pathname === item.path;
                     return (
-                      <Link
+                      <button
                         key={item.path}
-                        to={item.path}
+                        onClick={() => navigate(item.path)}
                         className={cn(
-                          "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                          "w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors text-left",
                           isActive
                             ? 'bg-primary text-primary-foreground'
                             : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
@@ -235,7 +237,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                       >
                         <item.icon className="w-4 h-4" />
                         {item.label}
-                      </Link>
+                      </button>
                     );
                   })}
                 </div>
@@ -245,14 +247,14 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                   <div className="px-2">
                     <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Learning & Social</div>
                   </div>
-                  {navItems.slice(4, 8).map((item) => {
+                  {navItems.slice(4, 9).map((item) => {
                     const isActive = location.pathname === item.path;
                     return (
-                      <Link
+                      <button
                         key={item.path}
-                        to={item.path}
+                        onClick={() => navigate(item.path)}
                         className={cn(
-                          "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                          "w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors text-left",
                           isActive
                             ? 'bg-primary text-primary-foreground'
                             : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
@@ -260,7 +262,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                       >
                         <item.icon className="w-4 h-4" />
                         {item.label}
-                      </Link>
+                      </button>
                     );
                   })}
                 </div>
@@ -270,14 +272,14 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                   <div className="px-2">
                     <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">System</div>
                   </div>
-                  {navItems.slice(8).map((item) => {
+                  {navItems.slice(9).map((item) => {
                     const isActive = location.pathname === item.path;
                     return (
-                      <Link
+                      <button
                         key={item.path}
-                        to={item.path}
+                        onClick={() => navigate(item.path)}
                         className={cn(
-                          "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                          "w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors text-left",
                           isActive
                             ? 'bg-primary text-primary-foreground'
                             : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
@@ -285,7 +287,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                       >
                         <item.icon className="w-4 h-4" />
                         {item.label}
-                      </Link>
+                      </button>
                     );
                   })}
                 </div>
