@@ -225,7 +225,7 @@ export default function GamifiedGarden() {
     }
   }
 
-  // Auto-wilt check
+  // Auto-wilt check and progress update
   useEffect(() => {
     const interval = setInterval(() => {
       setPlots(p => p.map(plot => {
@@ -238,7 +238,13 @@ export default function GamifiedGarden() {
         return plot;
       }));
     }, 5000);
-    return () => clearInterval(interval);
+    
+    // Force re-render for smooth progress bar
+    const progressInterval = setInterval(() => {
+      setPlots(p => [...p]);
+    }, 1000);
+    
+    return () => { clearInterval(interval); clearInterval(progressInterval); };
   }, []);
 
   const isDark = settings.darkMode;
@@ -272,7 +278,7 @@ export default function GamifiedGarden() {
               return (
                 <div
                   key={plot.id}
-                  className={`aspect-square rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center cursor-pointer hover:border-green-500 transition ${plant ? (isReady ? color : 'bg-green-600') : 'bg-muted'}`}
+                  className={`aspect-square rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center cursor-pointer transition-colors ${plant ? (isReady ? color : 'bg-green-600') : 'bg-muted'} hover:border-green-500`}
                   onClick={() => {
                     if (!plant && selectedSeed) plantSeed(plot.id, selectedSeed);
                     if (plant && !isReady) waterPlant(plot.id);
@@ -281,6 +287,14 @@ export default function GamifiedGarden() {
                 >
                   {plant ? (
                     <>
+                      <div className="relative w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-full mb-1 overflow-hidden">
+                        <div 
+                          className="absolute left-0 top-0 h-full bg-green-500 rounded-full transition-all duration-1000 ease-linear"
+                          style={{ 
+                            width: isReady ? '100%' : `${Math.max(0, 100 - (timeLeft / plant.growthTimeMs * 100))}%`
+                          }}
+                        />
+                      </div>
                       <Trees className={`w-6 h-6 ${isReady ? 'text-white' : 'text-green-100'}`} />
                       <span className="text-xs text-white mt-1 text-center">
                         {isReady ? 'Harvest!' : formatTime(timeLeft)}
