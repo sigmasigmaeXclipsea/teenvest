@@ -26,21 +26,17 @@ const AnimatedCounter = ({ value, prefix = '', suffix = '' }: { value: number; p
   const [hasAnimated, setHasAnimated] = useState(false);
   
   // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/4d192af1-b502-483f-960a-2e671e970a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:24',message:'AnimatedCounter render',data:{value,prefix,suffix,initialCount:count,hasAnimated},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+  fetch('http://127.0.0.1:7242/ingest/4d192af1-b502-483f-960a-2e671e970a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:24',message:'AnimatedCounter render',data:{value,prefix,suffix,initialCount:count,hasAnimated},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
   // #endregion
   
   useEffect(() => {
     // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/4d192af1-b502-483f-960a-2e671e970a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:28',message:'AnimatedCounter useEffect entry',data:{value,hasAnimated},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    fetch('http://127.0.0.1:7242/ingest/4d192af1-b502-483f-960a-2e671e970a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:28',message:'AnimatedCounter useEffect entry',data:{value,hasAnimated},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'B'})}).catch(()=>{});
     // #endregion
     if (hasAnimated) return;
     
-    // Reset to 0 for animation
-    setCount(0);
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/4d192af1-b502-483f-960a-2e671e970a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:32',message:'AnimatedCounter reset to 0',data:{value,countBeforeReset:value},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
-    
+    // Don't reset to 0 - animate from current value (which is the final value) down to 0 then back up
+    // This prevents the flash of "0" that makes numbers appear missing
     const duration = 1500;
     const steps = 30;
     const increment = value / steps;
@@ -51,14 +47,14 @@ const AnimatedCounter = ({ value, prefix = '', suffix = '' }: { value: number; p
       if (current >= value) {
         setCount(value);
         // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/4d192af1-b502-483f-960a-2e671e970a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:42',message:'AnimatedCounter animation complete',data:{value,finalCount:value},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        fetch('http://127.0.0.1:7242/ingest/4d192af1-b502-483f-960a-2e671e970a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:42',message:'AnimatedCounter animation complete',data:{value,finalCount:value},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
         // #endregion
         clearInterval(timer);
       } else {
         const newCount = Math.floor(current);
         setCount(newCount);
         // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/4d192af1-b502-483f-960a-2e671e970a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:46',message:'AnimatedCounter count update',data:{value,currentCount:newCount,progress:((current/value)*100).toFixed(1)+'%'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        fetch('http://127.0.0.1:7242/ingest/4d192af1-b502-483f-960a-2e671e970a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:46',message:'AnimatedCounter count update',data:{value,currentCount:newCount,progress:((current/value)*100).toFixed(1)+'%'},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
         // #endregion
       }
     }, duration / steps);
@@ -69,7 +65,7 @@ const AnimatedCounter = ({ value, prefix = '', suffix = '' }: { value: number; p
   
   // #region agent log
   const renderedValue = `${prefix}${count.toLocaleString()}${suffix}`;
-  fetch('http://127.0.0.1:7242/ingest/4d192af1-b502-483f-960a-2e671e970a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:53',message:'AnimatedCounter render output',data:{value,count,renderedValue},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+  fetch('http://127.0.0.1:7242/ingest/4d192af1-b502-483f-960a-2e671e970a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:53',message:'AnimatedCounter render output',data:{value,count,renderedValue},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
   // #endregion
   return <span>{prefix}{count.toLocaleString()}{suffix}</span>;
 };
@@ -258,20 +254,6 @@ const FeatureCard = ({ icon: Icon, title, desc, gradient, delay = 0 }: {
 const LandingPage = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-<<<<<<< HEAD
-=======
-  const containerRef = useRef<HTMLDivElement>(null);
-  
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start start", "end end"]
-  });
-
-  const heroY = useTransform(scrollYProgress, [0, 0.3], [0, -150]);
-  const heroScale = useTransform(scrollYProgress, [0, 0.2], [1, 0.9]);
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.25], [1, 0]);
-  const heroRotate = useTransform(scrollYProgress, [0, 0.3], [0, -5]);
->>>>>>> 39ba640 (your message)
 
   // #region agent log
   fetch('http://127.0.0.1:7242/ingest/4d192af1-b502-483f-960a-2e671e970a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:219',message:'LandingPage render',data:{hasUser:!!user,userId:user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
@@ -282,7 +264,6 @@ const LandingPage = () => {
     navigate('/');
   };
 
-<<<<<<< HEAD
   return (
     <div className="min-h-screen bg-background text-foreground" style={{ minHeight: '100vh' }}>
       {/* Background gradient - static for performance */}
@@ -290,45 +271,6 @@ const LandingPage = () => {
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
-=======
-  // #region agent log
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const el = containerRef.current;
-    const computed = window.getComputedStyle(el);
-    const bgColor = computed.backgroundColor;
-    const bgVar = getComputedStyle(document.documentElement).getPropertyValue('--background');
-    const hasDark = document.documentElement.classList.contains('dark');
-    const bodyBg = window.getComputedStyle(document.body).backgroundColor;
-    const htmlBg = window.getComputedStyle(document.documentElement).backgroundColor;
-    const savedTheme = localStorage.getItem('theme');
-    const logData = {containerBg:bgColor,backgroundVar:bgVar,hasDarkClass:hasDark,bodyBg:bodyBg,htmlBg:htmlBg,savedTheme:savedTheme,isBlack:bgColor.includes('0, 0, 0')||bgColor.includes('6%')||bgColor==='rgb(0, 0, 0)'||bgColor==='black'};
-    console.log('[DEBUG] LandingPage dark mode check:', logData);
-    fetch('http://127.0.0.1:7242/ingest/e2d8d1cd-98b7-48dc-8a2d-9afbbe01d7c6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:972',message:'LandingPage render - dark mode check',data:logData,timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-  }, []);
-  // #endregion
-
-  return (
-    <div 
-      ref={containerRef} 
-      className="min-h-screen bg-background relative overflow-x-hidden"
-      style={{
-        perspective: '2000px',
-        transformStyle: 'preserve-3d',
-      }}
-    >
-        {/* Custom cursor - disabled for performance, can re-enable if needed */}
-        {false && typeof window !== 'undefined' && window.innerWidth >= 768 && <CursorFollower />}
-        
-        {/* Floating particles disabled for performance */}
-        {/* Grid background disabled for performance */}
-        
-        {/* Simplified static gradient background - removed 3D blobs for performance */}
-        <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div 
-          className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5"
-        />
->>>>>>> 39ba640 (your message)
       </div>
       
       {/* Header */}
