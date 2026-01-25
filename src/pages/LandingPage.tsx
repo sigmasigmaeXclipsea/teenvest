@@ -1,10 +1,9 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { TrendingUp, BookOpen, Trophy, Shield, ArrowRight, BarChart3, Briefcase, Target, Bot, Sparkles, Zap, Flame, Rocket, User, LogOut, Play, Star, ChevronRight } from 'lucide-react';
+import { TrendingUp, BookOpen, Trophy, Shield, ArrowRight, BarChart3, Briefcase, Target, Bot, Sparkles, Zap, Flame, Rocket, User, LogOut, Play, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRef, useState, useEffect, useMemo, memo } from 'react';
-import { useMultipleStockQuotes } from '@/hooks/useStockAPI';
+import { useState, useEffect, useMemo, memo } from 'react';
 
 // Simple marquee for stock ticker
 const Marquee = ({ children, direction = 'left', speed = 25 }: { children: React.ReactNode; direction?: 'left' | 'right'; speed?: number }) => (
@@ -22,21 +21,12 @@ const Marquee = ({ children, direction = 'left', speed = 25 }: { children: React
 
 // Animated counter - simplified
 const AnimatedCounter = ({ value, prefix = '', suffix = '' }: { value: number; prefix?: string; suffix?: string }) => {
-  const [count, setCount] = useState(value); // Start with final value to avoid showing 0
+  const [count, setCount] = useState(0);
   const [hasAnimated, setHasAnimated] = useState(false);
   
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/4d192af1-b502-483f-960a-2e671e970a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:24',message:'AnimatedCounter render',data:{value,prefix,suffix,initialCount:count,hasAnimated},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
-  // #endregion
-  
   useEffect(() => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/4d192af1-b502-483f-960a-2e671e970a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:28',message:'AnimatedCounter useEffect entry',data:{value,hasAnimated},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'B'})}).catch(()=>{});
-    // #endregion
     if (hasAnimated) return;
-    
-    // Don't reset to 0 - animate from current value (which is the final value) down to 0 then back up
-    // This prevents the flash of "0" that makes numbers appear missing
+
     const duration = 1500;
     const steps = 30;
     const increment = value / steps;
@@ -46,101 +36,49 @@ const AnimatedCounter = ({ value, prefix = '', suffix = '' }: { value: number; p
       current += increment;
       if (current >= value) {
         setCount(value);
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/4d192af1-b502-483f-960a-2e671e970a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:42',message:'AnimatedCounter animation complete',data:{value,finalCount:value},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
         clearInterval(timer);
       } else {
-        const newCount = Math.floor(current);
-        setCount(newCount);
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/4d192af1-b502-483f-960a-2e671e970a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:46',message:'AnimatedCounter count update',data:{value,currentCount:newCount,progress:((current/value)*100).toFixed(1)+'%'},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
+        setCount(Math.floor(current));
       }
     }, duration / steps);
     
     setHasAnimated(true);
     return () => clearInterval(timer);
   }, [value, hasAnimated]);
-  
-  // #region agent log
-  const renderedValue = `${prefix}${count.toLocaleString()}${suffix}`;
-  fetch('http://127.0.0.1:7242/ingest/4d192af1-b502-483f-960a-2e671e970a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:53',message:'AnimatedCounter render output',data:{value,count,renderedValue},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
-  // #endregion
+
   return <span>{prefix}{count.toLocaleString()}{suffix}</span>;
 };
 
 // Dashboard preview - simplified
 const DashboardPreview = memo(() => {
-  const stockSymbols = useMemo(() => ['AAPL', 'TSLA', 'NVDA', 'MSFT'], []);
-  const { data: stockQuotes, isLoading, isError } = useMultipleStockQuotes(stockSymbols);
-  
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/4d192af1-b502-483f-960a-2e671e970a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:57',message:'DashboardPreview render',data:{stockSymbols,hasStockQuotes:!!stockQuotes,stockQuotesLength:stockQuotes?.length||0,isLoading,isError},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-  // #endregion
-  
-  const stocks = useMemo(() => {
-    const colors = ['from-blue-500 to-blue-600', 'from-red-500 to-red-600', 'from-green-500 to-green-600', 'from-cyan-500 to-cyan-600'];
-    
-    // Always use fallback data for landing page to ensure it always displays
-    // API data is optional and only used if available
-    const fallbackStocks = [
+  const colors = useMemo(
+    () => ['from-blue-500 to-blue-600', 'from-red-500 to-red-600', 'from-green-500 to-green-600', 'from-cyan-500 to-cyan-600'],
+    []
+  );
+
+  const stocks = useMemo(
+    () => [
       { symbol: 'AAPL', name: 'Apple Inc.', price: 178.25, change: '+2.4%', color: colors[0], isPositive: true },
       { symbol: 'TSLA', name: 'Tesla Inc.', price: 245.50, change: '+5.1%', color: colors[1], isPositive: true },
       { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 890.20, change: '+4.5%', color: colors[2], isPositive: true },
       { symbol: 'MSFT', name: 'Microsoft', price: 378.90, change: '+0.8%', color: colors[3], isPositive: true },
-    ];
-    
-    if (stockQuotes && stockQuotes.length > 0 && !isError) {
-      const mappedStocks = stockQuotes.map((quote, i) => ({
-        symbol: quote.symbol,
-        name: quote.companyName || fallbackStocks[i]?.name || quote.symbol,
-        price: quote.price || fallbackStocks[i]?.price || 0,
-        change: quote.changePercent !== undefined 
-          ? `${quote.changePercent >= 0 ? '+' : ''}${quote.changePercent.toFixed(2)}%`
-          : fallbackStocks[i]?.change || '+0%',
-        color: colors[i % colors.length],
-        isPositive: quote.changePercent !== undefined ? quote.changePercent >= 0 : true,
-      }));
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/4d192af1-b502-483f-960a-2e671e970a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:73',message:'DashboardPreview using API data',data:{stocksCount:mappedStocks.length,stocks:mappedStocks.map(s=>({symbol:s.symbol,price:s.price}))},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-      // #endregion
-      return mappedStocks;
-    }
-    
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/4d192af1-b502-483f-960a-2e671e970a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:85',message:'DashboardPreview using fallback data',data:{reason:!stockQuotes?'noStockQuotes':stockQuotes.length===0?'emptyStockQuotes':'isError',isError,fallbackCount:fallbackStocks.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-    // #endregion
-    return fallbackStocks;
-  }, [stockQuotes, isError]);
-  
-  const portfolioValue = useMemo(() => {
-    const holdings = { AAPL: 15, TSLA: 8, NVDA: 5, MSFT: 12 };
-    if (stockQuotes && stockQuotes.length > 0 && !isError) {
-      const calculated = stockQuotes.reduce((total, quote) => {
-        const shares = holdings[quote.symbol as keyof typeof holdings] || 0;
-        return total + ((quote.price || 0) * shares);
-      }, 0);
-      const finalValue = calculated > 0 ? calculated : 15847;
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/4d192af1-b502-483f-960a-2e671e970a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:92',message:'DashboardPreview portfolioValue calculated',data:{calculated,finalValue,usedAPI:true},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-      // #endregion
-      return finalValue;
-    }
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/4d192af1-b502-483f-960a-2e671e970a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:98',message:'DashboardPreview portfolioValue fallback',data:{portfolioValue:15847,usedAPI:false},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-    // #endregion
-    return 15847;
-  }, [stockQuotes, isError]);
+    ],
+    [colors]
+  );
+
+  const portfolioValue = 15847;
   
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -6, rotateX: 2, rotateY: -2, scale: 1.01 }}
       transition={{ delay: 0.3, duration: 0.5 }}
-      className="w-full max-w-xl mx-auto"
+      className="group w-full max-w-xl mx-auto will-change-transform"
+      style={{ transformStyle: 'preserve-3d' }}
     >
-      <div className="rounded-2xl overflow-hidden bg-card border border-border/60 shadow-xl">
+      <div className="rounded-2xl overflow-hidden bg-card border border-border/60 shadow-xl relative">
+        <div className="absolute -inset-[1px] bg-gradient-to-r from-primary/30 via-accent/30 to-primary/30 opacity-0 group-hover:opacity-100 transition-opacity" />
         {/* Window controls */}
         <div className="flex items-center gap-2 p-3 border-b border-border/50 bg-muted/30">
           <div className="flex gap-1.5">
@@ -243,6 +181,7 @@ const FeatureCard = ({ icon: Icon, title, desc, gradient, delay = 0 }: {
     transition={{ duration: 0.4, delay }}
     className="group relative overflow-hidden rounded-2xl bg-card border border-border/50 p-6 transition-all duration-300 hover:border-primary/30 hover:shadow-lg"
   >
+    <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100 bg-[radial-gradient(circle_at_20%_10%,hsl(var(--primary))_0%,transparent_55%)]" />
     <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center mb-4 shadow-md group-hover:scale-105 transition-transform duration-300`}>
       <Icon className="w-6 h-6 text-white" />
     </div>
@@ -255,22 +194,23 @@ const LandingPage = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/4d192af1-b502-483f-960a-2e671e970a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:219',message:'LandingPage render',data:{hasUser:!!user,userId:user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-  // #endregion
-
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground" style={{ minHeight: '100vh' }}>
+    <div className="min-h-screen bg-background relative overflow-x-hidden">
       {/* Background gradient - static for performance */}
-      <div className="fixed inset-0 pointer-events-none">
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
+        <motion.div
+          className="absolute -top-24 left-1/2 -translate-x-1/2 w-[40rem] h-[40rem] rounded-full bg-gradient-to-tr from-primary/20 via-accent/10 to-transparent blur-3xl"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 80, repeat: Infinity, ease: 'linear' }}
+        />
       </div>
       
       {/* Header */}
@@ -328,6 +268,10 @@ const LandingPage = () => {
 
       {/* Hero Section */}
       <section className="container mx-auto px-4 pt-16 pb-20 md:pt-24 md:pb-32 relative">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -top-12 left-6 w-64 h-64 bg-primary/10 rounded-full blur-3xl" />
+          <div className="absolute top-20 right-0 w-72 h-72 bg-accent/10 rounded-full blur-3xl" />
+        </div>
         <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
           {/* Left Content */}
           <motion.div 
@@ -354,7 +298,8 @@ const LandingPage = () => {
             
             <div className="flex flex-col sm:flex-row items-start gap-3 mb-8">
               <Link to={user ? "/dashboard" : "/signup"}>
-                <Button size="lg" className="gap-2 bg-gradient-to-r from-primary to-accent shadow-lg font-bold px-6">
+                <Button size="lg" className="gap-2 bg-gradient-to-r from-primary to-accent shadow-lg font-bold px-6 relative overflow-hidden">
+                  <span className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-300 bg-[radial-gradient(circle_at_30%_30%,hsl(var(--primary-foreground))_0%,transparent_55%)]" />
                   <Play className="w-4 h-4 fill-current" />
                   {user ? "Go to Dashboard" : "Start Free Today"}
                   <ArrowRight className="w-4 h-4" />
