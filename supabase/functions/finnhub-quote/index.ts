@@ -35,14 +35,19 @@ interface FinnhubProfile {
   weburl: string;
 }
 
-serve(async (req) => {
+interface RequestBody {
+  ticker: string;
+}
+
+serve(async (req: Request) => {
   // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    const { ticker } = await req.json();
+    const body: RequestBody = await req.json();
+    const { ticker } = body;
     
     if (!ticker) {
       throw new Error('Ticker symbol is required');
@@ -70,8 +75,8 @@ serve(async (req) => {
       throw new Error('Failed to fetch data from Finnhub API');
     }
 
-    const quote: FinnhubQuote = await quoteResponse.json();
-    const profile: FinnhubProfile = await profileResponse.json();
+    const quote: FinnhubQuote = await quoteResponse.json() as FinnhubQuote;
+    const profile: FinnhubProfile = await profileResponse.json() as FinnhubProfile;
 
     // Calculate change percentage and format
     const changePercent = quote.dp?.toFixed(2) || '0.00';
@@ -100,9 +105,10 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Error:', error.message);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error:', errorMessage);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
