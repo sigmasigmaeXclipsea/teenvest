@@ -644,8 +644,7 @@ const LandingPage = () => {
             
             <div className="flex flex-col sm:flex-row items-start gap-3 mb-8">
               <Link to={user ? "/dashboard" : "/signup"}>
-                <Button size="lg" className="gap-2 bg-gradient-to-r from-primary to-accent shadow-lg font-bold px-6 relative overflow-hidden">
-                  <span className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-300 bg-[radial-gradient(circle_at_30%_30%,hsl(var(--primary-foreground))_0%,transparent_55%)]" />
+                <Button size="lg" className="gap-2 bg-gradient-to-r from-primary to-accent shadow-lg font-bold px-6 hover:shadow-xl hover:scale-[1.02] transition-all duration-200">
                   <Play className="w-4 h-4 fill-current" />
                   {user ? "Go to Dashboard" : "Start Free Today"}
                   <ArrowRight className="w-4 h-4" />
