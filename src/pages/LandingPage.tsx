@@ -107,17 +107,32 @@ const DashboardPreview: FC = () => {
         const colors = ['from-blue-500 to-blue-600', 'from-red-500 to-red-600', 'from-green-500 to-green-600', 'from-cyan-500 to-cyan-600'];
         
         const stockPromises = symbols.map(async (symbol, index) => {
-          const response = await fetch(`https://finnhub-stock-api-5xrj.onrender.com/api/stock/${symbol}`);
-          const data = await response.json();
-          
-          return {
-            symbol: data.symbol,
-            name: data.name,
-            price: data.price,
-            change: data.changePercent + '%',
-            color: colors[index],
-            isPositive: data.isPositive
-          };
+          try {
+            const response = await fetch(`https://finnhub-stock-api-5xrj.onrender.com/api/stock/${symbol}`);
+            if (!response.ok) throw new Error('API request failed');
+            const data = await response.json();
+            
+            if (data.error) throw new Error(data.error);
+            
+            return {
+              symbol: data.symbol,
+              name: data.name,
+              price: data.price,
+              change: data.changePercent + '%',
+              color: colors[index],
+              isPositive: data.isPositive
+            };
+          } catch (err) {
+            console.warn(`Failed to fetch ${symbol}, using fallback`);
+            // Return fallback data for each stock
+            const fallbackData = {
+              'AAPL': { symbol: 'AAPL', name: 'Apple Inc.', price: 248.00, change: '+1.2%', isPositive: true },
+              'TSLA': { symbol: 'TSLA', name: 'Tesla Inc.', price: 242.84, change: '-0.8%', isPositive: false },
+              'NVDA': { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 875.28, change: '+3.4%', isPositive: true },
+              'MSFT': { symbol: 'MSFT', name: 'Microsoft', price: 429.63, change: '+0.6%', isPositive: true }
+            };
+            return { ...fallbackData[symbol], color: colors[index] };
+          }
         });
 
         const fetchedStocks = await Promise.all(stockPromises);
@@ -125,7 +140,7 @@ const DashboardPreview: FC = () => {
         
         // Calculate portfolio metrics based on real data
         const totalValue = fetchedStocks.reduce((sum, stock) => sum + (stock.price * 10), 0); // Assume 10 shares each
-        const avgChange = fetchedStocks.reduce((sum, stock) => sum + parseFloat(stock.changePercent), 0) / fetchedStocks.length;
+        const avgChange = fetchedStocks.reduce((sum, stock) => sum + parseFloat(stock.change), 0) / fetchedStocks.length;
         
         setPortfolioValue(Math.round(totalValue));
         setTodayChange(Math.abs(avgChange));
@@ -140,6 +155,9 @@ const DashboardPreview: FC = () => {
           { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 875.28, change: '+3.4%', color: 'from-green-500 to-green-600', isPositive: true },
           { symbol: 'MSFT', name: 'Microsoft', price: 429.63, change: '+0.6%', color: 'from-cyan-500 to-cyan-600', isPositive: true },
         ]);
+        setPortfolioValue(18636);
+        setTodayChange(1.1);
+        setTotalGain(2036);
       } finally {
         setLoading(false);
       }
@@ -451,14 +469,35 @@ const LandingPage = () => {
         const symbols = ['AAPL', 'TSLA', 'GOOGL', 'MSFT', 'AMZN', 'NVDA', 'META', 'NFLX', 'AMD', 'DIS'];
         
         const stockPromises = symbols.map(async (symbol) => {
-          const response = await fetch(`https://finnhub-stock-api-5xrj.onrender.com/api/stock/${symbol}`);
-          const data = await response.json();
-          
-          return {
-            symbol: data.symbol,
-            price: `$${data.price.toFixed(2)}`,
-            change: data.changePercent + '%'
-          };
+          try {
+            const response = await fetch(`https://finnhub-stock-api-5xrj.onrender.com/api/stock/${symbol}`);
+            if (!response.ok) throw new Error('API request failed');
+            const data = await response.json();
+            
+            if (data.error) throw new Error(data.error);
+            
+            return {
+              symbol: data.symbol,
+              price: `$${data.price.toFixed(2)}`,
+              change: data.changePercent + '%'
+            };
+          } catch (err) {
+            console.warn(`Failed to fetch ${symbol} for ticker, using fallback`);
+            // Return fallback data for each stock
+            const fallbackData = {
+              'AAPL': { price: '$248.00', change: '+1.2%' },
+              'TSLA': { price: '$242.84', change: '-0.8%' },
+              'GOOGL': { price: '$168.50', change: '+0.5%' },
+              'MSFT': { price: '$429.63', change: '+0.6%' },
+              'AMZN': { price: '$178.35', change: '+1.1%' },
+              'NVDA': { price: '$875.28', change: '+3.4%' },
+              'META': { price: '$512.75', change: '+0.9%' },
+              'NFLX': { price: '$486.23', change: '-0.3%' },
+              'AMD': { price: '$124.58', change: '+2.1%' },
+              'DIS': { price: '$91.45', change: '+0.2%' }
+            };
+            return { symbol, ...fallbackData[symbol] };
+          }
         });
 
         const fetchedStocks = await Promise.all(stockPromises);
