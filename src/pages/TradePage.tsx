@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, type KeyboardEvent } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowUpDown, TrendingUp, TrendingDown, Search, Loader2, ExternalLink, BarChart3, AlertTriangle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,8 @@ import { usePortfolio, useHoldings, useExecuteTrade } from '@/hooks/usePortfolio
 import { useToast } from '@/hooks/use-toast';
 import { useStockQuote, useSearchStock, StockQuote } from '@/hooks/useStockAPI';
 import { getUserFriendlyError } from '@/lib/errorMessages';
+import StockLineChart from '@/components/StockLineChart';
+import ProfessionalCandlestickChart from '@/components/ProfessionalCandlestickChart';
 
 const TradePage = () => {
   const [searchParams] = useSearchParams();
@@ -66,7 +68,7 @@ const TradePage = () => {
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       handleTickerSearch();
     }
@@ -319,6 +321,28 @@ const TradePage = () => {
             </CardContent>
           </Card>
         </div>
+
+        {selectedStock && currentQuote && (
+          <div className="grid gap-6 lg:grid-cols-2">
+            <StockLineChart
+              symbol={selectedStock.symbol}
+              currentPrice={Number(currentQuote.price) || 0}
+              previousClose={Number(currentQuote.previousClose) || Number(currentQuote.price) || 0}
+              high={Number(currentQuote.high) || 0}
+              low={Number(currentQuote.low) || 0}
+              open={Number(currentQuote.open) || 0}
+            />
+
+            <ProfessionalCandlestickChart
+              symbol={selectedStock.symbol}
+              currentPrice={Number(currentQuote.price) || 0}
+              previousClose={Number(currentQuote.previousClose) || Number(currentQuote.price) || 0}
+              high={Number(currentQuote.high) || 0}
+              low={Number(currentQuote.low) || 0}
+              open={Number(currentQuote.open) || 0}
+            />
+          </div>
+        )}
 
       </div>
     </DashboardLayout>

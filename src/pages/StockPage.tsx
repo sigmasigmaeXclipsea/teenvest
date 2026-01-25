@@ -17,7 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { getUserFriendlyError } from '@/lib/errorMessages';
 import { formatMarketCap, formatVolume } from '@/data/mockStocks';
 import StockLineChart from '@/components/StockLineChart';
-import StockCandlestickChart from '@/components/StockCandlestickChart';
+import ProfessionalCandlestickChart from '@/components/ProfessionalCandlestickChart';
 // Lazy load StockNews - it's heavy with API calls
 const StockNews = lazy(() => import('@/components/StockNews'));
 import { useSettings } from '@/contexts/SettingsContext';
@@ -178,7 +178,7 @@ const StockPage = () => {
             open={stock.open}
           />
           
-          <StockCandlestickChart 
+          <ProfessionalCandlestickChart 
             symbol={stock.symbol}
             currentPrice={stock.price}
             previousClose={stock.previousClose}
