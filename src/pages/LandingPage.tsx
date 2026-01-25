@@ -23,11 +23,13 @@ const Marquee = ({ children, direction = 'left', speed = 25 }: { children: React
 // Animated counter - simplified
 const AnimatedCounter = ({ value, prefix = '', suffix = '' }: { value: number; prefix?: string; suffix?: string }) => {
   const [count, setCount] = useState(0);
-  const [hasAnimated, setHasAnimated] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
   
   useEffect(() => {
-    if (hasAnimated) return;
-
+    // Skip animation if value is 0 or already animating
+    if (value === 0 || isAnimating) return;
+    
+    setIsAnimating(true);
     const duration = 1500;
     const steps = 30;
     const increment = value / steps;
@@ -38,14 +40,17 @@ const AnimatedCounter = ({ value, prefix = '', suffix = '' }: { value: number; p
       if (current >= value) {
         setCount(value);
         clearInterval(timer);
+        setIsAnimating(false);
       } else {
         setCount(Math.floor(current));
       }
     }, duration / steps);
     
-    setHasAnimated(true);
-    return () => clearInterval(timer);
-  }, [value, hasAnimated]);
+    return () => {
+      clearInterval(timer);
+      setIsAnimating(false);
+    };
+  }, [value]);
 
   return <span>{prefix}{count.toLocaleString()}{suffix}</span>;
 };
@@ -672,16 +677,20 @@ const LandingPage = () => {
       {/* Stock Ticker */}
       <section className="py-6 border-y border-border/30 bg-card/30 backdrop-blur-sm">
         <Marquee speed={30}>
-          {tickerStocks.map((stock, i) => (
-            <div key={i} className="mx-4 flex items-center gap-2 px-4 py-2 rounded-lg bg-card/50 border border-border/30">
-              <span className="font-bold">{stock.symbol}</span>
-              <span className="text-sm text-muted-foreground">{stock.price}</span>
-              <span className={`text-sm font-medium flex items-center gap-1 ${stock.change.startsWith('+') ? 'text-success' : 'text-destructive'}`}>
-                {stock.change.startsWith('+') ? <TrendingUp className="w-3 h-3" /> : <TrendingUp className="w-3 h-3 rotate-180" />}
-                {stock.change}
-              </span>
-            </div>
-          ))}
+          {tickerStocks.map((stock, i) => {
+            const changeStr = stock.change || '+0%';
+            const isPositive = changeStr.startsWith('+');
+            return (
+              <div key={i} className="mx-4 flex items-center gap-2 px-4 py-2 rounded-lg bg-card/50 border border-border/30">
+                <span className="font-bold">{stock.symbol || 'N/A'}</span>
+                <span className="text-sm text-muted-foreground">{stock.price || '$0.00'}</span>
+                <span className={`text-sm font-medium flex items-center gap-1 ${isPositive ? 'text-success' : 'text-destructive'}`}>
+                  {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingUp className="w-3 h-3 rotate-180" />}
+                  {changeStr}
+                </span>
+              </div>
+            );
+          })}
         </Marquee>
       </section>
 
