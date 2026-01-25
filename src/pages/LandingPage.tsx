@@ -1,9 +1,9 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { TrendingUp, BookOpen, Trophy, Shield, ArrowRight, BarChart3, Briefcase, Target, Bot, Sparkles, Zap, Flame, Rocket, User, LogOut, Play, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { motion } from 'framer-motion';
+import { motion, useMotionValue, useSpring } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
-import { useState, useEffect, useMemo, memo } from 'react';
+import { useState, useEffect, useMemo, memo, useRef, useCallback } from 'react';
 
 // Simple marquee for stock ticker
 const Marquee = ({ children, direction = 'left', speed = 25 }: { children: React.ReactNode; direction?: 'left' | 'right'; speed?: number }) => (
@@ -49,8 +49,87 @@ const AnimatedCounter = ({ value, prefix = '', suffix = '' }: { value: number; p
   return <span>{prefix}{count.toLocaleString()}{suffix}</span>;
 };
 
-// Dashboard preview - simplified
+// Floating particles component
+const FloatingParticles = memo(() => {
+  const particles = useMemo(() => 
+    Array.from({ length: 20 }, (_, i) => ({
+      id: i,
+      size: Math.random() * 3 + 1,
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      duration: Math.random() * 4 + 3,
+      delay: Math.random() * 2,
+    })), []
+  );
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {particles.map((p) => (
+        <motion.div
+          key={p.id}
+          className="absolute rounded-full bg-primary/30"
+          style={{
+            width: p.size,
+            height: p.size,
+            left: `${p.x}%`,
+            top: `${p.y}%`,
+          }}
+          animate={{
+            y: [-20, 20, -20],
+            opacity: [0.2, 0.6, 0.2],
+          }}
+          transition={{
+            duration: p.duration,
+            delay: p.delay,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+        />
+      ))}
+    </div>
+  );
+});
+
+// Dashboard preview with smooth cursor tracking
 const DashboardPreview = memo(() => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  // Spring-based mouse tracking for smooth movement
+  const mouseX = useMotionValue(0.5);
+  const mouseY = useMotionValue(0.5);
+  
+  const springConfig = { stiffness: 150, damping: 20, mass: 0.5 };
+  const rotateX = useSpring(0, springConfig);
+  const rotateY = useSpring(0, springConfig);
+  const glowX = useSpring(50, springConfig);
+  const glowY = useSpring(50, springConfig);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!containerRef.current) return;
+    
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    
+    mouseX.set(x);
+    mouseY.set(y);
+    
+    // Subtle 3D tilt effect
+    rotateX.set((y - 0.5) * -8);
+    rotateY.set((x - 0.5) * 8);
+    
+    // Glow position
+    glowX.set(x * 100);
+    glowY.set(y * 100);
+  }, [mouseX, mouseY, rotateX, rotateY, glowX, glowY]);
+
+  const handleMouseLeave = useCallback(() => {
+    rotateX.set(0);
+    rotateY.set(0);
+    glowX.set(50);
+    glowY.set(50);
+  }, [rotateX, rotateY, glowX, glowY]);
+
   const colors = useMemo(
     () => ['from-blue-500 to-blue-600', 'from-red-500 to-red-600', 'from-green-500 to-green-600', 'from-cyan-500 to-cyan-600'],
     []
@@ -69,103 +148,126 @@ const DashboardPreview = memo(() => {
   const portfolioValue = 15847;
   
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -6, rotateX: 2, rotateY: -2, scale: 1.01 }}
-      transition={{ delay: 0.3, duration: 0.5 }}
-      className="group w-full max-w-xl mx-auto will-change-transform"
-      style={{ transformStyle: 'preserve-3d' }}
-    >
-      <div className="rounded-2xl overflow-hidden bg-card border border-border/60 shadow-xl relative">
-        <div className="absolute -inset-[1px] bg-gradient-to-r from-primary/30 via-accent/30 to-primary/30 opacity-0 group-hover:opacity-100 transition-opacity" />
-        {/* Window controls */}
-        <div className="flex items-center gap-2 p-3 border-b border-border/50 bg-muted/30">
-          <div className="flex gap-1.5">
-            <div className="w-3 h-3 rounded-full bg-red-500" />
-            <div className="w-3 h-3 rounded-full bg-yellow-500" />
-            <div className="w-3 h-3 rounded-full bg-green-500" />
-          </div>
-          <div className="flex-1 flex justify-center">
-            <div className="px-4 py-1 rounded-lg bg-background/80 text-xs text-muted-foreground">
-              🔒 teenvests.com/dashboard
-            </div>
-          </div>
-        </div>
-        
-        {/* Dashboard content */}
-        <div className="p-4 space-y-4">
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="p-3 rounded-xl bg-muted/30 border border-border/30">
-              <p className="text-xs text-muted-foreground mb-1">Portfolio Value</p>
-              <p className="text-lg font-bold">${Math.round(portfolioValue).toLocaleString()}</p>
-              <p className="text-xs text-success font-medium">+12.0%</p>
-            </div>
-            <div className="p-3 rounded-xl bg-muted/30 border border-border/30">
-              <p className="text-xs text-muted-foreground mb-1">Total Gain</p>
-              <p className="text-lg font-bold text-success">+$1,847</p>
-              <p className="text-xs text-muted-foreground">📈 Today</p>
-            </div>
-            <div className="p-3 rounded-xl bg-muted/30 border border-border/30">
-              <p className="text-xs text-muted-foreground mb-1">Streak</p>
-              <p className="text-lg font-bold">7 days</p>
-              <p className="text-xs text-warning">🔥</p>
-            </div>
-          </div>
+    <div className="relative w-full max-w-xl mx-auto" style={{ perspective: '1000px' }}>
+      {/* Floating particles behind */}
+      <FloatingParticles />
+      
+      <motion.div
+        ref={containerRef}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3, duration: 0.5 }}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+        className="relative will-change-transform"
+        style={{
+          rotateX,
+          rotateY,
+          transformStyle: 'preserve-3d',
+        }}
+      >
+        <div className="rounded-2xl overflow-hidden bg-card border border-border/60 shadow-xl relative">
+          {/* Dynamic glow effect */}
+          <motion.div
+            className="absolute inset-0 pointer-events-none opacity-0 hover:opacity-100 transition-opacity duration-300"
+            style={{
+              background: `radial-gradient(circle at ${glowX.get()}% ${glowY.get()}%, hsl(var(--primary) / 0.15), transparent 50%)`,
+            }}
+          />
+          <motion.div
+            className="absolute -inset-[1px] rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity"
+            style={{
+              background: `radial-gradient(circle at ${glowX.get()}% ${glowY.get()}%, hsl(var(--primary) / 0.4), hsl(var(--accent) / 0.2), transparent 60%)`,
+            }}
+          />
           
-          {/* Chart placeholder */}
-          <div className="h-24 rounded-xl bg-gradient-to-t from-primary/10 to-transparent border border-border/30 relative overflow-hidden">
-            <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 400 100">
-              <path
-                d="M0,80 Q50,70 100,75 T200,50 T300,40 T400,25"
-                fill="none"
-                stroke="hsl(var(--primary))"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-              <path
-                d="M0,80 Q50,70 100,75 T200,50 T300,40 T400,25 L400,100 L0,100 Z"
-                fill="url(#chartGradient)"
-                opacity="0.3"
-              />
-              <defs>
-                <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="hsl(var(--primary))" />
-                  <stop offset="100%" stopColor="transparent" />
-                </linearGradient>
-              </defs>
-            </svg>
-          </div>
-          
-          {/* Stocks list */}
-          <div className="space-y-2">
-            {stocks.map((stock, i) => (
-              <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-muted/20 border border-border/20">
-                <div className="flex items-center gap-2">
-                  <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${stock.color} flex items-center justify-center text-xs font-bold text-white`}>
-                    {stock.symbol[0]}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold">{stock.symbol}</p>
-                    <p className="text-xs text-muted-foreground">{stock.name}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium">${stock.price.toFixed(2)}</p>
-                  <p className={`text-xs font-semibold ${stock.isPositive ? 'text-success' : 'text-destructive'}`}>
-                    {stock.change}
-                  </p>
-                </div>
+          {/* Window controls */}
+          <div className="flex items-center gap-2 p-3 border-b border-border/50 bg-muted/30 relative z-10">
+            <div className="flex gap-1.5">
+              <div className="w-3 h-3 rounded-full bg-red-500" />
+              <div className="w-3 h-3 rounded-full bg-yellow-500" />
+              <div className="w-3 h-3 rounded-full bg-green-500" />
+            </div>
+            <div className="flex-1 flex justify-center">
+              <div className="px-4 py-1 rounded-lg bg-background/80 text-xs text-muted-foreground">
+                🔒 teenvests.com/dashboard
               </div>
-            ))}
+            </div>
+          </div>
+          
+          {/* Dashboard content */}
+          <div className="p-4 space-y-4 relative z-10">
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="p-3 rounded-xl bg-muted/30 border border-border/30">
+                <p className="text-xs text-muted-foreground mb-1">Portfolio Value</p>
+                <p className="text-lg font-bold">${Math.round(portfolioValue).toLocaleString()}</p>
+                <p className="text-xs text-success font-medium">+12.0%</p>
+              </div>
+              <div className="p-3 rounded-xl bg-muted/30 border border-border/30">
+                <p className="text-xs text-muted-foreground mb-1">Total Gain</p>
+                <p className="text-lg font-bold text-success">+$1,847</p>
+                <p className="text-xs text-muted-foreground">📈 Today</p>
+              </div>
+              <div className="p-3 rounded-xl bg-muted/30 border border-border/30">
+                <p className="text-xs text-muted-foreground mb-1">Streak</p>
+                <p className="text-lg font-bold">7 days</p>
+                <p className="text-xs text-warning">🔥</p>
+              </div>
+            </div>
+            
+            {/* Chart placeholder */}
+            <div className="h-24 rounded-xl bg-gradient-to-t from-primary/10 to-transparent border border-border/30 relative overflow-hidden">
+              <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 400 100">
+                <path
+                  d="M0,80 Q50,70 100,75 T200,50 T300,40 T400,25"
+                  fill="none"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M0,80 Q50,70 100,75 T200,50 T300,40 T400,25 L400,100 L0,100 Z"
+                  fill="url(#chartGradient)"
+                  opacity="0.3"
+                />
+                <defs>
+                  <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--primary))" />
+                    <stop offset="100%" stopColor="transparent" />
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+            
+            {/* Stocks list */}
+            <div className="space-y-2">
+              {stocks.map((stock, i) => (
+                <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-muted/20 border border-border/20">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${stock.color} flex items-center justify-center text-xs font-bold text-white`}>
+                      {stock.symbol[0]}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold">{stock.symbol}</p>
+                      <p className="text-xs text-muted-foreground">{stock.name}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium">${stock.price.toFixed(2)}</p>
+                    <p className={`text-xs font-semibold ${stock.isPositive ? 'text-success' : 'text-destructive'}`}>
+                      {stock.change}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
-    </motion.div>
+      </motion.div>
+    </div>
   );
 });
-
 // Feature card - simplified
 const FeatureCard = ({ icon: Icon, title, desc, gradient, delay = 0 }: { 
   icon: React.ElementType; 
