@@ -33,14 +33,18 @@ export async function invokeFunctionWithCSRF(
   functionName: string,
   options: { body?: any; headers?: Record<string, string> } = {}
 ) {
-  const { body, headers } = options;
+  const { body, headers = {} } = options;
+  const token = getCSRFToken();
+  const authToken = await getSupabaseToken();
+  
   const response = await fetch(`/functions/v1/${functionName}`, {
     method: 'POST',
-    headers: withCSRF({
+    headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${await getSupabaseToken()}`,
+      'X-CSRF-Token': token,
+      Authorization: `Bearer ${authToken}`,
       ...headers,
-    }),
+    },
     body: JSON.stringify(body),
   });
   if (!response.ok) {
