@@ -102,6 +102,20 @@ const DashboardPreview: FC = () => {
   // Fetch real stock data
   useEffect(() => {
     const fetchStockData = async () => {
+      // Temporarily use static data until Edge Function is deployed
+      setStocks([
+        { symbol: 'AAPL', name: 'Apple Inc.', price: 195.89, change: '+1.2%', color: 'from-blue-500 to-blue-600', isPositive: true },
+        { symbol: 'TSLA', name: 'Tesla Inc.', price: 242.84, change: '-0.8%', color: 'from-red-500 to-red-600', isPositive: false },
+        { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 875.28, change: '+3.4%', color: 'from-green-500 to-green-600', isPositive: true },
+        { symbol: 'MSFT', name: 'Microsoft', price: 429.63, change: '+0.6%', color: 'from-cyan-500 to-cyan-600', isPositive: true },
+      ]);
+      setPortfolioValue(18636);
+      setTodayChange(1.1);
+      setTotalGain(2036);
+      setLoading(false);
+      
+      // TODO: Uncomment when Edge Function is deployed
+      /*
       try {
         const symbols = ['AAPL', 'TSLA', 'NVDA', 'MSFT'];
         const colors = ['from-blue-500 to-blue-600', 'from-red-500 to-red-600', 'from-green-500 to-green-600', 'from-cyan-500 to-cyan-600'];
@@ -146,6 +160,7 @@ const DashboardPreview: FC = () => {
       } finally {
         setLoading(false);
       }
+      */
     };
 
     fetchStockData();
@@ -449,6 +464,22 @@ const LandingPage = () => {
 
   // Fetch ticker data
   useEffect(() => {
+    // Temporarily use static data until Edge Function is deployed
+    setTickerStocks([
+      { symbol: 'AAPL', price: '$195.89', change: '+1.2%' },
+      { symbol: 'TSLA', price: '$242.84', change: '-0.8%' },
+      { symbol: 'GOOGL', price: '$168.50', change: '+0.5%' },
+      { symbol: 'MSFT', price: '$429.63', change: '+0.6%' },
+      { symbol: 'AMZN', price: '$178.35', change: '+1.1%' },
+      { symbol: 'NVDA', price: '$875.28', change: '+3.4%' },
+      { symbol: 'META', price: '$512.75', change: '+0.9%' },
+      { symbol: 'NFLX', price: '$486.23', change: '-0.3%' },
+      { symbol: 'AMD', price: '$124.58', change: '+2.1%' },
+      { symbol: 'DIS', price: '$91.45', change: '+0.2%' },
+    ]);
+    
+    // TODO: Uncomment when Edge Function is deployed
+    /*
     const fetchTickerData = async () => {
       try {
         const symbols = ['AAPL', 'TSLA', 'GOOGL', 'MSFT', 'AMZN', 'NVDA', 'META', 'NFLX', 'AMD', 'DIS'];
@@ -488,6 +519,7 @@ const LandingPage = () => {
     };
 
     fetchTickerData();
+    */
   }, []);
 
   const handleSignOut = async () => {
