@@ -127,184 +127,106 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
       {/* Desktop Sidebar */}
       <aside className="hidden lg:fixed lg:top-14 lg:inset-y-0 lg:left-0 lg:z-40 lg:block group">
-        <div className="flex h-[calc(100vh-3.5rem)]">
-          {/* Icons-only column (always visible) */}
-          <div className="w-16 border-r border-border bg-card flex flex-col">
-            {/* Navigation */}
-            <nav className="flex-1 space-y-1 p-2">
-              {/* Core */}
-              <div className="pb-2 mb-2 border-b border-border/60">
-                {navItems.slice(0, 4).map((item) => {
-                  const isActive = location.pathname === item.path;
-                  return (
-                    <button
-                      key={item.path}
-                      onClick={() => navigate(item.path)}
-                      className={cn(
-                        "flex items-center justify-center w-12 h-12 rounded-lg transition-colors",
-                        isActive
-                          ? 'bg-primary text-primary-foreground'
-                          : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-                      )}
-                      title={item.label}
-                    >
-                      <item.icon className="w-5 h-5" />
-                    </button>
-                  );
-                })}
+        <div className="w-16 group-hover:w-56 bg-card border-r border-border transition-all duration-300 ease-in-out overflow-hidden flex flex-col">
+          {/* Navigation */}
+          <nav className="flex-1 space-y-1 p-2">
+            {/* Core */}
+            <div className="pb-2 mb-2 border-b border-border/60">
+              <div className="px-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Core</div>
               </div>
-
-              {/* Learning & Social */}
-              <div className="pb-2 mb-2 border-b border-border/60">
-                {navItems.slice(4, 8).map((item) => {
-                  const isActive = location.pathname === item.path;
-                  return (
-                    <button
-                      key={item.path}
-                      onClick={() => navigate(item.path)}
-                      className={cn(
-                        "flex items-center justify-center w-12 h-12 rounded-lg transition-colors",
-                        isActive
-                          ? 'bg-primary text-primary-foreground'
-                          : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-                      )}
-                      title={item.label}
-                    >
-                      <item.icon className="w-5 h-5" />
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* System */}
-              <div>
-                {navItems.slice(8).map((item) => {
-                  const isActive = location.pathname === item.path;
-                  return (
-                    <button
-                      key={item.path}
-                      onClick={() => navigate(item.path)}
-                      className={cn(
-                        "flex items-center justify-center w-12 h-12 rounded-lg transition-colors",
-                        isActive
-                          ? 'bg-primary text-primary-foreground'
-                          : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-                      )}
-                      title={item.label}
-                    >
-                      <item.icon className="w-5 h-5" />
-                    </button>
-                  );
-                })}
-              </div>
-            </nav>
-
-            {/* Logout */}
-            <div className="p-2 border-t border-border">
-              <Button
-                variant="ghost"
-                className="w-12 h-12 p-0 text-muted-foreground"
-                onClick={handleLogout}
-                title="Log Out"
-              >
-                <LogOut className="w-5 h-5" />
-              </Button>
+              {navItems.slice(0, 4).map((item) => {
+                const isActive = location.pathname === item.path;
+                return (
+                  <button
+                    key={item.path}
+                    onClick={() => navigate(item.path)}
+                    className={cn(
+                      "flex items-center gap-3 w-12 h-12 group-hover:w-full rounded-lg transition-colors",
+                      isActive
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                    )}
+                    title={item.label}
+                  >
+                    <item.icon className="w-5 h-5 flex-shrink-0" />
+                    <span className="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-sm font-medium">
+                      {item.label}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
-          </div>
 
-          {/* Expanding labels column (visible on hover) */}
-          <div className="w-0 group-hover:w-48 bg-card border-r border-border transition-all duration-300 ease-in-out overflow-hidden">
-            <div className="w-48 h-full flex flex-col">
-              {/* Navigation */}
-              <nav className="flex-1 space-y-1 p-3">
-                {/* Core */}
-                <div className="pb-2 mb-2 border-b border-border/60">
-                  <div className="px-2">
-                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Core</div>
-                  </div>
-                  {navItems.slice(0, 4).map((item) => {
-                    const isActive = location.pathname === item.path;
-                    return (
-                      <button
-                        key={item.path}
-                        onClick={() => navigate(item.path)}
-                        className={cn(
-                          "w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors text-left",
-                          isActive
-                            ? 'bg-primary text-primary-foreground'
-                            : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-                        )}
-                      >
-                        <item.icon className="w-4 h-4" />
-                        {item.label}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Learning & Social */}
-                <div className="pb-2 mb-2 border-b border-border/60">
-                  <div className="px-2">
-                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Learning & Social</div>
-                  </div>
-                  {navItems.slice(4, 9).map((item) => {
-                    const isActive = location.pathname === item.path;
-                    return (
-                      <button
-                        key={item.path}
-                        onClick={() => navigate(item.path)}
-                        className={cn(
-                          "w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors text-left",
-                          isActive
-                            ? 'bg-primary text-primary-foreground'
-                            : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-                        )}
-                      >
-                        <item.icon className="w-4 h-4" />
-                        {item.label}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* System */}
-                <div>
-                  <div className="px-2">
-                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">System</div>
-                  </div>
-                  {navItems.slice(9).map((item) => {
-                    const isActive = location.pathname === item.path;
-                    return (
-                      <button
-                        key={item.path}
-                        onClick={() => navigate(item.path)}
-                        className={cn(
-                          "w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors text-left",
-                          isActive
-                            ? 'bg-primary text-primary-foreground'
-                            : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-                        )}
-                      >
-                        <item.icon className="w-4 h-4" />
-                        {item.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </nav>
-
-              {/* Logout */}
-              <div className="p-3 border-t border-border">
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start gap-3 text-muted-foreground"
-                  onClick={handleLogout}
-                >
-                  <LogOut className="w-4 h-4" />
-                  Log Out
-                </Button>
+            {/* Learning & Social */}
+            <div className="pb-2 mb-2 border-b border-border/60">
+              <div className="px-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Learning & Social</div>
               </div>
+              {navItems.slice(4, 9).map((item) => {
+                const isActive = location.pathname === item.path;
+                return (
+                  <button
+                    key={item.path}
+                    onClick={() => navigate(item.path)}
+                    className={cn(
+                      "flex items-center gap-3 w-12 h-12 group-hover:w-full rounded-lg transition-colors",
+                      isActive
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                    )}
+                    title={item.label}
+                  >
+                    <item.icon className="w-5 h-5 flex-shrink-0" />
+                    <span className="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-sm font-medium">
+                      {item.label}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
+
+            {/* System */}
+            <div>
+              <div className="px-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">System</div>
+              </div>
+              {navItems.slice(9).map((item) => {
+                const isActive = location.pathname === item.path;
+                return (
+                  <button
+                    key={item.path}
+                    onClick={() => navigate(item.path)}
+                    className={cn(
+                      "flex items-center gap-3 w-12 h-12 group-hover:w-full rounded-lg transition-colors",
+                      isActive
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                    )}
+                    title={item.label}
+                  >
+                    <item.icon className="w-5 h-5 flex-shrink-0" />
+                    <span className="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-sm font-medium">
+                      {item.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </nav>
+
+          {/* Logout */}
+          <div className="p-2 border-t border-border">
+            <Button
+              variant="ghost"
+              className="w-12 h-12 p-0 text-muted-foreground group-hover:w-full justify-start gap-3 transition-all duration-300"
+              onClick={handleLogout}
+            >
+              <LogOut className="w-5 h-5 flex-shrink-0" />
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                Log Out
+              </span>
+            </Button>
           </div>
         </div>
       </aside>
