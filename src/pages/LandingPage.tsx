@@ -429,7 +429,7 @@ const DashboardPreview: FC = () => {
       </motion.div>
     </div>
   );
-});
+};
 
 // Feature card - simplified
 type FeatureCardProps = {
