@@ -44,17 +44,22 @@ const WILT_THRESHOLD = 10 * 60 * 1000; // 10 minutes without water
 const WATER_REDUCTION = 0.5; // watering cuts remaining time by 50%
 
 const SEED_TEMPLATES: Omit<Seed, 'id'>[] = [
-  { name: 'Tomato', rarity: 'common', baseGrowthTime: 5, baseSizeKg: 1.2, price: 100, sellPrice: 150 },
-  { name: 'Carrot', rarity: 'common', baseGrowthTime: 4, baseSizeKg: 0.8, price: 80, sellPrice: 120 },
-  { name: 'Corn', rarity: 'rare', baseGrowthTime: 8, baseSizeKg: 2.0, price: 250, sellPrice: 450 },
-  { name: 'Pumpkin', rarity: 'rare', baseGrowthTime: 12, baseSizeKg: 4.5, price: 400, sellPrice: 800 },
-  { name: 'Dragon Fruit', rarity: 'mythic', baseGrowthTime: 20, baseSizeKg: 3.0, price: 1200, sellPrice: 2500 },
+  { name: 'Tomato', rarity: 'common', baseGrowthTime: 5, baseSizeKg: 1.2, price: 50, sellPrice: 75 },
+  { name: 'Carrot', rarity: 'common', baseGrowthTime: 4, baseSizeKg: 0.8, price: 40, sellPrice: 60 },
+  { name: 'Lettuce', rarity: 'common', baseGrowthTime: 3, baseSizeKg: 0.6, price: 30, sellPrice: 45 },
+  { name: 'Potato', rarity: 'common', baseGrowthTime: 6, baseSizeKg: 1.5, price: 60, sellPrice: 90 },
+  { name: 'Strawberry', rarity: 'common', baseGrowthTime: 4, baseSizeKg: 0.5, price: 45, sellPrice: 68 },
+  { name: 'Corn', rarity: 'rare', baseGrowthTime: 8, baseSizeKg: 2.0, price: 120, sellPrice: 180 },
+  { name: 'Pumpkin', rarity: 'rare', baseGrowthTime: 10, baseSizeKg: 3.5, price: 150, sellPrice: 225 },
+  { name: 'Watermelon', rarity: 'rare', baseGrowthTime: 12, baseSizeKg: 5.0, price: 200, sellPrice: 300 },
+  { name: 'Blueberry', rarity: 'rare', baseGrowthTime: 7, baseSizeKg: 0.8, price: 110, sellPrice: 165 },
+  { name: 'Pineapple', rarity: 'mythic', baseGrowthTime: 15, baseSizeKg: 2.5, price: 350, sellPrice: 525 },
 ];
 
 const GEAR_TEMPLATES: Omit<Gear, 'id'>[] = [
-  { name: 'Watering Can', type: 'wateringCan', effect: 'Reduces growth time by 50%', price: 300 },
-  { name: 'Sprinkler', type: 'sprinkler', effect: 'Increases golden/rainbow chance', price: 1500 },
-  { name: 'Plot Upgrade', type: 'plotUpgrade', effect: 'Expands garden grid', price: 2000 },
+  { name: 'Watering Can', type: 'wateringCan', effect: 'Reduces growth time by 50%', price: 150 },
+  { name: 'Sprinkler', type: 'sprinkler', effect: 'Increases golden/rainbow chance', price: 500 },
+  { name: 'Plot Upgrade', type: 'plotUpgrade', effect: 'Expands garden grid', price: 750 },
 ];
 
 // Utility
@@ -123,10 +128,8 @@ export default function GamifiedGarden() {
   }, []);
 
   function restockShops() {
-    const seeds = Array.from({ length: 3 }, () => {
-      const template = SEED_TEMPLATES[Math.floor(Math.random() * SEED_TEMPLATES.length)];
-      return { ...template, id: generateId() };
-    });
+    // Show all 10 unique seeds, no repeats
+    const seeds = SEED_TEMPLATES.map(template => ({ ...template, id: generateId() }));
     setShopSeeds(seeds);
   }
   function restockGear() {
@@ -315,7 +318,7 @@ export default function GamifiedGarden() {
           {/* Seed Shop */}
           <div className="bg-card rounded-xl shadow-sm p-4 border">
             <h3 className="font-bold mb-2 flex items-center gap-2 text-foreground"><Package className="w-5 h-5" /> Seed Shop (restocks hourly)</h3>
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-80 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
               {shopSeeds.map(seed => (
                 <div key={seed.id} className="flex items-center justify-between p-2 border rounded">
                   <div>
