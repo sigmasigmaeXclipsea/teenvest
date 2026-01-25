@@ -22,11 +22,25 @@ const Marquee = ({ children, direction = 'left', speed = 25 }: { children: React
 
 // Animated counter - simplified
 const AnimatedCounter = ({ value, prefix = '', suffix = '' }: { value: number; prefix?: string; suffix?: string }) => {
-  const [count, setCount] = useState(0);
+  const [count, setCount] = useState(value); // Start with final value to avoid showing 0
   const [hasAnimated, setHasAnimated] = useState(false);
   
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/4d192af1-b502-483f-960a-2e671e970a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:24',message:'AnimatedCounter render',data:{value,prefix,suffix,initialCount:count,hasAnimated},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+  // #endregion
+  
   useEffect(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/4d192af1-b502-483f-960a-2e671e970a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:28',message:'AnimatedCounter useEffect entry',data:{value,hasAnimated},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
     if (hasAnimated) return;
+    
+    // Reset to 0 for animation
+    setCount(0);
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/4d192af1-b502-483f-960a-2e671e970a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:32',message:'AnimatedCounter reset to 0',data:{value,countBeforeReset:value},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+    
     const duration = 1500;
     const steps = 30;
     const increment = value / steps;
@@ -36,9 +50,16 @@ const AnimatedCounter = ({ value, prefix = '', suffix = '' }: { value: number; p
       current += increment;
       if (current >= value) {
         setCount(value);
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4d192af1-b502-483f-960a-2e671e970a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:42',message:'AnimatedCounter animation complete',data:{value,finalCount:value},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
         clearInterval(timer);
       } else {
-        setCount(Math.floor(current));
+        const newCount = Math.floor(current);
+        setCount(newCount);
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4d192af1-b502-483f-960a-2e671e970a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:46',message:'AnimatedCounter count update',data:{value,currentCount:newCount,progress:((current/value)*100).toFixed(1)+'%'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
       }
     }, duration / steps);
     
@@ -46,46 +67,75 @@ const AnimatedCounter = ({ value, prefix = '', suffix = '' }: { value: number; p
     return () => clearInterval(timer);
   }, [value, hasAnimated]);
   
+  // #region agent log
+  const renderedValue = `${prefix}${count.toLocaleString()}${suffix}`;
+  fetch('http://127.0.0.1:7242/ingest/4d192af1-b502-483f-960a-2e671e970a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:53',message:'AnimatedCounter render output',data:{value,count,renderedValue},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+  // #endregion
   return <span>{prefix}{count.toLocaleString()}{suffix}</span>;
 };
 
 // Dashboard preview - simplified
 const DashboardPreview = memo(() => {
   const stockSymbols = useMemo(() => ['AAPL', 'TSLA', 'NVDA', 'MSFT'], []);
-  const { data: stockQuotes } = useMultipleStockQuotes(stockSymbols);
+  const { data: stockQuotes, isLoading, isError } = useMultipleStockQuotes(stockSymbols);
+  
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/4d192af1-b502-483f-960a-2e671e970a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:57',message:'DashboardPreview render',data:{stockSymbols,hasStockQuotes:!!stockQuotes,stockQuotesLength:stockQuotes?.length||0,isLoading,isError},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+  // #endregion
   
   const stocks = useMemo(() => {
     const colors = ['from-blue-500 to-blue-600', 'from-red-500 to-red-600', 'from-green-500 to-green-600', 'from-cyan-500 to-cyan-600'];
     
-    if (stockQuotes && stockQuotes.length > 0) {
-      return stockQuotes.map((quote, i) => ({
-        symbol: quote.symbol,
-        name: quote.companyName,
-        price: quote.price,
-        change: `${quote.changePercent >= 0 ? '+' : ''}${quote.changePercent.toFixed(2)}%`,
-        color: colors[i],
-        isPositive: quote.changePercent >= 0,
-      }));
-    }
-    
-    return [
+    // Always use fallback data for landing page to ensure it always displays
+    // API data is optional and only used if available
+    const fallbackStocks = [
       { symbol: 'AAPL', name: 'Apple Inc.', price: 178.25, change: '+2.4%', color: colors[0], isPositive: true },
       { symbol: 'TSLA', name: 'Tesla Inc.', price: 245.50, change: '+5.1%', color: colors[1], isPositive: true },
       { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 890.20, change: '+4.5%', color: colors[2], isPositive: true },
       { symbol: 'MSFT', name: 'Microsoft', price: 378.90, change: '+0.8%', color: colors[3], isPositive: true },
     ];
-  }, [stockQuotes]);
+    
+    if (stockQuotes && stockQuotes.length > 0 && !isError) {
+      const mappedStocks = stockQuotes.map((quote, i) => ({
+        symbol: quote.symbol,
+        name: quote.companyName || fallbackStocks[i]?.name || quote.symbol,
+        price: quote.price || fallbackStocks[i]?.price || 0,
+        change: quote.changePercent !== undefined 
+          ? `${quote.changePercent >= 0 ? '+' : ''}${quote.changePercent.toFixed(2)}%`
+          : fallbackStocks[i]?.change || '+0%',
+        color: colors[i % colors.length],
+        isPositive: quote.changePercent !== undefined ? quote.changePercent >= 0 : true,
+      }));
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/4d192af1-b502-483f-960a-2e671e970a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:73',message:'DashboardPreview using API data',data:{stocksCount:mappedStocks.length,stocks:mappedStocks.map(s=>({symbol:s.symbol,price:s.price}))},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
+      return mappedStocks;
+    }
+    
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/4d192af1-b502-483f-960a-2e671e970a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:85',message:'DashboardPreview using fallback data',data:{reason:!stockQuotes?'noStockQuotes':stockQuotes.length===0?'emptyStockQuotes':'isError',isError,fallbackCount:fallbackStocks.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
+    return fallbackStocks;
+  }, [stockQuotes, isError]);
   
   const portfolioValue = useMemo(() => {
     const holdings = { AAPL: 15, TSLA: 8, NVDA: 5, MSFT: 12 };
-    if (stockQuotes && stockQuotes.length > 0) {
-      return stockQuotes.reduce((total, quote) => {
+    if (stockQuotes && stockQuotes.length > 0 && !isError) {
+      const calculated = stockQuotes.reduce((total, quote) => {
         const shares = holdings[quote.symbol as keyof typeof holdings] || 0;
-        return total + (quote.price * shares);
+        return total + ((quote.price || 0) * shares);
       }, 0);
+      const finalValue = calculated > 0 ? calculated : 15847;
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/4d192af1-b502-483f-960a-2e671e970a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:92',message:'DashboardPreview portfolioValue calculated',data:{calculated,finalValue,usedAPI:true},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
+      return finalValue;
     }
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/4d192af1-b502-483f-960a-2e671e970a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:98',message:'DashboardPreview portfolioValue fallback',data:{portfolioValue:15847,usedAPI:false},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
     return 15847;
-  }, [stockQuotes]);
+  }, [stockQuotes, isError]);
   
   return (
     <motion.div 
@@ -209,13 +259,17 @@ const LandingPage = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/4d192af1-b502-483f-960a-2e671e970a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:219',message:'LandingPage render',data:{hasUser:!!user,userId:user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+  // #endregion
+
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background text-foreground" style={{ minHeight: '100vh' }}>
       {/* Background gradient - static for performance */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />

@@ -213,6 +213,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [loadSettings]);
 
   // Initialize theme from localStorage on first load - default to dark
+  // This runs immediately to prevent flash of wrong theme
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
     // Default to dark mode if no preference saved
@@ -224,6 +225,8 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setSettings(prev => ({ ...prev, darkMode: true }));
       document.documentElement.classList.add('dark');
     }
+    // Ensure body is visible
+    document.body.style.visibility = 'visible';
   }, []);
 
   return (

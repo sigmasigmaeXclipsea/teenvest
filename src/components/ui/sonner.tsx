@@ -1,10 +1,18 @@
-import { useTheme } from "next-themes";
 import { Toaster as Sonner, toast } from "sonner";
+import { useSettings } from "@/contexts/SettingsContext";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme();
+  // Safely get settings, default to light mode if not available
+  let theme: "light" | "dark" = "light";
+  try {
+    const { settings } = useSettings();
+    theme = settings.darkMode ? "dark" : "light";
+  } catch {
+    // If SettingsContext is not available, check document class
+    theme = document.documentElement.classList.contains("dark") ? "dark" : "light";
+  }
 
   return (
     <Sonner
