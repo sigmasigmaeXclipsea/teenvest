@@ -90,19 +90,32 @@ const FloatingParticles = memo(() => {
   );
 });
 
-// Dashboard preview with smooth cursor tracking
+// Dashboard preview with smooth cursor tracking and pulsing glow
 const DashboardPreview = memo(() => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [isHovering, setIsHovering] = useState(false);
+  const [pulsePhase, setPulsePhase] = useState(0);
   
   // Spring-based mouse tracking for smooth movement
-  const mouseX = useMotionValue(0.5);
-  const mouseY = useMotionValue(0.5);
-  
-  const springConfig = { stiffness: 150, damping: 20, mass: 0.5 };
+  const springConfig = { stiffness: 120, damping: 25, mass: 0.8 };
   const rotateX = useSpring(0, springConfig);
   const rotateY = useSpring(0, springConfig);
   const glowX = useSpring(50, springConfig);
   const glowY = useSpring(50, springConfig);
+  const glowOpacity = useSpring(0, { stiffness: 200, damping: 30 });
+  const cursorGlowX = useSpring(0, { stiffness: 300, damping: 30 });
+  const cursorGlowY = useSpring(0, { stiffness: 300, damping: 30 });
+
+  // Pulsing animation synced with cursor
+  useEffect(() => {
+    if (!isHovering) return;
+    
+    const interval = setInterval(() => {
+      setPulsePhase((prev) => (prev + 1) % 360);
+    }, 50);
+    
+    return () => clearInterval(interval);
+  }, [isHovering]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!containerRef.current) return;
@@ -111,24 +124,32 @@ const DashboardPreview = memo(() => {
     const x = (e.clientX - rect.left) / rect.width;
     const y = (e.clientY - rect.top) / rect.height;
     
-    mouseX.set(x);
-    mouseY.set(y);
-    
     // Subtle 3D tilt effect
-    rotateX.set((y - 0.5) * -8);
-    rotateY.set((x - 0.5) * 8);
+    rotateX.set((y - 0.5) * -6);
+    rotateY.set((x - 0.5) * 6);
     
     // Glow position
     glowX.set(x * 100);
     glowY.set(y * 100);
-  }, [mouseX, mouseY, rotateX, rotateY, glowX, glowY]);
+    glowOpacity.set(1);
+    
+    // Cursor glow position (absolute pixels for the cursor follower)
+    cursorGlowX.set(e.clientX);
+    cursorGlowY.set(e.clientY);
+  }, [rotateX, rotateY, glowX, glowY, glowOpacity, cursorGlowX, cursorGlowY]);
+
+  const handleMouseEnter = useCallback(() => {
+    setIsHovering(true);
+  }, []);
 
   const handleMouseLeave = useCallback(() => {
+    setIsHovering(false);
     rotateX.set(0);
     rotateY.set(0);
     glowX.set(50);
     glowY.set(50);
-  }, [rotateX, rotateY, glowX, glowY]);
+    glowOpacity.set(0);
+  }, [rotateX, rotateY, glowX, glowY, glowOpacity]);
 
   const colors = useMemo(
     () => ['from-blue-500 to-blue-600', 'from-red-500 to-red-600', 'from-green-500 to-green-600', 'from-cyan-500 to-cyan-600'],
@@ -147,10 +168,58 @@ const DashboardPreview = memo(() => {
 
   const portfolioValue = 15847;
   
+  // Calculate pulsing glow intensity
+  const pulseIntensity = Math.sin(pulsePhase * Math.PI / 180) * 0.3 + 0.7;
+  
   return (
     <div className="relative w-full max-w-xl mx-auto" style={{ perspective: '1000px' }}>
       {/* Floating particles behind */}
       <FloatingParticles />
+      
+      {/* Cursor glow follower - fixed position */}
+      {isHovering && (
+        <motion.div
+          className="fixed pointer-events-none z-50"
+          style={{
+            x: cursorGlowX,
+            y: cursorGlowY,
+            translateX: '-50%',
+            translateY: '-50%',
+          }}
+        >
+          {/* Outer glow ring */}
+          <motion.div
+            className="absolute rounded-full"
+            style={{
+              width: 80,
+              height: 80,
+              left: -40,
+              top: -40,
+              background: `radial-gradient(circle, hsl(var(--primary) / ${0.15 * pulseIntensity}), transparent 70%)`,
+              boxShadow: `0 0 ${30 * pulseIntensity}px ${10 * pulseIntensity}px hsl(var(--primary) / ${0.2 * pulseIntensity})`,
+            }}
+            animate={{
+              scale: [1, 1.1, 1],
+            }}
+            transition={{
+              duration: 1.5,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+          />
+          {/* Inner bright core */}
+          <motion.div
+            className="absolute rounded-full"
+            style={{
+              width: 20,
+              height: 20,
+              left: -10,
+              top: -10,
+              background: `radial-gradient(circle, hsl(var(--primary) / ${0.6 * pulseIntensity}), hsl(var(--accent) / ${0.3 * pulseIntensity}), transparent 80%)`,
+            }}
+          />
+        </motion.div>
+      )}
       
       <motion.div
         ref={containerRef}
@@ -158,26 +227,57 @@ const DashboardPreview = memo(() => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, duration: 0.5 }}
         onMouseMove={handleMouseMove}
+        onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        className="relative will-change-transform"
+        className="relative will-change-transform group"
         style={{
           rotateX,
           rotateY,
           transformStyle: 'preserve-3d',
         }}
       >
+        {/* Pulsing glow layer - on the same plane as dashboard */}
+        <motion.div
+          className="absolute -inset-4 rounded-3xl pointer-events-none"
+          style={{
+            opacity: glowOpacity,
+            background: `radial-gradient(ellipse 60% 50% at ${glowX.get()}% ${glowY.get()}%, hsl(var(--primary) / ${0.25 * pulseIntensity}), transparent 60%)`,
+            filter: `blur(${8 + 4 * pulseIntensity}px)`,
+            transform: 'translateZ(-1px)',
+          }}
+        />
+        
+        {/* Secondary ambient glow */}
+        <motion.div
+          className="absolute -inset-8 rounded-3xl pointer-events-none"
+          style={{
+            opacity: glowOpacity,
+            background: `radial-gradient(circle at ${glowX.get()}% ${glowY.get()}%, hsl(var(--accent) / ${0.15 * pulseIntensity}), transparent 50%)`,
+            filter: 'blur(20px)',
+            transform: 'translateZ(-2px)',
+          }}
+        />
+        
         <div className="rounded-2xl overflow-hidden bg-card border border-border/60 shadow-xl relative">
-          {/* Dynamic glow effect */}
+          {/* Inner glow effect that follows cursor */}
           <motion.div
-            className="absolute inset-0 pointer-events-none opacity-0 hover:opacity-100 transition-opacity duration-300"
+            className="absolute inset-0 pointer-events-none z-0"
             style={{
-              background: `radial-gradient(circle at ${glowX.get()}% ${glowY.get()}%, hsl(var(--primary) / 0.15), transparent 50%)`,
+              opacity: glowOpacity,
+              background: `radial-gradient(circle 150px at ${glowX.get()}% ${glowY.get()}%, hsl(var(--primary) / ${0.12 * pulseIntensity}), transparent)`,
             }}
           />
+          
+          {/* Border glow effect */}
           <motion.div
-            className="absolute -inset-[1px] rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute -inset-[1px] rounded-2xl pointer-events-none"
             style={{
-              background: `radial-gradient(circle at ${glowX.get()}% ${glowY.get()}%, hsl(var(--primary) / 0.4), hsl(var(--accent) / 0.2), transparent 60%)`,
+              opacity: glowOpacity,
+              background: `conic-gradient(from ${pulsePhase}deg at ${glowX.get()}% ${glowY.get()}%, hsl(var(--primary) / 0.4), hsl(var(--accent) / 0.2), hsl(var(--primary) / 0.4))`,
+              mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+              maskComposite: 'exclude',
+              WebkitMaskComposite: 'xor',
+              padding: '1px',
             }}
           />
           
@@ -268,7 +368,8 @@ const DashboardPreview = memo(() => {
     </div>
   );
 });
-// Feature card - simplified
+
+
 const FeatureCard = ({ icon: Icon, title, desc, gradient, delay = 0 }: { 
   icon: React.ElementType; 
   title: string; 
