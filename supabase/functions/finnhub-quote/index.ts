@@ -46,7 +46,7 @@ serve(async (req: Request) => {
   }
 
   try {
-    const body: RequestBody = await req.json();
+    const body: RequestBody = await req.json() as RequestBody;
     const { ticker } = body;
     
     if (!ticker) {
