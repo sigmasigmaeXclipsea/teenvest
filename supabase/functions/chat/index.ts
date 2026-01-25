@@ -1,10 +1,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { rateLimit, RateLimitConfig, sanitizeInput, cspHeaders } from "../_shared/security.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-csrf-token",
+  "Access-Control-Allow-Credentials": "true",
+  ...cspHeaders,
 };
+
+const rateLimitConfig: RateLimitConfig = { windowMs: 60 * 1000, maxRequests: 20 };
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -39,9 +44,44 @@ serve(async (req) => {
       );
     }
 
+    // Rate limiting per user
+    const rateLimitResult = rateLimit(claims.claims.sub as string, rateLimitConfig);
+    if (!rateLimitResult.allowed) {
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
+        { 
+          status: 429, 
+          headers: { 
+            ...corsHeaders, 
+            "Content-Type": "application/json",
+            "Retry-After": Math.ceil((rateLimitResult.resetTime! - Date.now()) / 1000).toString(),
+          } 
+        }
+      );
+    }
+
+    // CSRF protection for state-changing requests
+    if (req.method !== "GET" && req.method !== "HEAD") {
+      const csrfToken = req.headers.get("X-CSRF-Token");
+      if (!csrfToken || csrfToken.length < 16) {
+        return new Response(
+          JSON.stringify({ error: "CSRF token required" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     console.log("Authenticated user:", claims.claims.sub);
 
-    const { messages, context } = await req.json();
+    const body = await req.json();
+    const { messages, context } = body;
+
+    // Sanitize inputs
+    const sanitizedMessages = (messages || []).map((m: any) => ({
+      ...m,
+      content: sanitizeInput(m.content),
+    }));
+    const sanitizedContext = sanitizeInput(context);
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
