@@ -129,101 +129,113 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       <aside className="hidden lg:fixed lg:top-14 lg:inset-y-0 lg:left-0 lg:z-40 lg:block group">
         <div className="w-16 group-hover:w-56 bg-card border-r border-border transition-all duration-300 ease-in-out overflow-hidden flex flex-col">
           {/* Navigation */}
-          <nav className="flex-1 space-y-1 p-2">
+          <nav className="flex-1 space-y-1 p-2 flex flex-col">
             {/* Core */}
             <div className="pb-2 mb-2 border-b border-border/60">
-              <div className="px-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Core</div>
+              <div className="h-0 opacity-0 group-hover:h-auto group-hover:opacity-100 transition-all">
+                <div className="px-3 py-1">
+                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Core</div>
+                </div>
               </div>
               {navItems.slice(0, 4).map((item) => {
                 const isActive = location.pathname === item.path;
                 return (
-                  <button
-                    key={item.path}
-                    onClick={() => navigate(item.path)}
-                    className={cn(
-                      "flex items-center gap-3 w-12 h-12 group-hover:w-full rounded-lg transition-colors",
-                      isActive
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-                    )}
-                    title={item.label}
-                  >
-                    <item.icon className="w-5 h-5 flex-shrink-0" />
-                    <span className="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-sm font-medium">
-                      {item.label}
-                    </span>
-                  </button>
+                  <div className="flex justify-center group-hover:justify-start">
+                    <button
+                      key={item.path}
+                      onClick={() => navigate(item.path)}
+                      className={cn(
+                        "flex items-center gap-3 w-12 h-12 group-hover:w-full px-3 rounded-lg transition-colors",
+                        isActive
+                          ? 'bg-primary text-primary-foreground'
+                          : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                      )}
+                      title={item.label}
+                    >
+                      <item.icon className="w-5 h-5 flex-shrink-0" />
+                      <span className="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-sm font-medium text-left">
+                        {item.label}
+                      </span>
+                    </button>
+                  </div>
                 );
               })}
             </div>
 
             {/* Learning & Social */}
             <div className="pb-2 mb-2 border-b border-border/60">
-              <div className="px-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Learning & Social</div>
+              <div className="h-0 opacity-0 group-hover:h-auto group-hover:opacity-100 transition-all">
+                <div className="px-3 py-1">
+                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Learning & Social</div>
+                </div>
               </div>
               {navItems.slice(4, 9).map((item) => {
                 const isActive = location.pathname === item.path;
                 return (
-                  <button
-                    key={item.path}
-                    onClick={() => navigate(item.path)}
-                    className={cn(
-                      "flex items-center gap-3 w-12 h-12 group-hover:w-full rounded-lg transition-colors",
-                      isActive
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-                    )}
-                    title={item.label}
-                  >
-                    <item.icon className="w-5 h-5 flex-shrink-0" />
-                    <span className="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-sm font-medium">
-                      {item.label}
-                    </span>
-                  </button>
+                  <div className="flex justify-center group-hover:justify-start">
+                    <button
+                      key={item.path}
+                      onClick={() => navigate(item.path)}
+                      className={cn(
+                        "flex items-center gap-3 w-12 h-12 group-hover:w-full px-3 rounded-lg transition-colors",
+                        isActive
+                          ? 'bg-primary text-primary-foreground'
+                          : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                      )}
+                      title={item.label}
+                    >
+                      <item.icon className="w-5 h-5 flex-shrink-0" />
+                      <span className="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-sm font-medium text-left">
+                        {item.label}
+                      </span>
+                    </button>
+                  </div>
                 );
               })}
             </div>
 
             {/* System */}
             <div>
-              <div className="px-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">System</div>
+              <div className="h-0 opacity-0 group-hover:h-auto group-hover:opacity-100 transition-all">
+                <div className="px-3 py-1">
+                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">System</div>
+                </div>
               </div>
               {navItems.slice(9).map((item) => {
                 const isActive = location.pathname === item.path;
                 return (
-                  <button
-                    key={item.path}
-                    onClick={() => navigate(item.path)}
-                    className={cn(
-                      "flex items-center gap-3 w-12 h-12 group-hover:w-full rounded-lg transition-colors",
-                      isActive
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-                    )}
-                    title={item.label}
-                  >
-                    <item.icon className="w-5 h-5 flex-shrink-0" />
-                    <span className="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-sm font-medium">
-                      {item.label}
-                    </span>
-                  </button>
+                  <div className="flex justify-center group-hover:justify-start">
+                    <button
+                      key={item.path}
+                      onClick={() => navigate(item.path)}
+                      className={cn(
+                        "flex items-center gap-3 w-12 h-12 group-hover:w-full px-3 rounded-lg transition-colors",
+                        isActive
+                          ? 'bg-primary text-primary-foreground'
+                          : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                      )}
+                      title={item.label}
+                    >
+                      <item.icon className="w-5 h-5 flex-shrink-0" />
+                      <span className="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-sm font-medium text-left">
+                        {item.label}
+                      </span>
+                    </button>
+                  </div>
                 );
               })}
             </div>
           </nav>
 
           {/* Logout */}
-          <div className="p-2 border-t border-border">
+          <div className="p-2 border-t border-border flex justify-center group-hover:justify-start">
             <Button
               variant="ghost"
-              className="w-12 h-12 p-0 text-muted-foreground group-hover:w-full justify-start gap-3 transition-all duration-300"
+              className="w-12 h-12 p-0 text-muted-foreground group-hover:w-full justify-start gap-3 px-3 transition-all duration-300"
               onClick={handleLogout}
             >
               <LogOut className="w-5 h-5 flex-shrink-0" />
-              <span className="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-left">
                 Log Out
               </span>
             </Button>
