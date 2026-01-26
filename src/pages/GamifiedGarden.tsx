@@ -309,13 +309,33 @@ export default function GamifiedGarden() {
 
   // Load from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem('garden-state-v5');
+    // Try v5 first (new garden system)
+    let saved = localStorage.getItem('garden-state-v5');
+    let version = 'v5';
+    
+    // If v5 doesn't exist, try v4 (old plot system) and migrate
+    if (!saved) {
+      saved = localStorage.getItem('garden-state-v4');
+      version = 'v4';
+    }
+    
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
+        console.log('Loading garden state from version:', version);
+        
         setXp(parsed.xp ?? 0);
         setMoney(parsed.money ?? 0); // Default to 0 coins
-        setGarden(parsed.garden ?? { plants: [], width: 800, height: 600 });
+        
+        if (version === 'v5') {
+          // New garden system
+          setGarden(parsed.garden ?? { plants: [], width: 800, height: 600 });
+        } else {
+          // Migrate from old plot system to new garden system
+          setGarden({ plants: [], width: 800, height: 600 });
+          console.log('Migrated from plot system to garden system');
+        }
+        
         setInventory(parsed.inventory ?? { seeds: [], gear: [] });
         setHarvestedPlants(parsed.harvestedPlants ?? []);
         setSprinklerPositions(parsed.sprinklerPositions ?? []);
@@ -327,7 +347,14 @@ export default function GamifiedGarden() {
         setSelectedItem(parsed.selectedItem ?? null);
       } catch (e) {
         console.error('Failed to load garden state:', e);
+        // Reset to defaults on error
+        setGarden({ plants: [], width: 800, height: 600 });
+        setInventory({ seeds: [], gear: [] });
       }
+    } else {
+      // No saved state, use defaults
+      console.log('No saved state found, using defaults');
+      setGarden({ plants: [], width: 800, height: 600 });
     }
   }, []);
 
