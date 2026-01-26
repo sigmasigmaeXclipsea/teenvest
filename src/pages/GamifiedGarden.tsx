@@ -539,7 +539,12 @@ export default function GamifiedGarden() {
     
     // Purchase the seed
     setMoney(m => m - seed.price);
-    setInventory(inv => ({ ...inv, seeds: [...inv.seeds, seed] }));
+    // Create a unique seed object for the inventory with a new ID
+    const uniqueSeed = {
+      ...seed,
+      id: generateId(), // Generate unique ID for this specific seed
+    };
+    setInventory(inv => ({ ...inv, seeds: [...inv.seeds, uniqueSeed] }));
     
     // Decrease stock quantity
     setShopSeeds(seeds => 
@@ -571,14 +576,23 @@ export default function GamifiedGarden() {
           return;
         }
       } else if (gear.type === 'wateringCan') {
-        // Add consumable watering can with uses
-        const wateringCanWithUses = { ...gear, uses: 10 }; // 10 uses per watering can
+        // Add consumable watering can with uses and unique ID
+        const wateringCanWithUses = { 
+          ...gear, 
+          id: generateId(), // Generate unique ID for this specific watering can
+          uses: 10 
+        };
         setInventory(inv => ({ ...inv, gear: [...inv.gear, wateringCanWithUses] }));
         toast({ title: 'Purchased', description: `${gear.name} (10 uses)` });
         return;
       }
       
-      setInventory(inv => ({ ...inv, gear: [...inv.gear, gear] }));
+      // For other gear types, create unique object
+      const uniqueGear = {
+        ...gear,
+        id: generateId(), // Generate unique ID for this specific gear
+      };
+      setInventory(inv => ({ ...inv, gear: [...inv.gear, uniqueGear] }));
       if (gear.type !== 'plotUpgrade') {
         toast({ title: 'Purchased', description: gear.name });
       }
