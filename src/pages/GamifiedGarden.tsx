@@ -78,59 +78,59 @@ function getPlotUpgradePrice(currentPots: number): number {
   return Math.round(basePrice * Math.pow(exponent, upgradeIndex));
 }
 
-// 40 different seeds ordered by price (cheapest to most expensive) with slower progression and balanced sell prices
+// 40 different seeds ordered by price (cheapest to most expensive) with scaled stock rates
 const SEED_TEMPLATES: Omit<Seed, 'id' | 'inStock' | 'stockQuantity'>[] = [
-  // Common (10 seeds) - Reduced stock rates
-  { name: 'Radish', rarity: 'common', baseGrowthTime: 30, baseSizeKg: 0.2, price: 10, sellPrice: 12, icon: '🌱', stockRate: 0.8 },
-  { name: 'Lettuce', rarity: 'common', baseGrowthTime: 40, baseSizeKg: 0.3, price: 20, sellPrice: 25, icon: '🥬', stockRate: 0.7 },
-  { name: 'Carrot', rarity: 'common', baseGrowthTime: 50, baseSizeKg: 0.5, price: 35, sellPrice: 40, icon: '🥕', stockRate: 0.8 },
-  { name: 'Spinach', rarity: 'common', baseGrowthTime: 35, baseSizeKg: 0.3, price: 25, sellPrice: 30, icon: '🍃', stockRate: 0.6 },
-  { name: 'Cabbage', rarity: 'common', baseGrowthTime: 60, baseSizeKg: 0.8, price: 40, sellPrice: 45, icon: '🥬', stockRate: 0.7 },
-  { name: 'Peas', rarity: 'common', baseGrowthTime: 45, baseSizeKg: 0.4, price: 30, sellPrice: 35, icon: '🟢', stockRate: 0.8 },
-  { name: 'Onion', rarity: 'common', baseGrowthTime: 55, baseSizeKg: 0.6, price: 38, sellPrice: 42, icon: '🧅', stockRate: 0.7 },
-  { name: 'Garlic', rarity: 'common', baseGrowthTime: 70, baseSizeKg: 0.2, price: 45, sellPrice: 50, icon: '🧄', stockRate: 0.6 },
-  { name: 'Potato', rarity: 'common', baseGrowthTime: 80, baseSizeKg: 1.0, price: 50, sellPrice: 55, icon: '🥔', stockRate: 0.8 },
-  { name: 'Turnip', rarity: 'common', baseGrowthTime: 65, baseSizeKg: 0.7, price: 42, sellPrice: 48, icon: '⚪', stockRate: 0.7 },
+  // Common (10 seeds) - High availability
+  { name: 'Radish', rarity: 'common', baseGrowthTime: 30, baseSizeKg: 0.2, price: 10, sellPrice: 12, icon: '🌱', stockRate: 0.6 },
+  { name: 'Lettuce', rarity: 'common', baseGrowthTime: 40, baseSizeKg: 0.3, price: 20, sellPrice: 25, icon: '🥬', stockRate: 0.55 },
+  { name: 'Carrot', rarity: 'common', baseGrowthTime: 50, baseSizeKg: 0.5, price: 35, sellPrice: 40, icon: '🥕', stockRate: 0.6 },
+  { name: 'Spinach', rarity: 'common', baseGrowthTime: 35, baseSizeKg: 0.3, price: 25, sellPrice: 30, icon: '🍃', stockRate: 0.5 },
+  { name: 'Cabbage', rarity: 'common', baseGrowthTime: 60, baseSizeKg: 0.8, price: 40, sellPrice: 45, icon: '🥬', stockRate: 0.55 },
+  { name: 'Peas', rarity: 'common', baseGrowthTime: 45, baseSizeKg: 0.4, price: 30, sellPrice: 35, icon: '🟢', stockRate: 0.6 },
+  { name: 'Onion', rarity: 'common', baseGrowthTime: 55, baseSizeKg: 0.6, price: 38, sellPrice: 42, icon: '🧅', stockRate: 0.55 },
+  { name: 'Garlic', rarity: 'common', baseGrowthTime: 70, baseSizeKg: 0.2, price: 45, sellPrice: 50, icon: '🧄', stockRate: 0.5 },
+  { name: 'Potato', rarity: 'common', baseGrowthTime: 80, baseSizeKg: 1.0, price: 50, sellPrice: 55, icon: '🥔', stockRate: 0.6 },
+  { name: 'Turnip', rarity: 'common', baseGrowthTime: 65, baseSizeKg: 0.7, price: 42, sellPrice: 48, icon: '⚪', stockRate: 0.55 },
   
-  // Uncommon (8 seeds) - Reduced stock rates
-  { name: 'Tomato', rarity: 'uncommon', baseGrowthTime: 90, baseSizeKg: 0.8, price: 75, sellPrice: 85, icon: '🍅', stockRate: 0.6 },
-  { name: 'Bell Pepper', rarity: 'uncommon', baseGrowthTime: 100, baseSizeKg: 0.6, price: 85, sellPrice: 95, icon: '🫑', stockRate: 0.7 },
-  { name: 'Cucumber', rarity: 'uncommon', baseGrowthTime: 85, baseSizeKg: 0.9, price: 80, sellPrice: 90, icon: '🥒', stockRate: 0.6 },
-  { name: 'Broccoli', rarity: 'uncommon', baseGrowthTime: 95, baseSizeKg: 0.7, price: 90, sellPrice: 100, icon: '🥦', stockRate: 0.5 },
-  { name: 'Eggplant', rarity: 'uncommon', baseGrowthTime: 110, baseSizeKg: 0.8, price: 100, sellPrice: 110, icon: '🍆', stockRate: 0.6 },
-  { name: 'Zucchini', rarity: 'uncommon', baseGrowthTime: 75, baseSizeKg: 1.2, price: 70, sellPrice: 80, icon: '🥒', stockRate: 0.7 },
-  { name: 'Green Bean', rarity: 'uncommon', baseGrowthTime: 70, baseSizeKg: 0.5, price: 65, sellPrice: 75, icon: '🟩', stockRate: 0.6 },
-  { name: 'Chili Pepper', rarity: 'uncommon', baseGrowthTime: 105, baseSizeKg: 0.3, price: 95, sellPrice: 105, icon: '🌶️', stockRate: 0.5 },
+  // Uncommon (8 seeds) - Moderate availability
+  { name: 'Tomato', rarity: 'uncommon', baseGrowthTime: 90, baseSizeKg: 0.8, price: 75, sellPrice: 85, icon: '🍅', stockRate: 0.35 },
+  { name: 'Bell Pepper', rarity: 'uncommon', baseGrowthTime: 100, baseSizeKg: 0.6, price: 85, sellPrice: 95, icon: '🫑', stockRate: 0.4 },
+  { name: 'Cucumber', rarity: 'uncommon', baseGrowthTime: 85, baseSizeKg: 0.9, price: 80, sellPrice: 90, icon: '🥒', stockRate: 0.35 },
+  { name: 'Broccoli', rarity: 'uncommon', baseGrowthTime: 95, baseSizeKg: 0.7, price: 90, sellPrice: 100, icon: '🥦', stockRate: 0.3 },
+  { name: 'Eggplant', rarity: 'uncommon', baseGrowthTime: 110, baseSizeKg: 0.8, price: 100, sellPrice: 110, icon: '🍆', stockRate: 0.35 },
+  { name: 'Zucchini', rarity: 'uncommon', baseGrowthTime: 75, baseSizeKg: 1.2, price: 70, sellPrice: 80, icon: '🥒', stockRate: 0.4 },
+  { name: 'Green Bean', rarity: 'uncommon', baseGrowthTime: 70, baseSizeKg: 0.5, price: 65, sellPrice: 75, icon: '🟩', stockRate: 0.35 },
+  { name: 'Chili Pepper', rarity: 'uncommon', baseGrowthTime: 105, baseSizeKg: 0.3, price: 95, sellPrice: 105, icon: '🌶️', stockRate: 0.3 },
   
-  // Rare (8 seeds) - Much slower growth with better sell prices
-  { name: 'Corn', rarity: 'rare', baseGrowthTime: 120, baseSizeKg: 1.5, price: 150, sellPrice: 180, icon: '🌽', stockRate: 0.3 },
-  { name: 'Pumpkin', rarity: 'rare', baseGrowthTime: 150, baseSizeKg: 4.0, price: 200, sellPrice: 240, icon: '🎃', stockRate: 0.3 },
-  { name: 'Watermelon', rarity: 'rare', baseGrowthTime: 160, baseSizeKg: 8.0, price: 250, sellPrice: 300, icon: '🍉', stockRate: 0.3 },
-  { name: 'Cauliflower', rarity: 'rare', baseGrowthTime: 130, baseSizeKg: 1.2, price: 175, sellPrice: 210, icon: '🥦', stockRate: 0.3 },
-  { name: 'Asparagus', rarity: 'rare', baseGrowthTime: 140, baseSizeKg: 0.4, price: 190, sellPrice: 225, icon: '🥬', stockRate: 0.3 },
-  { name: 'Brussels Sprouts', rarity: 'rare', baseGrowthTime: 135, baseSizeKg: 0.8, price: 185, sellPrice: 220, icon: '🥦', stockRate: 0.3 },
-  { name: 'Artichoke', rarity: 'rare', baseGrowthTime: 145, baseSizeKg: 0.6, price: 195, sellPrice: 230, icon: '🌿', stockRate: 0.3 },
-  { name: 'Mushroom', rarity: 'rare', baseGrowthTime: 90, baseSizeKg: 0.3, price: 160, sellPrice: 190, icon: '🍄', stockRate: 0.3 },
+  // Rare (8 seeds) - Lower availability
+  { name: 'Corn', rarity: 'rare', baseGrowthTime: 120, baseSizeKg: 1.5, price: 150, sellPrice: 180, icon: '🌽', stockRate: 0.15 },
+  { name: 'Pumpkin', rarity: 'rare', baseGrowthTime: 150, baseSizeKg: 4.0, price: 200, sellPrice: 240, icon: '🎃', stockRate: 0.15 },
+  { name: 'Watermelon', rarity: 'rare', baseGrowthTime: 160, baseSizeKg: 8.0, price: 250, sellPrice: 300, icon: '🍉', stockRate: 0.15 },
+  { name: 'Cauliflower', rarity: 'rare', baseGrowthTime: 130, baseSizeKg: 1.2, price: 175, sellPrice: 210, icon: '🥦', stockRate: 0.15 },
+  { name: 'Asparagus', rarity: 'rare', baseGrowthTime: 140, baseSizeKg: 0.4, price: 190, sellPrice: 225, icon: '🥬', stockRate: 0.15 },
+  { name: 'Brussels Sprouts', rarity: 'rare', baseGrowthTime: 135, baseSizeKg: 0.8, price: 185, sellPrice: 220, icon: '🥦', stockRate: 0.15 },
+  { name: 'Artichoke', rarity: 'rare', baseGrowthTime: 145, baseSizeKg: 0.6, price: 195, sellPrice: 230, icon: '🌿', stockRate: 0.15 },
+  { name: 'Mushroom', rarity: 'rare', baseGrowthTime: 90, baseSizeKg: 0.3, price: 160, sellPrice: 190, icon: '🍄', stockRate: 0.15 },
   
-  // Epic (8 seeds) - Long growth times with good returns
-  { name: 'Strawberry', rarity: 'epic', baseGrowthTime: 180, baseSizeKg: 0.4, price: 350, sellPrice: 420, icon: '🍓', stockRate: 0.2 },
-  { name: 'Pineapple', rarity: 'epic', baseGrowthTime: 240, baseSizeKg: 2.0, price: 500, sellPrice: 600, icon: '🍍', stockRate: 0.2 },
-  { name: 'Avocado', rarity: 'epic', baseGrowthTime: 200, baseSizeKg: 0.5, price: 450, sellPrice: 540, icon: '🥑', stockRate: 0.2 },
-  { name: 'Mango', rarity: 'epic', baseGrowthTime: 220, baseSizeKg: 1.0, price: 475, sellPrice: 570, icon: '🥭', stockRate: 0.2 },
-  { name: 'Papaya', rarity: 'epic', baseGrowthTime: 190, baseSizeKg: 1.5, price: 425, sellPrice: 510, icon: '🍈', stockRate: 0.2 },
-  { name: 'Coconut', rarity: 'epic', baseGrowthTime: 260, baseSizeKg: 2.5, price: 550, sellPrice: 660, icon: '🥥', stockRate: 0.2 },
-  { name: 'Durian', rarity: 'epic', baseGrowthTime: 280, baseSizeKg: 3.0, price: 650, sellPrice: 780, icon: '🦥', stockRate: 0.2 },
-  { name: 'Jackfruit', rarity: 'epic', baseGrowthTime: 320, baseSizeKg: 4.0, price: 750, sellPrice: 900, icon: '🟡', stockRate: 0.2 },
+  // Epic (8 seeds) - Rare availability
+  { name: 'Strawberry', rarity: 'epic', baseGrowthTime: 180, baseSizeKg: 0.4, price: 350, sellPrice: 420, icon: '🍓', stockRate: 0.08 },
+  { name: 'Pineapple', rarity: 'epic', baseGrowthTime: 240, baseSizeKg: 2.0, price: 500, sellPrice: 600, icon: '🍍', stockRate: 0.08 },
+  { name: 'Avocado', rarity: 'epic', baseGrowthTime: 200, baseSizeKg: 0.5, price: 450, sellPrice: 540, icon: '🥑', stockRate: 0.08 },
+  { name: 'Mango', rarity: 'epic', baseGrowthTime: 220, baseSizeKg: 1.0, price: 475, sellPrice: 570, icon: '🥭', stockRate: 0.08 },
+  { name: 'Papaya', rarity: 'epic', baseGrowthTime: 190, baseSizeKg: 1.5, price: 425, sellPrice: 510, icon: '🍈', stockRate: 0.08 },
+  { name: 'Coconut', rarity: 'epic', baseGrowthTime: 260, baseSizeKg: 2.5, price: 550, sellPrice: 660, icon: '🥥', stockRate: 0.08 },
+  { name: 'Durian', rarity: 'epic', baseGrowthTime: 280, baseSizeKg: 3.0, price: 650, sellPrice: 780, icon: '🦥', stockRate: 0.08 },
+  { name: 'Jackfruit', rarity: 'epic', baseGrowthTime: 320, baseSizeKg: 4.0, price: 750, sellPrice: 900, icon: '🟡', stockRate: 0.08 },
   
-  // Mythic (1 seed) - High tier but not the best
-  { name: 'Dragon Fruit', rarity: 'mythic', baseGrowthTime: 360, baseSizeKg: 3.0, price: 2000, sellPrice: 2400, icon: '🐉', stockRate: 0.05 },
+  // Mythic (1 seed) - Very rare
+  { name: 'Dragon Fruit', rarity: 'mythic', baseGrowthTime: 360, baseSizeKg: 3.0, price: 2000, sellPrice: 2400, icon: '🐉', stockRate: 0.03 },
   
-  // Legendary (3 seeds) - Above Dragon Fruit
-  { name: 'Phoenix Feather', rarity: 'legendary', baseGrowthTime: 400, baseSizeKg: 2.0, price: 3000, sellPrice: 3600, icon: '🔥', stockRate: 0.02 },
-  { name: 'Unicorn Tear', rarity: 'legendary', baseGrowthTime: 440, baseSizeKg: 1.5, price: 4000, sellPrice: 4800, icon: '🦄', stockRate: 0.02 },
-  { name: 'Thunder Crystal', rarity: 'legendary', baseGrowthTime: 480, baseSizeKg: 4.0, price: 5000, sellPrice: 6000, icon: '⚡', stockRate: 0.02 },
+  // Legendary (3 seeds) - Extremely rare
+  { name: 'Phoenix Feather', rarity: 'legendary', baseGrowthTime: 400, baseSizeKg: 2.0, price: 3000, sellPrice: 3600, icon: '🔥', stockRate: 0.015 },
+  { name: 'Unicorn Tear', rarity: 'legendary', baseGrowthTime: 440, baseSizeKg: 1.5, price: 4000, sellPrice: 4800, icon: '🦄', stockRate: 0.015 },
+  { name: 'Thunder Crystal', rarity: 'legendary', baseGrowthTime: 480, baseSizeKg: 4.0, price: 5000, sellPrice: 6000, icon: '⚡', stockRate: 0.015 },
   
-  // Exotic (2 seeds) - The absolute best!
+  // Exotic (2 seeds) - The absolute best! 1% stock rate
   { name: 'Cosmic Melon', rarity: 'exotic', baseGrowthTime: 600, baseSizeKg: 10.0, price: 10000, sellPrice: 12000, icon: '🌌', stockRate: 0.01 },
   { name: 'Infinity Star', rarity: 'exotic', baseGrowthTime: 720, baseSizeKg: 5.0, price: 20000, sellPrice: 24000, icon: '⭐', stockRate: 0.01 },
 ];
