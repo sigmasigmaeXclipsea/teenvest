@@ -50,7 +50,7 @@ interface Gear {
 const MIN_POTS = 3;
 const MAX_POTS = 20; // Increased from 9 to 20 for more progression
 const WILT_THRESHOLD = 90 * 60 * 1000; // 90 minutes without water (increased from 60 min)
-const WATER_REDUCTION = 0.3; // watering cuts remaining time by 30% (reduced from 50%)
+const WATER_REDUCTION_TIME = 20 * 60 * 1000; // Fixed 20 minutes reduction per watering
 const XP_TO_MONEY_RATE = 5; // 1 XP = 5 coins (increased to make XP more valuable)
 
 // Exponential plot upgrade pricing: more expensive for longer progression
@@ -121,7 +121,7 @@ const SEED_TEMPLATES: Omit<Seed, 'id'>[] = [
 
 // Base gear templates - plot upgrade price is dynamic
 const GEAR_TEMPLATES: Omit<Gear, 'id'>[] = [
-  { name: 'Watering Can', type: 'wateringCan', effect: '10 uses - Reduces growth time by 30%', price: 150 },
+  { name: 'Watering Can', type: 'wateringCan', effect: '10 uses - Reduces growth time by 20 minutes', price: 150 },
   { name: 'Basic Sprinkler', type: 'sprinkler', effect: 'Increases golden chance by 10%', price: 400 },
   { name: 'Advanced Sprinkler', type: 'sprinkler', effect: 'Increases golden chance by 20%', price: 800 },
   { name: 'Deluxe Sprinkler', type: 'sprinkler', effect: 'Increases golden chance by 30%', price: 1500 },
@@ -350,7 +350,7 @@ export default function GamifiedGarden() {
         const plant = plot.plant;
         const elapsed = Date.now() - plant.plantedAt;
         const remaining = Math.max(0, plant.growthTimeMs - elapsed);
-        const newRemaining = remaining * WATER_REDUCTION;
+        const newRemaining = Math.max(0, remaining - WATER_REDUCTION_TIME); // Fixed 20 minutes reduction
         return {
           ...plot,
           plant: {
