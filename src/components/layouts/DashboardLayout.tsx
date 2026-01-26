@@ -127,13 +127,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
       {/* Desktop Sidebar */}
       <aside className="hidden lg:fixed lg:top-14 lg:bottom-0 lg:left-0 lg:z-40 lg:block group/sidebar">
-        <div className="h-full w-14 group-hover/sidebar:w-48 bg-card border-r border-border transition-all duration-300 ease-in-out overflow-hidden flex flex-col">
+        <div className="h-full w-12 group-hover/sidebar:w-48 bg-card border-r border-border transition-all duration-300 ease-in-out overflow-hidden flex flex-col">
           {/* Navigation */}
-          <nav className="flex-1 flex flex-col">
+          <nav className="flex-1 flex flex-col p-1 gap-1">
             {/* Core */}
-            <div className="pb-2 mb-2 border-b border-border/60">
-              <div className="h-6 opacity-0 group-hover:h-auto group-hover:opacity-100 transition-all duration-300 overflow-hidden">
-                <div className="px-3 py-1">
+            <div className="pb-1 mb-1 border-b border-border/60">
+              <div className="h-0 opacity-0 group-hover/sidebar:h-auto group-hover/sidebar:opacity-100 transition-all duration-300 overflow-hidden">
+                <div className="px-2 py-1">
                   <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Core</div>
                 </div>
               </div>
@@ -144,7 +144,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                     key={item.path}
                     onClick={() => navigate(item.path)}
                     className={cn(
-                      "flex items-center gap-3 h-10 w-full px-3 rounded-md transition-all duration-300",
+                      "flex items-center gap-3 w-10 h-10 group-hover/sidebar:w-full justify-center group-hover/sidebar:justify-start group-hover/sidebar:px-3 rounded-lg transition-all duration-300",
                       isActive
                         ? 'bg-primary text-primary-foreground'
                         : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
@@ -152,7 +152,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                     title={item.label}
                   >
                     <item.icon className="w-5 h-5 flex-shrink-0" />
-                    <span className="opacity-0 w-0 group-hover/sidebar:w-auto group-hover/sidebar:opacity-100 transition-all duration-300 whitespace-nowrap text-sm font-medium overflow-hidden">
+                    <span className="hidden group-hover/sidebar:inline whitespace-nowrap text-sm font-medium">
                       {item.label}
                     </span>
                   </button>
@@ -161,9 +161,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             </div>
 
             {/* Learning & Social */}
-            <div className="pb-2 mb-2 border-b border-border/60">
-              <div className="h-6 opacity-0 group-hover:h-auto group-hover:opacity-100 transition-all duration-300 overflow-hidden">
-                <div className="px-3 py-1">
+            <div className="pb-1 mb-1 border-b border-border/60">
+              <div className="h-0 opacity-0 group-hover/sidebar:h-auto group-hover/sidebar:opacity-100 transition-all duration-300 overflow-hidden">
+                <div className="px-2 py-1">
                   <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Learning & Social</div>
                 </div>
               </div>
@@ -174,7 +174,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                     key={item.path}
                     onClick={() => navigate(item.path)}
                     className={cn(
-                      "flex items-center gap-3 h-10 w-full px-3 rounded-md transition-all duration-300",
+                      "flex items-center gap-3 w-10 h-10 group-hover/sidebar:w-full justify-center group-hover/sidebar:justify-start group-hover/sidebar:px-3 rounded-lg transition-all duration-300",
                       isActive
                         ? 'bg-primary text-primary-foreground'
                         : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
@@ -182,7 +182,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                     title={item.label}
                   >
                     <item.icon className="w-5 h-5 flex-shrink-0" />
-                    <span className="opacity-0 w-0 group-hover/sidebar:w-auto group-hover/sidebar:opacity-100 transition-all duration-300 whitespace-nowrap text-sm font-medium overflow-hidden">
+                    <span className="hidden group-hover/sidebar:inline whitespace-nowrap text-sm font-medium">
                       {item.label}
                     </span>
                   </button>
@@ -192,8 +192,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
             {/* System */}
             <div>
-              <div className="h-6 opacity-0 group-hover:h-auto group-hover:opacity-100 transition-all duration-300 overflow-hidden">
-                <div className="px-3 py-1">
+              <div className="h-0 opacity-0 group-hover/sidebar:h-auto group-hover/sidebar:opacity-100 transition-all duration-300 overflow-hidden">
+                <div className="px-2 py-1">
                   <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">System</div>
                 </div>
               </div>
@@ -204,7 +204,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                     key={item.path}
                     onClick={() => navigate(item.path)}
                     className={cn(
-                      "flex items-center gap-3 h-10 w-full px-3 rounded-md transition-all duration-300",
+                      "flex items-center gap-3 w-10 h-10 group-hover/sidebar:w-full justify-center group-hover/sidebar:justify-start group-hover/sidebar:px-3 rounded-lg transition-all duration-300",
                       isActive
                         ? 'bg-primary text-primary-foreground'
                         : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
@@ -212,7 +212,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                     title={item.label}
                   >
                     <item.icon className="w-5 h-5 flex-shrink-0" />
-                    <span className="opacity-0 w-0 group-hover/sidebar:w-auto group-hover/sidebar:opacity-100 transition-all duration-300 whitespace-nowrap text-sm font-medium overflow-hidden">
+                    <span className="hidden group-hover/sidebar:inline whitespace-nowrap text-sm font-medium">
                       {item.label}
                     </span>
                   </button>
@@ -222,14 +222,14 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </nav>
 
           {/* Logout */}
-          <div className="mt-auto p-2 border-t border-border">
+          <div className="mt-auto p-1 border-t border-border">
             <Button
               variant="ghost"
-              className="flex items-center gap-3 h-10 w-full px-3 text-muted-foreground transition-all duration-300"
+              className="flex items-center gap-3 w-10 h-10 group-hover/sidebar:w-full justify-center group-hover/sidebar:justify-start group-hover/sidebar:px-3 text-muted-foreground rounded-lg transition-all duration-300"
               onClick={handleLogout}
             >
               <LogOut className="w-5 h-5 flex-shrink-0" />
-              <span className="opacity-0 w-0 group-hover/sidebar:w-auto group-hover/sidebar:opacity-100 transition-all duration-300 whitespace-nowrap overflow-hidden">
+              <span className="hidden group-hover/sidebar:inline whitespace-nowrap">
                 Log Out
               </span>
             </Button>
@@ -272,7 +272,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       )}
 
       {/* Main Content */}
-      <main className="lg:pl-14 pt-14 min-h-screen">
+      <main className="lg:pl-12 pt-14 min-h-screen">
         <div className="p-6">{children}</div>
       </main>
     </div>
