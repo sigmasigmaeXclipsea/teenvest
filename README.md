@@ -4,6 +4,35 @@
 
 **URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
 
+## 🚨 IMPORTANT DEVELOPMENT GUIDELINES
+
+### Variable Consistency Rule
+**CRITICAL**: When updating any variable, interface, or function name, you MUST update it across ALL related files in the codebase. This includes:
+
+- **Frontend components** (React/TypeScript files)
+- **Backend functions** (Supabase/SQL files)
+- **Database schemas** (migration files)
+- **Admin panels** (management interfaces)
+- **Type definitions** (interfaces, types)
+- **API endpoints** (function signatures)
+
+**Example**: If you change `plots` to `garden` in the frontend:
+- ✅ Update `GamifiedGarden.tsx` 
+- ✅ Update `FreeFormGarden.tsx`
+- ✅ Update admin SQL functions
+- ✅ Update database schema
+- ✅ Update any API calls
+- ❌ DON'T leave any old references
+
+**Failure to follow this rule will cause**: 
+- TypeScript errors
+- Runtime crashes
+- Admin panel malfunctions
+- Data corruption
+- Inconsistent user experience
+
+**Always run a full project search** (Ctrl+Shift+F) before and after variable changes to ensure complete consistency.
+
 ## How can I edit this code?
 
 There are several ways of editing your application.
