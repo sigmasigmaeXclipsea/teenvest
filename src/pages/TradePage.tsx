@@ -14,6 +14,7 @@ import { usePortfolio, useHoldings, useExecuteTrade } from '@/hooks/usePortfolio
 import { useToast } from '@/hooks/use-toast';
 import { useStockQuote, useSearchStock, StockQuote } from '@/hooks/useStockAPI';
 import { getUserFriendlyError } from '@/lib/errorMessages';
+import { useSettings } from '@/contexts/SettingsContext';
 import StockLineChart from '@/components/StockLineChart';
 import ProfessionalCandlestickChart from '@/components/ProfessionalCandlestickChart';
 
@@ -21,6 +22,7 @@ const TradePage = () => {
   const [searchParams] = useSearchParams();
   const initialSymbol = searchParams.get('symbol') || '';
   const navigate = useNavigate();
+  const { settings } = useSettings();
   
   const [selectedSymbol, setSelectedSymbol] = useState(initialSymbol);
   const [tickerSearch, setTickerSearch] = useState('');
@@ -323,7 +325,7 @@ const TradePage = () => {
         </div>
 
         {selectedStock && currentQuote && (
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className={`${settings.advancedMode ? 'grid gap-6 lg:grid-cols-2' : 'space-y-6'}`}>
             <StockLineChart
               symbol={selectedStock.symbol}
               currentPrice={Number(currentQuote.price) || 0}
@@ -333,14 +335,16 @@ const TradePage = () => {
               open={Number(currentQuote.open) || 0}
             />
 
-            <ProfessionalCandlestickChart
-              symbol={selectedStock.symbol}
-              currentPrice={Number(currentQuote.price) || 0}
-              previousClose={Number(currentQuote.previousClose) || Number(currentQuote.price) || 0}
-              high={Number(currentQuote.high) || 0}
-              low={Number(currentQuote.low) || 0}
-              open={Number(currentQuote.open) || 0}
-            />
+            {settings.advancedMode && (
+              <ProfessionalCandlestickChart
+                symbol={selectedStock.symbol}
+                currentPrice={Number(currentQuote.price) || 0}
+                previousClose={Number(currentQuote.previousClose) || Number(currentQuote.price) || 0}
+                high={Number(currentQuote.high) || 0}
+                low={Number(currentQuote.low) || 0}
+                open={Number(currentQuote.open) || 0}
+              />
+            )}
           </div>
         )}
 

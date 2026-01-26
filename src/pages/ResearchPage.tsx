@@ -12,6 +12,7 @@ import { useCachedStocks, useRefreshStockCache, isCacheStale } from '@/hooks/use
 import { useStockQuote } from '@/hooks/useStockAPI';
 import StockLineChart from '@/components/StockLineChart';
 import ProfessionalCandlestickChart from '@/components/ProfessionalCandlestickChart';
+import StockNews from '@/components/StockNews';
 
 // Lazy load heavy research components - only load when tab is active
 const ResearchCompanyProfile = lazy(() => import('@/components/research/ResearchCompanyProfile'));
@@ -445,8 +446,9 @@ const ResearchPage = () => {
             {/* Research Tabs - Only show if we have valid data */}
             {hasValidStockData && (
               <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                <TabsList className="grid grid-cols-4 lg:grid-cols-9 w-full">
+                <TabsList className="grid grid-cols-4 lg:grid-cols-10 w-full">
                   <TabsTrigger value="charts">Charts</TabsTrigger>
+                  <TabsTrigger value="news">News</TabsTrigger>
                   <TabsTrigger value="overview">Overview</TabsTrigger>
                   <TabsTrigger value="financials">Financials</TabsTrigger>
                   <TabsTrigger value="statistics">Statistics</TabsTrigger>
@@ -499,6 +501,10 @@ const ResearchPage = () => {
                     </CardContent>
                   </Card>
                 )}
+              </TabsContent>
+
+              <TabsContent value="news">
+                <StockNews symbol={selectedStock} />
               </TabsContent>
 
               <TabsContent value="overview">
