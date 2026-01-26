@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import { 
   Lock, DollarSign, ArrowLeft, Shield, UserPlus, Trash2, Crown, Loader2,
   Users, TrendingUp, BarChart3, RefreshCw, Search, Award, Activity,
-  BookOpen, Briefcase, ArrowUpRight, ArrowDownRight, Sprout, Coins, Zap
+  BookOpen, Briefcase, ArrowUpRight, ArrowDownRight
 } from 'lucide-react';
 import { getUserFriendlyError } from '@/lib/errorMessages';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
@@ -94,15 +94,6 @@ type CashBalanceResult = AdminResult & {
   new_balance?: number;
 };
 
-type GardenUpdateRow = {
-  id?: string;
-  user_email: string;
-  money?: number | null;
-  xp?: number | null;
-  updated_at?: string;
-  created_at?: string;
-};
-
 const AdminPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -120,10 +111,6 @@ const AdminPage = () => {
   const [newStartingBalance, setNewStartingBalance] = useState('');
   const [cashBalanceEmail, setCashBalanceEmail] = useState('');
   const [newCashBalanceForUser, setNewCashBalanceForUser] = useState('');
-  const [gardenMoneyEmail, setGardenMoneyEmail] = useState('');
-  const [newGardenMoney, setNewGardenMoney] = useState('');
-  const [newGardenXp, setNewGardenXp] = useState('');
-
   const isOwner = user?.email === OWNER_EMAIL;
 
   // Check if user has admin role
@@ -318,12 +305,20 @@ const AdminPage = () => {
 
   const updateCashBalanceMutation = useMutation<CashBalanceResult, Error, { email: string; balance: number }>({
     mutationFn: async ({ email, balance }: { email: string; balance: number }) => {
-      const { data, error } = await supabase.rpc('admin_update_cash_balance', { 
-        _email: email, 
-        _new_balance: balance 
+      // Get user ID from email first
+      const { data: userId, error: lookupError } = await supabase.rpc('get_user_id_by_email', { 
+        _email: email 
       });
-      if (error) throw error;
-      return data as CashBalanceResult;
+      if (lookupError || !userId) throw new Error('User not found');
+      
+      // Update portfolio directly
+      const { error: updateError } = await supabase
+        .from('portfolios')
+        .update({ cash_balance: balance, updated_at: new Date().toISOString() })
+        .eq('user_id', userId);
+      
+      if (updateError) throw updateError;
+      return { success: true, new_balance: balance };
     },
     onSuccess: (data) => {
       if (data?.success) {
@@ -347,31 +342,6 @@ const AdminPage = () => {
       } else {
         toast.error(data?.error || 'Failed to update cash balance');
       }
-    },
-    onError: (error: unknown) => toast.error(getUserFriendlyError(error)),
-  });
-
-  const updateGardenMoneyMutation = useMutation<GardenUpdateRow, Error, { email: string; money?: number; xp?: number }>({
-    mutationFn: async ({ email, money, xp }: { email: string; money?: number; xp?: number }) => {
-      const { data, error } = await supabase
-        .from('garden_updates')
-        .upsert({
-          user_email: email,
-          money: money,
-          xp: xp,
-          updated_at: new Date().toISOString()
-        })
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data as GardenUpdateRow;
-    },
-    onSuccess: (data) => {
-      toast.success(`Garden money/XP updated for ${gardenMoneyEmail}`);
-      setGardenMoneyEmail('');
-      setNewGardenMoney('');
-      setNewGardenXp('');
     },
     onError: (error: unknown) => toast.error(getUserFriendlyError(error)),
   });
@@ -402,20 +372,6 @@ const AdminPage = () => {
       toast.error(getUserFriendlyError(error));
     } finally {
       setIsUpdating(false);
-    }
-  };
-
-  const handleUpdateMyGardenMoney = async (money: number, xp: number) => {
-    // Update current user's garden money in localStorage
-    const saved = localStorage.getItem('garden-state-v4');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      parsed.money = money;
-      parsed.xp = xp;
-      localStorage.setItem('garden-state-v4', JSON.stringify(parsed));
-      toast.success(`Your garden money updated to ${money} and XP to ${xp}`);
-      // Force a re-render of the garden component if it's mounted
-      window.dispatchEvent(new Event('storage'));
     }
   };
 
@@ -926,103 +882,6 @@ const AdminPage = () => {
                 </CardContent>
               </Card>
 
-              {/* My Garden Money */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Sprout className="w-5 h-5 text-green-600" />
-                    My Garden Money
-                  </CardTitle>
-                  <CardDescription>Update your garden money and XP</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="relative">
-                    <Coins className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      type="number"
-                      step="1"
-                      min="0"
-                      placeholder="100"
-                      className="pl-9"
-                      onChange={(e) => setNewGardenMoney(e.target.value)}
-                    />
-                  </div>
-                  <div className="relative">
-                    <Zap className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      type="number"
-                      step="1"
-                      min="0"
-                      placeholder="50"
-                      className="pl-9"
-                      onChange={(e) => setNewGardenXp(e.target.value)}
-                    />
-                  </div>
-                  <Button
-                    onClick={() => {
-                      const money = parseInt(newGardenMoney) || 0;
-                      const xp = parseInt(newGardenXp) || 0;
-                      handleUpdateMyGardenMoney(money, xp);
-                    }}
-                    disabled={!newGardenMoney && !newGardenXp}
-                    className="w-full"
-                  >
-                    Update My Garden
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* User Garden Money */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Sprout className="w-5 h-5 text-green-600" />
-                    Set User Garden Money
-                  </CardTitle>
-                  <CardDescription>Update another user's garden money and XP</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <Input
-                    type="email"
-                    value={gardenMoneyEmail}
-                    onChange={(e) => setGardenMoneyEmail(e.target.value)}
-                    placeholder="user@example.com"
-                  />
-                  <div className="relative">
-                    <Coins className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      type="number"
-                      step="1"
-                      min="0"
-                      placeholder="100"
-                      className="pl-9"
-                      onChange={(e) => setNewGardenMoney(e.target.value)}
-                    />
-                  </div>
-                  <div className="relative">
-                    <Zap className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      type="number"
-                      step="1"
-                      min="0"
-                      placeholder="50"
-                      className="pl-9"
-                      onChange={(e) => setNewGardenXp(e.target.value)}
-                    />
-                  </div>
-                  <Button
-                    onClick={() => updateGardenMoneyMutation.mutate({ 
-                      email: gardenMoneyEmail, 
-                      money: parseInt(newGardenMoney) || undefined,
-                      xp: parseInt(newGardenXp) || undefined
-                    })}
-                    disabled={updateGardenMoneyMutation.isPending || !gardenMoneyEmail || (!newGardenMoney && !newGardenXp)}
-                    className="w-full"
-                  >
-                    {updateGardenMoneyMutation.isPending ? 'Updating...' : 'Update User Garden'}
-                  </Button>
-                </CardContent>
-              </Card>
             </div>
           </TabsContent>
 

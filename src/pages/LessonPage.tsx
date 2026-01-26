@@ -1,10 +1,6 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-<<<<<<< HEAD
-import { ArrowLeft, Clock, CheckCircle, BookOpen, HelpCircle, Award, ChevronLeft, ChevronRight, XCircle, CheckCircle2, MessageCircle, Sparkles } from 'lucide-react';
-=======
-import { ArrowLeft, Clock, CheckCircle, BookOpen, HelpCircle, Award, ChevronLeft, ChevronRight, XCircle, CheckCircle2, MessageCircle, Trophy } from 'lucide-react';
->>>>>>> 15b2eff (Add podcast and beanstalk game to learning section: AI-narrated lesson podcasts using Gemini Flash 3; interactive beanstalk climbing game with lesson-based questions; cartoony art style matching garden theme)
+import { ArrowLeft, Clock, CheckCircle, BookOpen, HelpCircle, Award, ChevronLeft, ChevronRight, XCircle, CheckCircle2, MessageCircle, Sparkles, Trophy } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
