@@ -8,6 +8,7 @@ export interface LeaderboardEntry {
   gain_percent: number;
   rank: number;
   profile_public: boolean;
+  is_current_user: boolean;
 }
 
 export const useLeaderboard = () => {
@@ -26,6 +27,7 @@ export const useLeaderboard = () => {
         gain_percent: number;
         rank: number;
         profile_public: boolean;
+        is_current_user: boolean;
       }) => ({
         user_id: entry.user_id,
         display_name: entry.display_name || 'Anonymous',
@@ -33,6 +35,7 @@ export const useLeaderboard = () => {
         gain_percent: Number(entry.gain_percent),
         rank: Number(entry.rank),
         profile_public: Boolean(entry.profile_public),
+        is_current_user: Boolean(entry.is_current_user),
       }));
 
       return entries;

@@ -190,7 +190,7 @@ const StockPage = () => {
 
         {/* News Section - Lazy loaded */}
         <Suspense fallback={<Card><CardContent className="pt-6"><Skeleton className="h-64" /></CardContent></Card>}>
-          <StockNews symbol={stock.symbol} companyName={stock.companyName} />
+          <StockNews symbol={stock.symbol} />
         </Suspense>
 
         {/* Stats Grid */}

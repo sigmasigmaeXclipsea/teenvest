@@ -605,6 +605,7 @@ export type Database = {
         Returns: {
           display_name: string
           gain_percent: number
+          is_current_user: boolean
           profile_public: boolean
           rank: number
           total_value: number
