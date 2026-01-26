@@ -50,6 +50,7 @@ const BeanstalkGame = ({ moduleId, title, content }: BeanstalkGameProps) => {
   const generateQuestions = async () => {
     setIsLoading(true);
     try {
+      // @ts-ignore - Table exists but types haven't been generated yet
       const { data: config } = await supabase
         .from('ai_config')
         .select('gemini_api_key')

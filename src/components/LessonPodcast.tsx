@@ -24,6 +24,7 @@ const LessonPodcast = ({ moduleId, title, content }: LessonPodcastProps) => {
     setIsLoading(true);
     try {
       // Get API key from database
+      // @ts-ignore - Table exists but types haven't been generated yet
       const { data: config } = await supabase
         .from('ai_config')
         .select('gemini_api_key')
