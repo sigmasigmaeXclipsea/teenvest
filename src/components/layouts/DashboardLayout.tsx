@@ -129,118 +129,46 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       <aside className="hidden lg:fixed lg:top-14 lg:bottom-0 lg:left-0 lg:z-40 lg:block">
         <div className="h-full w-12 hover:w-48 bg-card border-r border-border transition-[width] duration-200 ease-out overflow-hidden flex flex-col group">
           {/* Navigation */}
-          <nav className="flex-1 flex flex-col p-1 gap-0.5">
-            {/* Core */}
-            <div className="pb-1 mb-1 border-b border-border/60">
-              <div className="h-0 opacity-0 group-hover:h-6 group-hover:opacity-100 transition-opacity duration-200 overflow-hidden">
-                <div className="px-2 py-1">
-                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Core</div>
-                </div>
-              </div>
-              {navItems.slice(0, 4).map((item) => {
-                const isActive = location.pathname === item.path;
-                return (
-                  <button
-                    key={item.path}
-                    onClick={() => navigate(item.path)}
-                    className={cn(
-                      "flex items-center w-10 h-10 group-hover:w-full rounded-lg overflow-hidden",
-                      isActive
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-                    )}
-                    title={item.label}
-                  >
-                    <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
-                      <item.icon className="w-5 h-5" />
-                    </div>
-                    <span className="whitespace-nowrap text-sm font-medium pr-3">
-                      {item.label}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Learning & Social */}
-            <div className="pb-1 mb-1 border-b border-border/60">
-              <div className="h-0 opacity-0 group-hover:h-6 group-hover:opacity-100 transition-opacity duration-200 overflow-hidden">
-                <div className="px-2 py-1">
-                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Learning & Social</div>
-                </div>
-              </div>
-              {navItems.slice(4, 9).map((item) => {
-                const isActive = location.pathname === item.path;
-                return (
-                  <button
-                    key={item.path}
-                    onClick={() => navigate(item.path)}
-                    className={cn(
-                      "flex items-center w-10 h-10 group-hover:w-full rounded-lg overflow-hidden",
-                      isActive
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-                    )}
-                    title={item.label}
-                  >
-                    <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
-                      <item.icon className="w-5 h-5" />
-                    </div>
-                    <span className="whitespace-nowrap text-sm font-medium pr-3">
-                      {item.label}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* System */}
-            <div>
-              <div className="h-0 opacity-0 group-hover:h-6 group-hover:opacity-100 transition-opacity duration-200 overflow-hidden">
-                <div className="px-2 py-1">
-                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">System</div>
-                </div>
-              </div>
-              {navItems.slice(9).map((item) => {
-                const isActive = location.pathname === item.path;
-                return (
-                  <button
-                    key={item.path}
-                    onClick={() => navigate(item.path)}
-                    className={cn(
-                      "flex items-center w-10 h-10 group-hover:w-full rounded-lg overflow-hidden",
-                      isActive
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-                    )}
-                    title={item.label}
-                  >
-                    <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
-                      <item.icon className="w-5 h-5" />
-                    </div>
-                    <span className="whitespace-nowrap text-sm font-medium pr-3">
-                      {item.label}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+          <nav className="flex-1 flex flex-col p-1 gap-0.5 overflow-y-auto overflow-x-hidden">
+            {navItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => navigate(item.path)}
+                  className={cn(
+                    "flex items-center w-10 h-10 min-h-[40px] rounded-lg overflow-hidden flex-shrink-0",
+                    isActive
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                  )}
+                  title={item.label}
+                >
+                  <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
+                    <item.icon className="w-5 h-5" />
+                  </div>
+                  <span className="whitespace-nowrap text-sm font-medium pr-3">
+                    {item.label}
+                  </span>
+                </button>
+              );
+            })}
           </nav>
 
           {/* Logout */}
-          <div className="mt-auto p-1 border-t border-border">
-            <Button
-              variant="ghost"
-              className="flex items-center w-10 h-10 group-hover:w-full rounded-lg overflow-hidden text-muted-foreground p-0"
+          <div className="p-1 border-t border-border flex-shrink-0">
+            <button
+              className="flex items-center w-10 h-10 min-h-[40px] rounded-lg overflow-hidden text-muted-foreground hover:bg-secondary hover:text-foreground"
               onClick={handleLogout}
+              title="Log Out"
             >
               <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
                 <LogOut className="w-5 h-5" />
               </div>
-              <span className="whitespace-nowrap pr-3">
+              <span className="whitespace-nowrap text-sm font-medium pr-3">
                 Log Out
               </span>
-            </Button>
+            </button>
           </div>
         </div>
       </aside>
