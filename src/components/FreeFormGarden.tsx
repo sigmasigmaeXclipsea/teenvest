@@ -235,7 +235,7 @@ export default function FreeFormGarden({
               <div 
                 className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 h-1/3 rounded-t-full"
                 style={{
-                  background: plant.variant === 'frozen' 
+                  background: plant.variant === 'frost' 
                     ? 'radial-gradient(ellipse at center, #E0F2FE, #BAE6FD)'
                     : plant.variant === 'candy'
                     ? 'radial-gradient(ellipse at center, #FCE7F3, #FBCFE8)'
