@@ -321,6 +321,7 @@ const AdminPage = () => {
       if (lookupError || !userId) throw new Error('User not found');
       
       // Update cash balance
+      // @ts-ignore - Function exists but types haven't been generated yet
       const { data, error } = await supabase.rpc('admin_update_cash_balance', { 
         _user_id: userId, 
         _new_balance: balance 
@@ -345,6 +346,7 @@ const AdminPage = () => {
       if (lookupError || !userId) throw new Error('User not found');
       
       // Update garden money
+      // @ts-ignore - Function exists but types haven't been generated yet
       const { data, error } = await supabase.rpc('admin_update_garden_money', { 
         _user_id: userId, 
         _new_money: money 
@@ -369,6 +371,7 @@ const AdminPage = () => {
       if (lookupError || !userId) throw new Error('User not found');
       
       // Update garden XP
+      // @ts-ignore - Function exists but types haven't been generated yet
       const { data, error } = await supabase.rpc('admin_update_garden_xp', { 
         _user_id: userId, 
         _new_xp: xp 
@@ -387,6 +390,7 @@ const AdminPage = () => {
   const updateCurrentUserGardenMutation = useMutation<any, Error, { money: number; xp: number }>({
     mutationFn: async ({ money, xp }: { money: number; xp: number }) => {
       // Update current user's garden state directly
+      // @ts-ignore - Function exists but types haven't been generated yet
       const { data, error } = await supabase.rpc('admin_update_garden_state', { 
         _user_id: user?.id, 
         _new_money: money, 
