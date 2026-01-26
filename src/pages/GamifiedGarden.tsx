@@ -112,7 +112,10 @@ const SEED_TEMPLATES: Omit<Seed, 'id'>[] = [
 // Base gear templates - plot upgrade price is dynamic
 const GEAR_TEMPLATES: Omit<Gear, 'id'>[] = [
   { name: 'Watering Can', type: 'wateringCan', effect: 'Reduces growth time by 50%', price: 150 },
-  { name: 'Sprinkler', type: 'sprinkler', effect: 'Increases golden/rainbow chance', price: 400 },
+  { name: 'Basic Sprinkler', type: 'sprinkler', effect: 'Increases golden chance by 10%', price: 400 },
+  { name: 'Advanced Sprinkler', type: 'sprinkler', effect: 'Increases golden chance by 20%', price: 800 },
+  { name: 'Deluxe Sprinkler', type: 'sprinkler', effect: 'Increases golden chance by 30%', price: 1500 },
+  { name: 'Magic Sprinkler', type: 'sprinkler', effect: 'Increases golden chance by 50%', price: 3000 },
 ];
 
 // Utility
@@ -125,10 +128,28 @@ function formatTime(ms: number) {
   if (hours > 0) return `${hours}h ${minutes}m`;
   return `${minutes}m ${seconds}s`;
 }
-function calculateVariant(sprinklerActive: boolean): 'normal' | 'golden' | 'rainbow' {
+function calculateVariant(sprinklerType: string | null): 'normal' | 'golden' | 'rainbow' {
   const baseGolden = 0.1;
   const baseRainbow = 0.02;
-  const boost = sprinklerActive ? 1.5 : 1;
+  
+  let boost = 1;
+  switch (sprinklerType) {
+    case 'Basic Sprinkler':
+      boost = 1.1; // 10% increase
+      break;
+    case 'Advanced Sprinkler':
+      boost = 1.2; // 20% increase
+      break;
+    case 'Deluxe Sprinkler':
+      boost = 1.3; // 30% increase
+      break;
+    case 'Magic Sprinkler':
+      boost = 1.5; // 50% increase
+      break;
+    default:
+      boost = 1; // No sprinkler
+  }
+  
   const rand = Math.random();
   if (rand < baseRainbow * boost) return 'rainbow';
   if (rand < baseGolden * boost) return 'golden';
@@ -161,7 +182,7 @@ export default function GamifiedGarden() {
   const [inventory, setInventory] = useState({ seeds: [] as Seed[], gear: [] as Gear[] });
   const [shopSeeds, setShopSeeds] = useState<Seed[]>([]);
   const [shopGear, setShopGear] = useState<Gear[]>([]);
-  const [hasSprinkler, setHasSprinkler] = useState(false);
+  const [hasSprinkler, setHasSprinkler] = useState<string | null>(null); // null = none, or name of sprinkler
   const [selectedSeed, setSelectedSeed] = useState<Seed | null>(null);
   
   // Restock timers
@@ -183,7 +204,7 @@ export default function GamifiedGarden() {
       setNumPots(savedNumPots);
       setPlots(parsed.plots ?? Array.from({ length: savedNumPots }, (_, i) => ({ id: `plot-${i}` })));
       setInventory(parsed.inventory ?? { seeds: [], gear: [] });
-      setHasSprinkler(parsed.hasSprinkler ?? false);
+      setHasSprinkler(parsed.hasSprinkler ?? null);
       setSeedRestockTime(parsed.seedRestockTime ?? Date.now() + 60 * 60 * 1000);
       setGearRestockTime(parsed.gearRestockTime ?? Date.now() + 15 * 60 * 1000);
     }
@@ -222,7 +243,7 @@ export default function GamifiedGarden() {
   }, [now, seedRestockTime, gearRestockTime]);
 
   function restockSeeds() {
-    // Show all 10 seeds sorted by price
+    // Show all 35 seeds sorted by price
     const seeds = SEED_TEMPLATES.map(template => ({ ...template, id: generateId() }));
     setShopSeeds(seeds);
   }
@@ -327,7 +348,7 @@ export default function GamifiedGarden() {
       setMoney(m => m - gear.price);
       
       if (gear.type === 'sprinkler') {
-        setHasSprinkler(true);
+        setHasSprinkler(gear.name);
       } else if (gear.type === 'plotUpgrade') {
         if (numPots < MAX_POTS) {
           const newNumPots = numPots + 1;
@@ -507,7 +528,7 @@ export default function GamifiedGarden() {
                 <span>Restocks in {formatTime(seedRestockRemaining)}</span>
               </div>
             </div>
-            <ScrollArea className="h-64">
+            <ScrollArea className="h-96">
               <div className="space-y-2 pr-4">
                 {shopSeeds.map(seed => (
                   <div key={seed.id} className="flex items-center justify-between p-2 border rounded bg-secondary/30">
@@ -554,7 +575,7 @@ export default function GamifiedGarden() {
             </div>
             <div className="space-y-2">
               {shopGear.map(gear => {
-                const isOwned = gear.type === 'sprinkler' && hasSprinkler;
+                const isOwned = gear.type === 'sprinkler' && hasSprinkler === gear.name;
                 const isMaxPlots = gear.type === 'plotUpgrade' && numPots >= MAX_POTS;
                 const disabled = money < gear.price || isOwned || isMaxPlots;
                 
