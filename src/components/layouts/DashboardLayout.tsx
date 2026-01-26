@@ -29,6 +29,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -182,39 +183,76 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </aside>
       </TooltipProvider>
 
-      {/* Mobile Menu */}
-      {mobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 z-40 bg-background pt-14">
-          <nav className="p-4 space-y-1">
-            {navItems.map((item) => {
-              const isActive = location.pathname === item.path;
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-                  }`}
-                >
-                  <item.icon className="w-5 h-5" />
-                  {item.label}
-                </Link>
-              );
-            })}
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-3 text-muted-foreground mt-4"
-              onClick={handleLogout}
-            >
-              <LogOut className="w-5 h-5" />
-              Log Out
-            </Button>
+      {/* Mobile Menu - Smooth Sliding Sheet */}
+      <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+        <SheetContent side="left" className="w-80 p-0 pt-14">
+          <SheetHeader className="px-6 pb-4 border-b">
+            <SheetTitle className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-primary-foreground" />
+              </div>
+              <span>TeenVest</span>
+            </SheetTitle>
+          </SheetHeader>
+          
+          <nav className="flex-1 p-4 space-y-1">
+            <div className="mb-4">
+              <p className="text-sm font-medium text-muted-foreground px-3 mb-2">Navigation</p>
+              {navItems.map((item) => {
+                const isActive = location.pathname === item.path;
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-all duration-200 hover:scale-[1.02]",
+                      isActive
+                        ? 'bg-primary text-primary-foreground shadow-md'
+                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                    )}
+                  >
+                    <item.icon className="w-5 h-5" />
+                    <span>{item.label}</span>
+                    {isActive && (
+                      <div className="ml-auto w-2 h-2 rounded-full bg-primary-foreground" />
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+            
+            <div className="border-t pt-4">
+              <p className="text-sm font-medium text-muted-foreground px-3 mb-2">Account</p>
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground transition-all duration-200 hover:scale-[1.02]"
+                onClick={() => {
+                  handleLogout();
+                  setMobileMenuOpen(false);
+                }}
+              >
+                <LogOut className="w-5 h-5" />
+                <span>Log Out</span>
+              </Button>
+            </div>
           </nav>
-        </div>
-      )}
+          
+          <div className="p-4 border-t">
+            <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg p-3">
+              <p className="text-xs text-muted-foreground mb-1">Need help?</p>
+              <p className="text-sm font-medium">Check out our Learn section</p>
+              <Link 
+                to="/learn"
+                onClick={() => setMobileMenuOpen(false)}
+                className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-2"
+              >
+                Get Started →
+              </Link>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Main Content */}
       <main className="lg:pl-16 pt-14 min-h-screen">
