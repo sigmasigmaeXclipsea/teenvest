@@ -278,7 +278,7 @@ export default function GamifiedGarden() {
   // Initialize and manage shop restocks
   useEffect(() => {
     restockSeeds();
-    restockGear();
+    restockGear(); // Force refresh on mount to get updated templates
   }, []);
 
   // Check for restock
@@ -301,6 +301,7 @@ export default function GamifiedGarden() {
   
   function restockGear() {
     const gear = GEAR_TEMPLATES.map(template => ({ ...template, id: generateId() }));
+    console.log('Restocking gear with templates:', GEAR_TEMPLATES); // Debug log
     // Add dynamic plot upgrade with current price
     gear.push({
       id: generateId(),
@@ -309,6 +310,7 @@ export default function GamifiedGarden() {
       effect: `Adds one more pot (${numPots}/${MAX_POTS})`,
       price: getPlotUpgradePrice(numPots),
     });
+    console.log('Setting shop gear:', gear); // Debug log
     setShopGear(gear);
   }
   
