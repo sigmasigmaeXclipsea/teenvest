@@ -1,8 +1,4 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-// @ts-ignore - Deno types not available in IDE but work in runtime
-declare const Deno: any
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,16 +10,6 @@ interface NewsRequest {
   market?: boolean;
 }
 
-interface GeminiResponse {
-  candidates: Array<{
-    content: {
-      parts: Array<{
-        text: string;
-      }>;
-    };
-  }>;
-}
-
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -32,24 +18,11 @@ serve(async (req: Request) => {
   try {
     const { symbol, market }: NewsRequest = await req.json()
 
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
-
-    // Get API key from database
-    const { data: config, error: configError } = await supabase
-      .from('ai_config')
-      .select('gemini_api_key')
-      .eq('service', 'gemini')
-      .single()
-
-    if (configError || !config?.gemini_api_key) {
-      throw new Error('Gemini API key not configured')
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')
+    
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY is not configured')
     }
-
-    const apiKey = config.gemini_api_key as string
-    const geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-exp:generateContent'
 
     let prompt = ''
     
@@ -67,7 +40,9 @@ serve(async (req: Request) => {
         }
       ]
       Ensure all news is from official sources like Bloomberg, Reuters, CNBC, WSJ, etc.
-      Current date: ${new Date().toLocaleDateString()}`
+      Current date: ${new Date().toLocaleDateString()}
+      
+      IMPORTANT: Return ONLY the JSON array, no markdown formatting or code blocks.`
     } else if (symbol) {
       prompt = `You are a financial news analyst. Provide the latest official news about ${symbol.toUpperCase()} stock.
       Focus on company announcements, earnings, analyst ratings, and significant business developments.
@@ -82,50 +57,67 @@ serve(async (req: Request) => {
         }
       ]
       Ensure all news is from official sources like Bloomberg, Reuters, CNBC, WSJ, company press releases, etc.
-      Current date: ${new Date().toLocaleDateString()}`
+      Current date: ${new Date().toLocaleDateString()}
+      
+      IMPORTANT: Return ONLY the JSON array, no markdown formatting or code blocks.`
     } else {
       throw new Error('Either symbol or market parameter is required')
     }
 
-    const response = await fetch(`${geminiUrl}?key=${apiKey}`, {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.3,
-          maxOutputTokens: 2000,
-        }
+        model: 'google/gemini-3-flash-preview',
+        messages: [
+          { role: 'user', content: prompt }
+        ],
       })
     })
 
     if (!response.ok) {
-      throw new Error(`Gemini API error: ${response.statusText}`)
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ 
+          error: 'Rate limit exceeded. Please try again in a moment.',
+          success: false 
+        }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const errorText = await response.text()
+      console.error('AI gateway error:', response.status, errorText)
+      throw new Error('AI service temporarily unavailable')
     }
 
-    const data = await response.json() as GeminiResponse
+    const data = await response.json()
+    const content = data.choices?.[0]?.message?.content || ''
     
-    if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
-      // Parse the JSON response from Gemini
-      const newsText = data.candidates[0].content.parts[0].text
-      const newsData = JSON.parse(newsText)
-      
-      return new Response(JSON.stringify({ 
-        success: true, 
-        data: newsData,
-        source: 'gemini-flash-3'
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    } else {
-      throw new Error('Invalid response from Gemini API')
+    // Parse the JSON response - handle potential markdown code blocks
+    let newsData
+    try {
+      // Try to extract JSON from the response (handle markdown code blocks)
+      const jsonMatch = content.match(/\[[\s\S]*\]/)
+      if (jsonMatch) {
+        newsData = JSON.parse(jsonMatch[0])
+      } else {
+        throw new Error('No JSON array found in response')
+      }
+    } catch (parseError) {
+      console.error('Failed to parse news response:', parseError, 'Content:', content)
+      newsData = []
     }
+    
+    return new Response(JSON.stringify({ 
+      success: true, 
+      data: newsData,
+      source: 'AI-powered'
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
 
   } catch (error: any) {
     console.error('Error:', error)
