@@ -10,8 +10,10 @@ import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useCachedStocks, useRefreshStockCache, isCacheStale } from '@/hooks/useStockCache';
 import { useStockQuote } from '@/hooks/useStockAPI';
+import { useSettings } from '@/contexts/SettingsContext';
 import StockLineChart from '@/components/StockLineChart';
 import ProfessionalCandlestickChart from '@/components/ProfessionalCandlestickChart';
+import StockNews from '@/components/StockNews';
 
 // Lazy load heavy research components - only load when tab is active
 const ResearchCompanyProfile = lazy(() => import('@/components/research/ResearchCompanyProfile'));
@@ -26,6 +28,7 @@ const ResearchVolumeWidget = lazy(() => import('@/components/research/ResearchVo
 
 const ResearchPage = () => {
   const navigate = useNavigate();
+  const { settings, loading: settingsLoading } = useSettings();
   const [searchParams, setSearchParams] = useSearchParams();
   const symbolFromUrl = searchParams.get('symbol') || '';
   
@@ -445,8 +448,9 @@ const ResearchPage = () => {
             {/* Research Tabs - Only show if we have valid data */}
             {hasValidStockData && (
               <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                <TabsList className="grid grid-cols-4 lg:grid-cols-9 w-full">
+                <TabsList className="grid grid-cols-4 lg:grid-cols-10 w-full">
                   <TabsTrigger value="charts">Charts</TabsTrigger>
+                  <TabsTrigger value="news">News</TabsTrigger>
                   <TabsTrigger value="overview">Overview</TabsTrigger>
                   <TabsTrigger value="financials">Financials</TabsTrigger>
                   <TabsTrigger value="statistics">Statistics</TabsTrigger>
@@ -482,15 +486,26 @@ const ResearchPage = () => {
                       </Suspense>
                     </div>
 
-                    {/* Professional Full-Width Candlestick Chart with Volume (real data) */}
-                    <ProfessionalCandlestickChart
-                      symbol={stockData.symbol}
-                      currentPrice={stockData.price}
-                      previousClose={stockData.previousClose}
-                      high={stockData.high}
-                      low={stockData.low}
-                      open={stockData.open}
-                    />
+                    {/* Professional Full-Width Candlestick Chart with Volume (real data) - Only in Advanced Mode */}
+                    {!settingsLoading && settings?.advancedMode ? (
+                      <ProfessionalCandlestickChart
+                        symbol={stockData.symbol}
+                        currentPrice={stockData.price}
+                        previousClose={stockData.previousClose}
+                        high={stockData.high}
+                        low={stockData.low}
+                        open={stockData.open}
+                      />
+                    ) : (
+                      <Card>
+                        <CardContent className="text-center py-12">
+                          <BarChart3 className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+                          <h3 className="text-lg font-semibold text-foreground mb-2">Candlestick Chart</h3>
+                          <p className="text-sm text-muted-foreground mb-4">Advanced trading charts are disabled</p>
+                          <p className="text-xs text-muted-foreground">Enable Advanced Mode in Settings to access professional candlestick charts with volume analysis</p>
+                        </CardContent>
+                      </Card>
+                    )}
                   </div>
                 ) : (
                   <Card>
@@ -499,6 +514,10 @@ const ResearchPage = () => {
                     </CardContent>
                   </Card>
                 )}
+              </TabsContent>
+
+              <TabsContent value="news">
+                <StockNews symbol={selectedStock} />
               </TabsContent>
 
               <TabsContent value="overview">

@@ -14,13 +14,16 @@ import { usePortfolio, useHoldings, useExecuteTrade } from '@/hooks/usePortfolio
 import { useToast } from '@/hooks/use-toast';
 import { useStockQuote, useSearchStock, StockQuote } from '@/hooks/useStockAPI';
 import { getUserFriendlyError } from '@/lib/errorMessages';
+import { useSettings } from '@/contexts/SettingsContext';
 import StockLineChart from '@/components/StockLineChart';
 import ProfessionalCandlestickChart from '@/components/ProfessionalCandlestickChart';
+import StockNews from '@/components/StockNews';
 
 const TradePage = () => {
   const [searchParams] = useSearchParams();
   const initialSymbol = searchParams.get('symbol') || '';
   const navigate = useNavigate();
+  const { settings, loading: settingsLoading } = useSettings();
   
   const [selectedSymbol, setSelectedSymbol] = useState(initialSymbol);
   const [tickerSearch, setTickerSearch] = useState('');
@@ -323,7 +326,7 @@ const TradePage = () => {
         </div>
 
         {selectedStock && currentQuote && (
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className={`${!settingsLoading && settings?.advancedMode ? 'grid gap-6 lg:grid-cols-2' : 'space-y-6'}`}>
             <StockLineChart
               symbol={selectedStock.symbol}
               currentPrice={Number(currentQuote.price) || 0}
@@ -333,15 +336,31 @@ const TradePage = () => {
               open={Number(currentQuote.open) || 0}
             />
 
-            <ProfessionalCandlestickChart
-              symbol={selectedStock.symbol}
-              currentPrice={Number(currentQuote.price) || 0}
-              previousClose={Number(currentQuote.previousClose) || Number(currentQuote.price) || 0}
-              high={Number(currentQuote.high) || 0}
-              low={Number(currentQuote.low) || 0}
-              open={Number(currentQuote.open) || 0}
-            />
+            {!settingsLoading && settings?.advancedMode ? (
+              <ProfessionalCandlestickChart
+                symbol={selectedStock.symbol}
+                currentPrice={Number(currentQuote.price) || 0}
+                previousClose={Number(currentQuote.previousClose) || Number(currentQuote.price) || 0}
+                high={Number(currentQuote.high) || 0}
+                low={Number(currentQuote.low) || 0}
+                open={Number(currentQuote.open) || 0}
+              />
+            ) : (
+              <Card className="h-full flex items-center justify-center">
+                <CardContent className="text-center py-8">
+                  <BarChart3 className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                  <h3 className="font-semibold text-foreground mb-2">Candlestick Chart</h3>
+                  <p className="text-sm text-muted-foreground mb-4">Advanced trading charts are disabled</p>
+                  <p className="text-xs text-muted-foreground">Enable Advanced Mode in Settings to access professional candlestick charts</p>
+                </CardContent>
+              </Card>
+            )}
           </div>
+        )}
+
+        {/* Stock News */}
+        {selectedStock && (
+          <StockNews symbol={selectedStock.symbol} />
         )}
 
       </div>

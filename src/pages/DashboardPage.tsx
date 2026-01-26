@@ -11,6 +11,7 @@ import { getTickerInfo } from '@/data/russell5000Tickers';
 import PortfolioHealthAI from '@/components/PortfolioHealthAI';
 import AIAssistantCard from '@/components/AIAssistantCard';
 import DashboardStreakWidget from '@/components/DashboardStreakWidget';
+import StockNews from '@/components/StockNews';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
@@ -342,6 +343,9 @@ const DashboardPage = () => {
             "What stocks should beginners avoid?"
           ]}
         />
+
+        {/* Market News */}
+        <StockNews market={true} />
       </div>
     </DashboardLayout>
   );

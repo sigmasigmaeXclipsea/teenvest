@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import { 
   Lock, DollarSign, ArrowLeft, Shield, UserPlus, Trash2, Crown, Loader2,
   Users, TrendingUp, BarChart3, RefreshCw, Search, Award, Activity,
-  BookOpen, Briefcase, ArrowUpRight, ArrowDownRight
+  BookOpen, Briefcase, ArrowUpRight, ArrowDownRight, Sprout, Coins, Zap
 } from 'lucide-react';
 import { getUserFriendlyError } from '@/lib/errorMessages';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
@@ -39,6 +39,9 @@ const AdminPage = () => {
   const [newStartingBalance, setNewStartingBalance] = useState('');
   const [cashBalanceEmail, setCashBalanceEmail] = useState('');
   const [newCashBalanceForUser, setNewCashBalanceForUser] = useState('');
+  const [gardenMoneyEmail, setGardenMoneyEmail] = useState('');
+  const [newGardenMoney, setNewGardenMoney] = useState('');
+  const [newGardenXp, setNewGardenXp] = useState('');
 
   const isOwner = user?.email === OWNER_EMAIL;
 
@@ -263,6 +266,34 @@ const AdminPage = () => {
     onError: (error: any) => toast.error(getUserFriendlyError(error)),
   });
 
+  const updateGardenMoneyMutation = useMutation({
+    mutationFn: async ({ email, money, xp }: { email: string; money?: number; xp?: number }) => {
+      // Since garden data is stored in localStorage, we need to create a database-backed approach
+      // For now, we'll store garden updates in a separate table
+      // @ts-ignore - Table exists but types haven't been generated yet
+      const { data, error } = await supabase
+        .from('garden_updates')
+        .upsert({
+          user_email: email,
+          money: money,
+          xp: xp,
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success(`Garden money/XP updated for ${gardenMoneyEmail}`);
+      setGardenMoneyEmail('');
+      setNewGardenMoney('');
+      setNewGardenXp('');
+    },
+    onError: (error: any) => toast.error(getUserFriendlyError(error)),
+  });
+
   const handleUpdateCash = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -289,6 +320,20 @@ const AdminPage = () => {
       toast.error(getUserFriendlyError(error));
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const handleUpdateMyGardenMoney = async (money: number, xp: number) => {
+    // Update current user's garden money in localStorage
+    const saved = localStorage.getItem('garden-state-v4');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      parsed.money = money;
+      parsed.xp = xp;
+      localStorage.setItem('garden-state-v4', JSON.stringify(parsed));
+      toast.success(`Your garden money updated to ${money} and XP to ${xp}`);
+      // Force a re-render of the garden component if it's mounted
+      window.dispatchEvent(new Event('storage'));
     }
   };
 
@@ -795,6 +840,104 @@ const AdminPage = () => {
                     className="w-full"
                   >
                     Update Starting Balance
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* My Garden Money */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Sprout className="w-5 h-5 text-green-600" />
+                    My Garden Money
+                  </CardTitle>
+                  <CardDescription>Update your garden money and XP</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="relative">
+                    <Coins className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      type="number"
+                      step="1"
+                      min="0"
+                      placeholder="100"
+                      className="pl-9"
+                      onChange={(e) => setNewGardenMoney(e.target.value)}
+                    />
+                  </div>
+                  <div className="relative">
+                    <Zap className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      type="number"
+                      step="1"
+                      min="0"
+                      placeholder="50"
+                      className="pl-9"
+                      onChange={(e) => setNewGardenXp(e.target.value)}
+                    />
+                  </div>
+                  <Button
+                    onClick={() => {
+                      const money = parseInt(newGardenMoney) || 0;
+                      const xp = parseInt(newGardenXp) || 0;
+                      handleUpdateMyGardenMoney(money, xp);
+                    }}
+                    disabled={!newGardenMoney && !newGardenXp}
+                    className="w-full"
+                  >
+                    Update My Garden
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* User Garden Money */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Sprout className="w-5 h-5 text-green-600" />
+                    Set User Garden Money
+                  </CardTitle>
+                  <CardDescription>Update another user's garden money and XP</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Input
+                    type="email"
+                    value={gardenMoneyEmail}
+                    onChange={(e) => setGardenMoneyEmail(e.target.value)}
+                    placeholder="user@example.com"
+                  />
+                  <div className="relative">
+                    <Coins className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      type="number"
+                      step="1"
+                      min="0"
+                      placeholder="100"
+                      className="pl-9"
+                      onChange={(e) => setNewGardenMoney(e.target.value)}
+                    />
+                  </div>
+                  <div className="relative">
+                    <Zap className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      type="number"
+                      step="1"
+                      min="0"
+                      placeholder="50"
+                      className="pl-9"
+                      onChange={(e) => setNewGardenXp(e.target.value)}
+                    />
+                  </div>
+                  <Button
+                    onClick={() => updateGardenMoneyMutation.mutate({ 
+                      email: gardenMoneyEmail, 
+                      money: parseInt(newGardenMoney) || undefined,
+                      xp: parseInt(newGardenXp) || undefined
+                    })}
+                    disabled={updateGardenMoneyMutation.isPending || !gardenMoneyEmail || (!newGardenMoney && !newGardenXp)}
+                    className="w-full"
+                  >
+                    {updateGardenMoneyMutation.isPending ? 'Updating...' : 'Update User Garden'}
                   </Button>
                 </CardContent>
               </Card>

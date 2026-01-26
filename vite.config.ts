@@ -116,7 +116,7 @@ export default defineConfig(({ mode }: { mode: string }) => ({
         },
       },
     },
-    minify: 'terser',
+    minify: 'terser' as const,
     terserOptions: {
       compress: {
         drop_console: true,

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { motion, useSpring, useMotionValue, useTransform, animate, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useState, useEffect, useMemo, memo, useRef, useCallback, type ReactNode, type ElementType, type FC, type MouseEvent } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 // Infinite recycling carousel component - like an airport carousel
 const InfiniteCarousel = ({ children, direction = 'left', speed = 1 }: { children: React.ReactNode[], direction?: 'left' | 'right', speed?: number }) => {
@@ -268,11 +269,13 @@ const Marquee = ({ children, direction = 'left', speed = 25 }: { children: React
 // Animated counter - simplified
 const AnimatedCounter = ({ value, prefix = '', suffix = '' }: { value: number; prefix?: string; suffix?: string }) => {
   const [count, setCount] = useState(0);
-  const [hasAnimated, setHasAnimated] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
   
   useEffect(() => {
-    if (hasAnimated) return;
-
+    // Skip animation if value is 0 or already animating
+    if (value === 0 || isAnimating) return;
+    
+    setIsAnimating(true);
     const duration = 1500;
     const steps = 30;
     const increment = value / steps;
@@ -283,14 +286,17 @@ const AnimatedCounter = ({ value, prefix = '', suffix = '' }: { value: number; p
       if (current >= value) {
         setCount(value);
         clearInterval(timer);
+        setIsAnimating(false);
       } else {
         setCount(Math.floor(current));
       }
     }, duration / steps);
     
-    setHasAnimated(true);
-    return () => clearInterval(timer);
-  }, [value, hasAnimated]);
+    return () => {
+      clearInterval(timer);
+      setIsAnimating(false);
+    };
+  }, [value]);
 
   return <span>{prefix}{count.toLocaleString()}{suffix}</span>;
 };
@@ -337,7 +343,85 @@ const FloatingParticles = memo(() => {
 });
 
 // Dashboard preview with smooth cursor tracking and pulsing glow
-const DashboardPreview = memo(() => {
+const DashboardPreview: FC = () => {
+  const [stocks, setStocks] = useState<any[]>([
+    { symbol: 'AAPL', name: 'Apple Inc.', price: 248.00, change: '+1.2%', color: 'from-blue-500 to-blue-600', isPositive: true },
+    { symbol: 'TSLA', name: 'Tesla Inc.', price: 242.84, change: '-0.8%', color: 'from-red-500 to-red-600', isPositive: false },
+    { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 875.28, change: '+3.4%', color: 'from-green-500 to-green-600', isPositive: true },
+    { symbol: 'MSFT', name: 'Microsoft', price: 429.63, change: '+0.6%', color: 'from-cyan-500 to-cyan-600', isPositive: true }
+  ]);
+  const [portfolioValue, setPortfolioValue] = useState(17958);
+  const [totalGain, setTotalGain] = useState(2155);
+  const [todayChange, setTodayChange] = useState(1.1);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch real stock data using Render proxy
+  useEffect(() => {
+    const fetchStockData = async () => {
+      setLoading(true);
+      try {
+        const symbols = ['AAPL', 'TSLA', 'NVDA', 'MSFT'];
+        const colors = ['from-blue-500 to-blue-600', 'from-red-500 to-red-600', 'from-green-500 to-green-600', 'from-cyan-500 to-cyan-600'];
+        
+        const stockPromises = symbols.map(async (symbol, index) => {
+          try {
+            const response = await fetch(`https://finnhub-stock-api-5xrj.onrender.com/api/stock/${symbol}`);
+            if (!response.ok) throw new Error('API request failed');
+            const data = await response.json();
+            
+            if (data.error) throw new Error(data.error);
+            
+            // API returns nested structure: { quote: { c, d, dp }, profile: { name } }
+            const price = data.quote?.c || 0;
+            const changePercent = data.quote?.dp || 0;
+            const name = data.profile?.name || symbol;
+            
+            return {
+              symbol: data.profile?.ticker || symbol,
+              name: name,
+              price: price,
+              change: `${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%`,
+              color: colors[index],
+              isPositive: changePercent >= 0
+            };
+          } catch (err) {
+            console.warn(`Failed to fetch ${symbol}, using fallback`);
+            const fallbackData: Record<string, { symbol: string; name: string; price: number; change: string; isPositive: boolean }> = {
+              'AAPL': { symbol: 'AAPL', name: 'Apple Inc.', price: 248.00, change: '+1.2%', isPositive: true },
+              'TSLA': { symbol: 'TSLA', name: 'Tesla Inc.', price: 449.00, change: '-0.1%', isPositive: false },
+              'NVDA': { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 187.00, change: '+1.5%', isPositive: true },
+              'MSFT': { symbol: 'MSFT', name: 'Microsoft', price: 465.00, change: '+3.3%', isPositive: true }
+            };
+            return { ...fallbackData[symbol], color: colors[index] };
+          }
+        });
+
+        const fetchedStocks = await Promise.all(stockPromises);
+        setStocks(fetchedStocks);
+        
+        // Only update portfolio values if we successfully fetched data
+        if (fetchedStocks.length > 0) {
+          const totalValue = fetchedStocks.reduce((sum, stock) => sum + (stock.price * 10), 0);
+          const avgChange = fetchedStocks.reduce((sum, stock) => {
+            const changeValue = parseFloat(stock.change);
+            return sum + (isNaN(changeValue) ? 0 : changeValue);
+          }, 0) / fetchedStocks.length;
+          
+          setPortfolioValue(Math.round(totalValue));
+          setTodayChange(Math.round(Math.abs(avgChange) * 10) / 10);
+          setTotalGain(Math.round(totalValue * 0.12));
+        }
+        
+      } catch (error) {
+        console.error('Failed to fetch stock data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStockData();
+  }, []);
+  
   const containerRef = useRef<HTMLDivElement>(null);
   const [isHovering, setIsHovering] = useState(false);
   const [pulsePhase, setPulsePhase] = useState(0);
@@ -403,18 +487,6 @@ const DashboardPreview = memo(() => {
     []
   );
 
-  const stocks = useMemo(
-    () => [
-      { symbol: 'AAPL', name: 'Apple Inc.', price: 178.25, change: '+2.4%', color: colors[0], isPositive: true },
-      { symbol: 'TSLA', name: 'Tesla Inc.', price: 245.50, change: '+5.1%', color: colors[1], isPositive: true },
-      { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 890.20, change: '+4.5%', color: colors[2], isPositive: true },
-      { symbol: 'MSFT', name: 'Microsoft', price: 378.90, change: '+0.8%', color: colors[3], isPositive: true },
-    ],
-    [colors]
-  );
-
-  const portfolioValue = 15847;
-  
   // Calculate pulsing glow intensity
   const pulseIntensity = Math.sin(pulsePhase * Math.PI / 180) * 0.3 + 0.7;
   
@@ -663,12 +735,12 @@ const DashboardPreview = memo(() => {
             <div className="grid grid-cols-3 gap-3">
               <div className="p-3 rounded-xl bg-muted/30 border border-border/30">
                 <p className="text-xs text-muted-foreground mb-1">Portfolio Value</p>
-                <p className="text-lg font-bold">${Math.round(portfolioValue).toLocaleString()}</p>
-                <p className="text-xs text-success font-medium">+12.0%</p>
+                <p className="text-lg font-bold">${portfolioValue.toLocaleString()}</p>
+                <p className="text-xs text-success font-medium">+{todayChange}%</p>
               </div>
               <div className="p-3 rounded-xl bg-muted/30 border border-border/30">
                 <p className="text-xs text-muted-foreground mb-1">Total Gain</p>
-                <p className="text-lg font-bold text-success">+$1,847</p>
+                <p className="text-lg font-bold text-success">+${totalGain.toLocaleString()}</p>
                 <p className="text-xs text-muted-foreground">📈 Today</p>
               </div>
               <div className="p-3 rounded-xl bg-muted/30 border border-border/30">
@@ -729,7 +801,7 @@ const DashboardPreview = memo(() => {
       </motion.div>
     </div>
   );
-});
+};
 
 // Simple feature card with screenshot on hover
 type FeatureCardProps = {
@@ -792,6 +864,81 @@ const FeatureCard: FC<FeatureCardProps> = ({ icon: Icon, title, desc, gradient, 
 const LandingPage = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const [tickerStocks, setTickerStocks] = useState<any[]>([
+    { symbol: 'AAPL', price: '$248.00', change: '+1.2%' },
+    { symbol: 'TSLA', price: '$242.84', change: '-0.8%' },
+    { symbol: 'GOOGL', price: '$168.50', change: '+0.5%' },
+    { symbol: 'MSFT', price: '$429.63', change: '+0.6%' },
+    { symbol: 'AMZN', price: '$178.35', change: '+1.1%' },
+    { symbol: 'NVDA', price: '$875.28', change: '+3.4%' },
+    { symbol: 'META', price: '$512.75', change: '+0.9%' },
+    { symbol: 'NFLX', price: '$486.23', change: '-0.3%' },
+    { symbol: 'AMD', price: '$124.58', change: '+2.1%' },
+    { symbol: 'DIS', price: '$91.45', change: '+0.2%' }
+  ]);
+
+  // Fetch ticker data using Render proxy
+  useEffect(() => {
+    const fetchTickerData = async () => {
+      try {
+        const symbols = ['AAPL', 'TSLA', 'GOOGL', 'MSFT', 'AMZN', 'NVDA', 'META', 'NFLX', 'AMD', 'DIS'];
+        
+        const stockPromises = symbols.map(async (symbol) => {
+          try {
+            const response = await fetch(`https://finnhub-stock-api-5xrj.onrender.com/api/stock/${symbol}`);
+            if (!response.ok) throw new Error('API request failed');
+            const data = await response.json();
+            
+            if (data.error) throw new Error(data.error);
+            
+            // API returns nested structure: { quote: { c, d, dp }, profile: { name } }
+            const price = data.quote?.c || 0;
+            const changePercent = data.quote?.dp || 0;
+            
+            return {
+              symbol: data.profile?.ticker || symbol,
+              price: `$${price.toFixed(2)}`,
+              change: `${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%`
+            };
+          } catch (err) {
+            console.warn(`Failed to fetch ${symbol} for ticker, using fallback`);
+            const fallbackData: Record<string, { price: string; change: string }> = {
+              'AAPL': { price: '$248.00', change: '+1.2%' },
+              'TSLA': { price: '$449.00', change: '-0.1%' },
+              'GOOGL': { price: '$327.00', change: '-0.8%' },
+              'MSFT': { price: '$465.00', change: '+3.3%' },
+              'AMZN': { price: '$260.00', change: '+1.1%' },
+              'NVDA': { price: '$187.00', change: '+1.5%' },
+              'META': { price: '$740.00', change: '+0.9%' },
+              'NFLX': { price: '$1050.00', change: '+0.5%' },
+              'AMD': { price: '$259.00', change: '+2.3%' },
+              'DIS': { price: '$110.00', change: '-2.0%' }
+            };
+            return { symbol, ...fallbackData[symbol] };
+          }
+        });
+
+        const fetchedStocks = await Promise.all(stockPromises);
+        setTickerStocks(fetchedStocks);
+      } catch (error) {
+        console.error('Failed to fetch ticker data:', error);
+        setTickerStocks([
+          { symbol: 'AAPL', price: '$248.00', change: '+1.2%' },
+          { symbol: 'TSLA', price: '$449.00', change: '-0.1%' },
+          { symbol: 'GOOGL', price: '$327.00', change: '-0.8%' },
+          { symbol: 'MSFT', price: '$465.00', change: '+3.3%' },
+          { symbol: 'AMZN', price: '$260.00', change: '+1.1%' },
+          { symbol: 'NVDA', price: '$187.00', change: '+1.5%' },
+          { symbol: 'META', price: '$740.00', change: '+0.9%' },
+          { symbol: 'NFLX', price: '$1050.00', change: '+0.5%' },
+          { symbol: 'AMD', price: '$259.00', change: '+2.3%' },
+          { symbol: 'DIS', price: '$110.00', change: '-2.0%' },
+        ]);
+      }
+    };
+
+    fetchTickerData();
+  }, []);
 
   const handleSignOut = async () => {
     await signOut();
@@ -935,8 +1082,7 @@ const LandingPage = () => {
             
             <div className="flex flex-col sm:flex-row items-start gap-3 mb-8">
               <Link to={user ? "/dashboard" : "/signup"}>
-                <Button size="lg" className="gap-2 bg-gradient-to-r from-primary to-accent shadow-lg font-bold px-6 relative overflow-hidden">
-                  <span className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-300 bg-[radial-gradient(circle_at_30%_30%,hsl(var(--primary-foreground))_0%,transparent_55%)]" />
+                <Button size="lg" className="gap-2 bg-gradient-to-r from-primary to-accent shadow-lg font-bold px-6 hover:shadow-xl hover:scale-[1.02] transition-all duration-200">
                   <Play className="w-4 h-4 fill-current" />
                   {user ? "Go to Dashboard" : "Start Free Today"}
                   <ArrowRight className="w-4 h-4" />
@@ -967,24 +1113,20 @@ const LandingPage = () => {
       {/* Stock Ticker */}
       <section className="py-6 border-y border-border/30 bg-card/30 backdrop-blur-sm">
         <Marquee speed={30}>
-          {[
-            { symbol: 'AAPL', change: '+2.4%', price: '$178.25' },
-            { symbol: 'TSLA', change: '+5.1%', price: '$245.50' },
-            { symbol: 'GOOGL', change: '+1.2%', price: '$140.80' },
-            { symbol: 'MSFT', change: '+0.8%', price: '$378.90' },
-            { symbol: 'AMZN', change: '+3.2%', price: '$185.30' },
-            { symbol: 'NVDA', change: '+4.5%', price: '$890.20' },
-            { symbol: 'META', change: '+2.8%', price: '$505.60' },
-          ].map((stock, i) => (
-            <div key={i} className="mx-4 flex items-center gap-2 px-4 py-2 rounded-lg bg-card/50 border border-border/30">
-              <span className="font-bold">{stock.symbol}</span>
-              <span className="text-sm text-muted-foreground">{stock.price}</span>
-              <span className="text-sm font-medium text-success flex items-center gap-1">
-                <TrendingUp className="w-3 h-3" />
-                {stock.change}
-              </span>
-            </div>
-          ))}
+          {tickerStocks.map((stock, i) => {
+            const changeStr = stock.change || '+0%';
+            const isPositive = changeStr.startsWith('+');
+            return (
+              <div key={i} className="mx-4 flex items-center gap-2 px-4 py-2 rounded-lg bg-card/50 border border-border/30">
+                <span className="font-bold">{stock.symbol || 'N/A'}</span>
+                <span className="text-sm text-muted-foreground">{stock.price || '$0.00'}</span>
+                <span className={`text-sm font-medium flex items-center gap-1 ${isPositive ? 'text-success' : 'text-destructive'}`}>
+                  {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingUp className="w-3 h-3 rotate-180" />}
+                  {changeStr}
+                </span>
+              </div>
+            );
+          })}
         </Marquee>
       </section>
 
