@@ -15,7 +15,7 @@ interface Plant {
   growthTimeMs: number;
   lastWateredAt: number;
   isWilted: boolean;
-  variant: 'normal' | 'golden' | 'rainbow';
+  variant: 'normal' | 'golden' | 'rainbow' | 'frost' | 'candy' | 'thunder';
   sizeKg: number;
   sellPrice: number;
   basePrice: number; // Store base price for tooltip display
