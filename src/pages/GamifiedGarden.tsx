@@ -68,27 +68,27 @@ function getPlotUpgradePrice(currentPots: number): number {
 
 // 40 different seeds ordered by price (cheapest to most expensive) with slower progression and balanced sell prices
 const SEED_TEMPLATES: Omit<Seed, 'id'>[] = [
-  // Common (10 seeds) - Much slower growth and lower sell prices
-  { name: 'Radish', rarity: 'common', baseGrowthTime: 30, baseSizeKg: 0.2, price: 10, sellPrice: 12, icon: '🌱', stockRate: 1.0 },
-  { name: 'Lettuce', rarity: 'common', baseGrowthTime: 40, baseSizeKg: 0.3, price: 20, sellPrice: 25, icon: '🥬', stockRate: 1.0 },
-  { name: 'Carrot', rarity: 'common', baseGrowthTime: 50, baseSizeKg: 0.5, price: 35, sellPrice: 40, icon: '🥕', stockRate: 1.0 },
-  { name: 'Spinach', rarity: 'common', baseGrowthTime: 35, baseSizeKg: 0.3, price: 25, sellPrice: 30, icon: '🍃', stockRate: 1.0 },
-  { name: 'Cabbage', rarity: 'common', baseGrowthTime: 60, baseSizeKg: 0.8, price: 40, sellPrice: 45, icon: '🥬', stockRate: 1.0 },
-  { name: 'Peas', rarity: 'common', baseGrowthTime: 45, baseSizeKg: 0.4, price: 30, sellPrice: 35, icon: '🟢', stockRate: 1.0 },
-  { name: 'Onion', rarity: 'common', baseGrowthTime: 55, baseSizeKg: 0.6, price: 38, sellPrice: 42, icon: '🧅', stockRate: 1.0 },
-  { name: 'Garlic', rarity: 'common', baseGrowthTime: 70, baseSizeKg: 0.2, price: 45, sellPrice: 50, icon: '🧄', stockRate: 1.0 },
-  { name: 'Potato', rarity: 'common', baseGrowthTime: 80, baseSizeKg: 1.0, price: 50, sellPrice: 55, icon: '🥔', stockRate: 1.0 },
-  { name: 'Turnip', rarity: 'common', baseGrowthTime: 65, baseSizeKg: 0.7, price: 42, sellPrice: 48, icon: '⚪', stockRate: 1.0 },
+  // Common (10 seeds) - Reduced stock rates
+  { name: 'Radish', rarity: 'common', baseGrowthTime: 30, baseSizeKg: 0.2, price: 10, sellPrice: 12, icon: '🌱', stockRate: 0.8 },
+  { name: 'Lettuce', rarity: 'common', baseGrowthTime: 40, baseSizeKg: 0.3, price: 20, sellPrice: 25, icon: '🥬', stockRate: 0.7 },
+  { name: 'Carrot', rarity: 'common', baseGrowthTime: 50, baseSizeKg: 0.5, price: 35, sellPrice: 40, icon: '🥕', stockRate: 0.8 },
+  { name: 'Spinach', rarity: 'common', baseGrowthTime: 35, baseSizeKg: 0.3, price: 25, sellPrice: 30, icon: '🍃', stockRate: 0.6 },
+  { name: 'Cabbage', rarity: 'common', baseGrowthTime: 60, baseSizeKg: 0.8, price: 40, sellPrice: 45, icon: '🥬', stockRate: 0.7 },
+  { name: 'Peas', rarity: 'common', baseGrowthTime: 45, baseSizeKg: 0.4, price: 30, sellPrice: 35, icon: '🟢', stockRate: 0.8 },
+  { name: 'Onion', rarity: 'common', baseGrowthTime: 55, baseSizeKg: 0.6, price: 38, sellPrice: 42, icon: '🧅', stockRate: 0.7 },
+  { name: 'Garlic', rarity: 'common', baseGrowthTime: 70, baseSizeKg: 0.2, price: 45, sellPrice: 50, icon: '🧄', stockRate: 0.6 },
+  { name: 'Potato', rarity: 'common', baseGrowthTime: 80, baseSizeKg: 1.0, price: 50, sellPrice: 55, icon: '🥔', stockRate: 0.8 },
+  { name: 'Turnip', rarity: 'common', baseGrowthTime: 65, baseSizeKg: 0.7, price: 42, sellPrice: 48, icon: '⚪', stockRate: 0.7 },
   
-  // Uncommon (8 seeds) - Slower growth and balanced sell prices
-  { name: 'Tomato', rarity: 'uncommon', baseGrowthTime: 90, baseSizeKg: 0.8, price: 75, sellPrice: 85, icon: '🍅', stockRate: 1.0 },
-  { name: 'Bell Pepper', rarity: 'uncommon', baseGrowthTime: 100, baseSizeKg: 0.6, price: 85, sellPrice: 95, icon: '🫑', stockRate: 1.0 },
-  { name: 'Cucumber', rarity: 'uncommon', baseGrowthTime: 85, baseSizeKg: 0.9, price: 80, sellPrice: 90, icon: '🥒', stockRate: 1.0 },
-  { name: 'Broccoli', rarity: 'uncommon', baseGrowthTime: 95, baseSizeKg: 0.7, price: 90, sellPrice: 100, icon: '🥦', stockRate: 1.0 },
-  { name: 'Eggplant', rarity: 'uncommon', baseGrowthTime: 110, baseSizeKg: 0.8, price: 100, sellPrice: 110, icon: '🍆', stockRate: 1.0 },
-  { name: 'Zucchini', rarity: 'uncommon', baseGrowthTime: 75, baseSizeKg: 1.2, price: 70, sellPrice: 80, icon: '🥒', stockRate: 1.0 },
-  { name: 'Green Bean', rarity: 'uncommon', baseGrowthTime: 70, baseSizeKg: 0.5, price: 65, sellPrice: 75, icon: '🟩', stockRate: 1.0 },
-  { name: 'Chili Pepper', rarity: 'uncommon', baseGrowthTime: 105, baseSizeKg: 0.3, price: 95, sellPrice: 105, icon: '🌶️', stockRate: 1.0 },
+  // Uncommon (8 seeds) - Reduced stock rates
+  { name: 'Tomato', rarity: 'uncommon', baseGrowthTime: 90, baseSizeKg: 0.8, price: 75, sellPrice: 85, icon: '🍅', stockRate: 0.6 },
+  { name: 'Bell Pepper', rarity: 'uncommon', baseGrowthTime: 100, baseSizeKg: 0.6, price: 85, sellPrice: 95, icon: '🫑', stockRate: 0.7 },
+  { name: 'Cucumber', rarity: 'uncommon', baseGrowthTime: 85, baseSizeKg: 0.9, price: 80, sellPrice: 90, icon: '🥒', stockRate: 0.6 },
+  { name: 'Broccoli', rarity: 'uncommon', baseGrowthTime: 95, baseSizeKg: 0.7, price: 90, sellPrice: 100, icon: '🥦', stockRate: 0.5 },
+  { name: 'Eggplant', rarity: 'uncommon', baseGrowthTime: 110, baseSizeKg: 0.8, price: 100, sellPrice: 110, icon: '🍆', stockRate: 0.6 },
+  { name: 'Zucchini', rarity: 'uncommon', baseGrowthTime: 75, baseSizeKg: 1.2, price: 70, sellPrice: 80, icon: '🥒', stockRate: 0.7 },
+  { name: 'Green Bean', rarity: 'uncommon', baseGrowthTime: 70, baseSizeKg: 0.5, price: 65, sellPrice: 75, icon: '🟩', stockRate: 0.6 },
+  { name: 'Chili Pepper', rarity: 'uncommon', baseGrowthTime: 105, baseSizeKg: 0.3, price: 95, sellPrice: 105, icon: '🌶️', stockRate: 0.5 },
   
   // Rare (8 seeds) - Much slower growth with better sell prices
   { name: 'Corn', rarity: 'rare', baseGrowthTime: 120, baseSizeKg: 1.5, price: 150, sellPrice: 180, icon: '🌽', stockRate: 0.3 },
@@ -323,17 +323,19 @@ export default function GamifiedGarden() {
       let quantity = 0;
       
       if (isInStock) {
-        // Set stock quantity based on rarity
+        // Set stock quantity based on rarity - reduced amounts
         switch (template.rarity) {
           case 'common':
+            quantity = Math.floor(Math.random() * 3) + 1; // 1-3 seeds (was 3-7)
+            break;
           case 'uncommon':
-            quantity = Math.floor(Math.random() * 5) + 3; // 3-7 seeds
+            quantity = Math.floor(Math.random() * 2) + 1; // 1-2 seeds (was 3-7)
             break;
           case 'rare':
-            quantity = Math.floor(Math.random() * 3) + 1; // 1-3 seeds
+            quantity = 1; // Always 1 seed (was 1-3)
             break;
           case 'epic':
-            quantity = Math.floor(Math.random() * 2) + 1; // 1-2 seeds
+            quantity = 1; // Always 1 seed (was 1-2)
             break;
           case 'mythic':
           case 'legendary':
