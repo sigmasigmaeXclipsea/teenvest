@@ -20,15 +20,9 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAchievementTracker } from '@/hooks/useAchievementTracker';
 import { cn } from '@/lib/utils';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 
 interface DashboardLayoutProps {
@@ -55,6 +49,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
   
   // Track and auto-award achievements
   useAchievementTracker();
@@ -133,55 +128,69 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       </header>
 
       {/* Desktop Sidebar */}
-      <TooltipProvider delayDuration={100}>
-        <aside className="hidden lg:fixed lg:top-14 lg:bottom-0 lg:left-0 lg:z-40 lg:block">
-          <div className="h-full w-16 bg-card border-r border-border flex flex-col">
-            {/* Navigation */}
-            <nav className="flex-1 flex flex-col p-2 gap-1 overflow-y-auto overflow-x-hidden">
-              {navItems.map((item) => {
-                const isActive = location.pathname === item.path;
-                return (
-                  <Tooltip key={item.path}>
-                    <TooltipTrigger asChild>
-                      <button
-                        onClick={() => navigate(item.path)}
-                        className={cn(
-                          "flex items-center justify-center w-12 h-12 rounded-xl transition-all duration-200",
-                          isActive
-                            ? 'bg-primary text-primary-foreground shadow-md'
-                            : 'text-muted-foreground hover:bg-secondary hover:text-foreground hover:scale-105'
-                        )}
-                      >
-                        <item.icon className="w-6 h-6" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right" sideOffset={8}>
-                      <p>{item.label}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                );
-              })}
-            </nav>
-
-            {/* Logout */}
-            <div className="p-2 border-t border-border">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    className="flex items-center justify-center w-12 h-12 rounded-xl text-muted-foreground hover:bg-secondary hover:text-foreground hover:scale-105 transition-all duration-200"
-                    onClick={handleLogout}
+      <aside 
+        className="hidden lg:fixed lg:top-14 lg:bottom-0 lg:left-0 lg:z-40 lg:block"
+        onMouseEnter={() => setSidebarExpanded(true)}
+        onMouseLeave={() => setSidebarExpanded(false)}
+      >
+        <div 
+          className={cn(
+            "h-full bg-card border-r border-border flex flex-col transition-all duration-300 ease-out",
+            sidebarExpanded ? "w-52" : "w-16"
+          )}
+        >
+          {/* Navigation */}
+          <nav className="flex-1 flex flex-col p-2 gap-1 overflow-y-auto overflow-x-hidden">
+            {navItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => navigate(item.path)}
+                  className={cn(
+                    "flex items-center gap-3 h-12 rounded-xl transition-all duration-200 overflow-hidden",
+                    sidebarExpanded ? "px-3 w-full" : "justify-center w-12",
+                    isActive
+                      ? 'bg-primary text-primary-foreground shadow-md'
+                      : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                  )}
+                >
+                  <item.icon className="w-6 h-6 shrink-0" />
+                  <span 
+                    className={cn(
+                      "text-sm font-medium whitespace-nowrap transition-all duration-300",
+                      sidebarExpanded ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2 w-0"
+                    )}
                   >
-                    <LogOut className="w-6 h-6" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right" sideOffset={8}>
-                  <p>Log Out</p>
-                </TooltipContent>
-              </Tooltip>
-            </div>
+                    {item.label}
+                  </span>
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Logout */}
+          <div className="p-2 border-t border-border">
+            <button
+              className={cn(
+                "flex items-center gap-3 h-12 rounded-xl text-muted-foreground hover:bg-secondary hover:text-foreground transition-all duration-200 overflow-hidden",
+                sidebarExpanded ? "px-3 w-full" : "justify-center w-12"
+              )}
+              onClick={handleLogout}
+            >
+              <LogOut className="w-6 h-6 shrink-0" />
+              <span 
+                className={cn(
+                  "text-sm font-medium whitespace-nowrap transition-all duration-300",
+                  sidebarExpanded ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2 w-0"
+                )}
+              >
+                Log Out
+              </span>
+            </button>
           </div>
-        </aside>
-      </TooltipProvider>
+        </div>
+      </aside>
 
       {/* Mobile Menu - Smooth Sliding Sheet */}
       <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
