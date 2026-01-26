@@ -20,11 +20,22 @@ interface Plot {
   plant?: Plant;
 }
 
+interface Gear {
+  id: string;
+  name: string;
+  type: 'wateringCan' | 'sprinkler' | 'plotUpgrade';
+  effect: string;
+  price: number;
+  quantity?: number;
+  uses?: number;
+}
+
 interface Garden2DProps {
   plots: Plot[];
   selectedSeed: { id: string; name: string; icon: string } | null;
   onPlotClick: (plotId: string, action: 'plant' | 'water' | 'harvest') => void;
   formatTime: (ms: number) => string;
+  sprinklerPositions?: {plotId: string, gear: Gear}[];
 }
 
 // Cartoonish plant SVG components for each seed type at different growth stages
@@ -36,7 +47,7 @@ const PlantVisual = ({
 }: { 
   seedType: string; 
   progress: number; 
-  variant: 'normal' | 'golden' | 'rainbow' | 'frost' | 'candy' | 'thunder';
+  variant: 'normal' | 'golden' | 'rainbow' | 'frost' | 'candy' | 'thunder' | 'lunar';
   isWilted: boolean;
 }) => {
   const stage = progress < 0.33 ? 'sprout' : progress < 0.66 ? 'growing' : progress < 1 ? 'mature' : 'ready';
@@ -49,6 +60,7 @@ const PlantVisual = ({
     if (variant === 'frost') return 'hue-rotate(180deg) saturate(150%) brightness(1.2)';
     if (variant === 'candy') return 'hue-rotate(320deg) saturate(200%) brightness(1.1)';
     if (variant === 'thunder') return 'sepia(50%) saturate(300%) hue-rotate(45deg) brightness(1.3)';
+    if (variant === 'lunar') return 'hue-rotate(270deg) saturate(180%) brightness(1.2) contrast(1.1)';
     return 'none';
   };
   
@@ -413,12 +425,14 @@ function PlotPot({
   onPlotClick,
   formatTime,
   index,
+  sprinkler,
 }: {
   plot: Plot;
   selectedSeed: Garden2DProps['selectedSeed'];
   onPlotClick: Garden2DProps['onPlotClick'];
   formatTime: (ms: number) => string;
   index: number;
+  sprinkler?: {plotId: string, gear: Gear};
 }) {
   const now = Date.now();
   const plant = plot.plant;
@@ -469,6 +483,16 @@ function PlotPot({
       <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-card border border-border rounded-full px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
         Pot {index + 1}
       </div>
+
+      {/* Sprinkler */}
+      {sprinkler && (
+        <div className="absolute -top-8 right-0 text-lg animate-pulse">
+          ⚡
+          <div className="absolute -top-5 right-0 bg-purple-600 text-white text-[8px] px-1 rounded whitespace-nowrap">
+            {sprinkler.gear.name}
+          </div>
+        </div>
+      )}
 
       {/* Plant area */}
       <div className="flex-1 flex items-end justify-center pb-2 w-full overflow-hidden">
@@ -578,7 +602,7 @@ function PlotPot({
   );
 }
 
-export default function Garden2D({ plots, selectedSeed, onPlotClick, formatTime }: Garden2DProps) {
+export default function Garden2D({ plots, selectedSeed, onPlotClick, formatTime, sprinklerPositions = [] }: Garden2DProps) {
   // Calculate grid layout based on number of plots
   const gridCols = plots.length <= 3 ? plots.length : plots.length <= 6 ? 3 : 4;
   
@@ -588,7 +612,9 @@ export default function Garden2D({ plots, selectedSeed, onPlotClick, formatTime 
         className="flex flex-wrap justify-center gap-6 sm:gap-8"
         style={{ maxWidth: `${gridCols * 160}px`, margin: '0 auto' }}
       >
-        {plots.map((plot, index) => (
+        {plots.map((plot, index) => {
+          const sprinkler = sprinklerPositions.find(s => s.plotId === plot.id);
+          return (
           <PlotPot
             key={plot.id}
             plot={plot}
@@ -596,8 +622,10 @@ export default function Garden2D({ plots, selectedSeed, onPlotClick, formatTime 
             onPlotClick={onPlotClick}
             formatTime={formatTime}
             index={index}
+            sprinkler={sprinkler}
           />
-        ))}
+          );
+        })}
       </div>
     </div>
   );

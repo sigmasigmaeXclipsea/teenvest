@@ -15,7 +15,7 @@ interface Plant {
   growthTimeMs: number;
   lastWateredAt: number;
   isWilted: boolean;
-  variant: 'normal' | 'golden' | 'rainbow' | 'frost' | 'candy' | 'thunder';
+  variant: 'normal' | 'golden' | 'rainbow' | 'frost' | 'candy' | 'thunder' | 'lunar';
   sizeKg: number;
   sellPrice: number;
   basePrice: number; // Store base price for tooltip display
@@ -54,14 +54,14 @@ interface Gear {
 interface HarvestedPlant {
   id: string;
   seedType: string;
-  variant: 'normal' | 'golden' | 'rainbow' | 'frost' | 'candy' | 'thunder';
+  variant: 'normal' | 'golden' | 'rainbow' | 'frost' | 'candy' | 'thunder' | 'lunar';
   sizeKg: number;
   sellPrice: number;
   icon: string;
   harvestedAt: number;
 }
 
-type Weather = 'normal' | 'cold' | 'candy' | 'thunder';
+type Weather = 'normal' | 'rainy' | 'frozen' | 'candy' | 'thunder' | 'lunar';
 
 const MIN_POTS = 3;
 const MAX_POTS = 20; // Increased from 9 to 20 for more progression
@@ -232,27 +232,44 @@ function getRarityColor(rarity: string) {
 
 function getWeatherMultiplier(weather: Weather): number {
   switch (weather) {
-    case 'cold': return 2; // 2x price multiplier
+    case 'frozen': return 2; // 2x price multiplier
     case 'candy': return 3; // 3x price multiplier  
     case 'thunder': return 5; // 5x price multiplier
+    case 'rainy': return 1.5; // 1.5x price multiplier
+    case 'lunar': return 4; // 4x price multiplier
     default: return 1;
+  }
+}
+
+function getWeatherMutationChance(weather: Weather): number {
+  switch (weather) {
+    case 'frozen': return 0.4; // 40% chance for frost mutation
+    case 'candy': return 0.35; // 35% chance for candy mutation
+    case 'thunder': return 0.25; // 25% chance for thunder mutation
+    case 'rainy': return 0.3; // 30% chance for rain boost (but no special mutation)
+    case 'lunar': return 0.2; // 20% chance for lunar mutation
+    default: return 0;
   }
 }
 
 function getWeatherIcon(weather: Weather): string {
   switch (weather) {
-    case 'cold': return '❄️';
+    case 'frozen': return '❄️';
     case 'candy': return '🍬';
     case 'thunder': return '⚡';
+    case 'rainy': return '🌧️';
+    case 'lunar': return '🌙';
     default: return '☀️';
   }
 }
 
 function getWeatherName(weather: Weather): string {
   switch (weather) {
-    case 'cold': return 'Frost';
+    case 'frozen': return 'Frozen';
     case 'candy': return 'Candy';
     case 'thunder': return 'Thunder';
+    case 'rainy': return 'Rainy';
+    case 'lunar': return 'Lunar';
     default: return 'Normal';
   }
 }
@@ -264,6 +281,7 @@ function getVariantColor(variant: string) {
     case 'thunder': return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900 border-2 border-yellow-400 shadow-lg shadow-yellow-500/50';
     case 'golden': return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900 border-2 border-yellow-400 shadow-lg shadow-yellow-500/50';
     case 'rainbow': return 'text-cyan-600 bg-gradient-to-r from-cyan-100 to-blue-100 dark:from-cyan-900 dark:to-blue-900 border-2 border-cyan-400 shadow-lg shadow-cyan-500/50 animate-pulse';
+    case 'lunar': return 'text-purple-600 bg-purple-100 dark:bg-purple-900 border-2 border-purple-400 shadow-lg shadow-purple-500/50 animate-pulse';
     default: return '';
   }
 }
@@ -284,6 +302,8 @@ export default function GamifiedGarden() {
   const [selectedItem, setSelectedItem] = useState<Gear | null>(null); // For consumable items
   const [selectedPlant, setSelectedPlant] = useState<Plot | null>(null); // For plant info display
   const [isWateringMode, setIsWateringMode] = useState(false); // When watering can is selected
+  const [isSprinklerMode, setIsSprinklerMode] = useState(false); // When placing sprinkler
+  const [sprinklerPositions, setSprinklerPositions] = useState<{plotId: string, gear: Gear}[]>([]); // Track placed sprinklers
   const [achievements, setAchievements] = useState<string[]>([]); // Achievement tracking
   const [currentWeather, setCurrentWeather] = useState<Weather>('normal');
   
@@ -308,6 +328,7 @@ export default function GamifiedGarden() {
         setPlots(parsed.plots ?? Array.from({ length: savedNumPots }, (_, i) => ({ id: `plot-${i}` })));
         setInventory(parsed.inventory ?? { seeds: [], gear: [] });
         setHarvestedPlants(parsed.harvestedPlants ?? []);
+        setSprinklerPositions(parsed.sprinklerPositions ?? []);
         setHasSprinkler(parsed.hasSprinkler ?? null);
         setCurrentWeather(parsed.currentWeather ?? 'normal');
         setSeedRestockTime(parsed.seedRestockTime ?? Date.now() + 60 * 60 * 1000);
@@ -335,9 +356,9 @@ export default function GamifiedGarden() {
 
   // Save to localStorage
   useEffect(() => {
-    const state = { xp, money, numPots, plots, inventory, harvestedPlants, hasSprinkler, currentWeather, seedRestockTime, gearRestockTime, selectedSeed, selectedItem };
+    const state = { xp, money, numPots, plots, inventory, harvestedPlants, sprinklerPositions, hasSprinkler, currentWeather, seedRestockTime, gearRestockTime, selectedSeed, selectedItem };
     localStorage.setItem('garden-state-v4', JSON.stringify(state));
-  }, [xp, money, numPots, plots, inventory, harvestedPlants, hasSprinkler, currentWeather, seedRestockTime, gearRestockTime, selectedSeed, selectedItem]);
+  }, [xp, money, numPots, plots, inventory, harvestedPlants, sprinklerPositions, hasSprinkler, currentWeather, seedRestockTime, gearRestockTime, selectedSeed, selectedItem]);
 
   // Timer tick for countdowns
   useEffect(() => {
@@ -350,14 +371,16 @@ export default function GamifiedGarden() {
   // Weather changing system - changes every 5-10 minutes
   useEffect(() => {
     const changeWeather = () => {
-      const weathers: Weather[] = ['normal', 'cold', 'candy', 'thunder'];
+      const weathers: Weather[] = ['normal', 'rainy', 'frozen', 'candy', 'thunder', 'lunar'];
       const randomWeather = weathers[Math.floor(Math.random() * weathers.length)];
       setCurrentWeather(randomWeather);
       
       if (randomWeather !== 'normal') {
+        const mutationChance = getWeatherMutationChance(randomWeather);
+        const multiplier = getWeatherMultiplier(randomWeather);
         toast({
           title: `🌦️ Weather Changed!`,
-          description: `${getWeatherName(randomWeather)} weather is now active! Plants harvested will have special mutations.`,
+          description: `${getWeatherName(randomWeather)} weather is now active! ${mutationChance > 0 ? `${Math.round(mutationChance * 100)}% mutation chance` : 'Growth boost'} with ${multiplier}x value multiplier!`,
         });
       }
     };
@@ -571,24 +594,35 @@ export default function GamifiedGarden() {
     const plant = plot.plant;
     if (Date.now() - plant.plantedAt < plant.growthTimeMs) return;
     
-    // Apply weather mutations
+    // Apply weather mutations with specific percentages
     let finalVariant = plant.variant === 'normal' ? calculateVariant(hasSprinkler) : plant.variant;
     let weatherMultiplier = 1;
     
-    if (currentWeather !== 'normal' && Math.random() < 0.5) { // 50% chance of weather mutation
-      switch (currentWeather) {
-        case 'cold':
-          finalVariant = 'frost';
-          weatherMultiplier = getWeatherMultiplier('cold');
-          break;
-        case 'candy':
-          finalVariant = 'candy';
-          weatherMultiplier = getWeatherMultiplier('candy');
-          break;
-        case 'thunder':
-          finalVariant = 'thunder';
-          weatherMultiplier = getWeatherMultiplier('thunder');
-          break;
+    if (currentWeather !== 'normal' && finalVariant === 'normal') {
+      const mutationChance = getWeatherMutationChance(currentWeather);
+      if (Math.random() < mutationChance) {
+        switch (currentWeather) {
+          case 'frozen':
+            finalVariant = 'frost';
+            weatherMultiplier = getWeatherMultiplier('frozen');
+            break;
+          case 'candy':
+            finalVariant = 'candy';
+            weatherMultiplier = getWeatherMultiplier('candy');
+            break;
+          case 'thunder':
+            finalVariant = 'thunder';
+            weatherMultiplier = getWeatherMultiplier('thunder');
+            break;
+          case 'lunar':
+            finalVariant = 'lunar';
+            weatherMultiplier = getWeatherMultiplier('lunar');
+            break;
+          case 'rainy':
+            // Rainy weather gives growth boost but no special mutation
+            weatherMultiplier = getWeatherMultiplier('rainy');
+            break;
+        }
       }
     }
     
@@ -701,9 +735,7 @@ export default function GamifiedGarden() {
     if (money >= gear.price) {
       setMoney(m => m - gear.price);
       
-      if (gear.type === 'sprinkler') {
-        setHasSprinkler(gear.name);
-      } else if (gear.type === 'plotUpgrade') {
+      if (gear.type === 'plotUpgrade') {
         if (numPots < MAX_POTS) {
           const newNumPots = numPots + 1;
           setNumPots(newNumPots);
@@ -715,29 +747,87 @@ export default function GamifiedGarden() {
           return;
         }
       } else if (gear.type === 'wateringCan') {
-        // Add consumable watering can with uses and unique ID
-        const wateringCanWithUses = { 
-          ...gear, 
-          id: generateId(), // Generate unique ID for this specific watering can
-          uses: 10 
-        };
-        setInventory(inv => ({ ...inv, gear: [...inv.gear, wateringCanWithUses] }));
-        toast({ title: 'Purchased', description: `${gear.name} (10 uses)` });
+        // Stack watering cans - add uses to existing or create new
+        const existingCan = inventory.gear.find(g => g.type === 'wateringCan');
+        if (existingCan) {
+          // Add 10 uses to existing watering can
+          setInventory(inv => ({
+            ...inv,
+            gear: inv.gear.map(g => 
+              g.type === 'wateringCan' 
+                ? { ...g, uses: (g.uses || 10) + 10 }
+                : g
+            )
+          }));
+          toast({ title: 'Watering Can Refilled!', description: `+10 uses (Total: ${(existingCan.uses || 10) + 10} uses)` });
+        } else {
+          // Create new watering can with 10 uses
+          const wateringCanWithUses = { 
+            ...gear, 
+            id: generateId(),
+            uses: 10 
+          };
+          setInventory(inv => ({ ...inv, gear: [...inv.gear, wateringCanWithUses] }));
+          toast({ title: 'Purchased', description: `${gear.name} (10 uses)` });
+        }
         return;
       }
       
-      // For other gear types, create unique object
+      // For sprinklers and other gear, add to inventory
       const uniqueGear = {
         ...gear,
-        id: generateId(), // Generate unique ID for this specific gear
+        id: generateId(),
       };
       setInventory(inv => ({ ...inv, gear: [...inv.gear, uniqueGear] }));
-      if (gear.type !== 'plotUpgrade') {
-        toast({ title: 'Purchased', description: gear.name });
-      }
+      toast({ title: 'Purchased', description: `${gear.name} - Click to place in garden` });
     } else {
       toast({ title: 'Not enough coins', description: `Need ${gear.price} coins`, variant: 'destructive' });
     }
+  }
+
+  // Place sprinkler in plot
+  function placeSprinkler(plotId: string, sprinkler: Gear) {
+    // Check if plot is empty and is an inner corner
+    const plotIndex = parseInt(plotId.split('-')[1]);
+    const gridSize = Math.ceil(Math.sqrt(numPots));
+    const row = Math.floor(plotIndex / gridSize);
+    const col = plotIndex % gridSize;
+    
+    // Check if it's an inner corner (not on outer edges)
+    const isInnerCorner = (row > 0 && row < gridSize - 1) && (col > 0 && col < gridSize - 1);
+    
+    if (!isInnerCorner) {
+      toast({ 
+        title: 'Invalid Placement', 
+        description: 'Sprinklers can only be placed in inner corner plots', 
+        variant: 'destructive' 
+      });
+      return;
+    }
+    
+    // Check if sprinkler already exists here
+    if (sprinklerPositions.some(s => s.plotId === plotId)) {
+      toast({ 
+        title: 'Sprinkler Already Placed', 
+        description: 'This plot already has a sprinkler', 
+        variant: 'destructive' 
+      });
+      return;
+    }
+    
+    // Place the sprinkler
+    setSprinklerPositions(prev => [...prev, { plotId, gear: sprinkler }]);
+    setInventory(inv => ({
+      ...inv,
+      gear: inv.gear.filter(g => g.id !== sprinkler.id)
+    }));
+    setSelectedItem(null);
+    setIsSprinklerMode(false);
+    
+    toast({ 
+      title: 'Sprinkler Placed!', 
+      description: `${sprinkler.name} is now watering nearby plants` 
+    });
   }
 
   // XP to Money exchange
@@ -874,6 +964,9 @@ export default function GamifiedGarden() {
                   }));
                   setSelectedItem(null);
                   setIsWateringMode(false);
+                } else if (isSprinklerMode && selectedItem?.type === 'sprinkler') {
+                  // Place sprinkler
+                  placeSprinkler(plotId, selectedItem);
                 } else {
                   // Show plant info if not in watering mode
                   if (plot?.plant) {
@@ -888,6 +981,7 @@ export default function GamifiedGarden() {
               }
             }}
             formatTime={formatTime}
+            sprinklerPositions={sprinklerPositions}
           />
           <p className="text-xs text-muted-foreground mt-3 text-center">
             {isWateringMode ? '🚿 Click a plant to water it' : 'Hover over plants to see info • Click pots to plant/harvest'}
@@ -931,35 +1025,55 @@ export default function GamifiedGarden() {
         {/* Items Inventory */}
         <div className="bg-card rounded-xl shadow-sm p-4 border">
           <h3 className="font-bold mb-2 flex items-center gap-2 text-foreground">
-            <Wrench className="w-5 h-5" /> My Items ({inventory.gear.filter(g => g.type === 'wateringCan').length})
+            <Wrench className="w-5 h-5" /> My Items ({inventory.gear.length})
           </h3>
-          {inventory.gear.filter(g => g.type === 'wateringCan').length === 0 ? (
+          {inventory.gear.length === 0 ? (
             <p className="text-sm text-muted-foreground">No items. Buy some from the shop!</p>
           ) : (
             <ScrollArea className="h-20">
               <div className="flex gap-2 flex-wrap pr-4">
-                {inventory.gear.filter(g => g.type === 'wateringCan').map(item => (
+                {inventory.gear.map(item => (
                   <button
                     key={item.id}
                     onClick={() => {
-                      if (isWateringMode && selectedItem?.id === item.id) {
-                        // Deselect if already selected
-                        setSelectedItem(null);
-                        setIsWateringMode(false);
-                      } else {
-                        // Select item for use
-                        setSelectedItem(item);
-                        setIsWateringMode(true);
-                        setSelectedSeed(null); // Deselect seed when selecting item
+                      if (item.type === 'wateringCan') {
+                        if (isWateringMode && selectedItem?.id === item.id) {
+                          // Deselect if already selected
+                          setSelectedItem(null);
+                          setIsWateringMode(false);
+                        } else {
+                          // Select watering can for use
+                          setSelectedItem(item);
+                          setIsWateringMode(true);
+                          setIsSprinklerMode(false);
+                          setSelectedSeed(null); // Deselect seed when selecting item
+                        }
+                      } else if (item.type === 'sprinkler') {
+                        if (isSprinklerMode && selectedItem?.id === item.id) {
+                          // Deselect if already selected
+                          setSelectedItem(null);
+                          setIsSprinklerMode(false);
+                        } else {
+                          // Select sprinkler for placement
+                          setSelectedItem(item);
+                          setIsSprinklerMode(true);
+                          setIsWateringMode(false);
+                          setSelectedSeed(null); // Deselect seed when selecting item
+                        }
                       }
                     }}
                     className={`px-3 py-1.5 rounded border text-xs flex items-center gap-1 transition-colors ${
-                      selectedItem?.id === item.id && isWateringMode
+                      (item.type === 'wateringCan' && selectedItem?.id === item.id && isWateringMode) ||
+                      (item.type === 'sprinkler' && selectedItem?.id === item.id && isSprinklerMode)
                         ? 'bg-blue-100 border-blue-500 dark:bg-blue-900 dark:border-blue-400' 
                         : 'bg-secondary hover:bg-secondary/80'
                     }`}
                   >
-                    <Droplets className="w-3 h-3" />
+                    {item.type === 'wateringCan' ? (
+                      <Droplets className="w-3 h-3" />
+                    ) : (
+                      <Zap className="w-3 h-3" />
+                    )}
                     <span>{item.name}</span>
                     {item.uses && (
                       <span className="text-xs text-muted-foreground">({item.uses})</span>
@@ -969,9 +1083,14 @@ export default function GamifiedGarden() {
               </div>
             </ScrollArea>
           )}
-          {isWateringMode && selectedItem && (
+          {isWateringMode && selectedItem && selectedItem.type === 'wateringCan' && (
             <p className="mt-2 text-xs text-blue-600">
               🚿 Watering can selected - Click a plant to water it
+            </p>
+          )}
+          {isSprinklerMode && selectedItem && selectedItem.type === 'sprinkler' && (
+            <p className="mt-2 text-xs text-purple-600">
+              ⚡ Sprinkler selected - Click an inner corner plot to place it
             </p>
           )}
         </div>
