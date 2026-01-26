@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import AIAssistantCard from '@/components/AIAssistantCard';
 import InteractiveBlockRenderer, { type InteractiveBlock } from '@/components/learn/InteractiveBlockRenderer';
 import LessonPodcast from '@/components/LessonPodcast';
-import BeanstalkGame from '@/components/BeanstalkGame';
+import BeanstalkGameModal from '@/components/BeanstalkGameModal';
 
 const LessonPage = () => {
   const { moduleId } = useParams<{ moduleId: string }>();
@@ -31,7 +31,8 @@ const LessonPage = () => {
 
   const [activeView, setActiveView] = useState<'content' | 'quiz' | 'game'>('content');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
+  const [selectedAnswers, setSelectedAnswers] = useState<{ [key: number]: number }>({});
+  const [isGameModalOpen, setIsGameModalOpen] = useState(false);
   const [showResults, setShowResults] = useState(false);
 
   const currentModule = modules?.find(m => m.id === moduleId);
@@ -489,11 +490,33 @@ const LessonPage = () => {
             />
 
             {/* Beanstalk Game */}
-            <BeanstalkGame
-              moduleId={moduleId || ''}
-              title={currentModule?.title || ''}
-              content={currentModule?.content || ''}
-            />
+            <Card className="bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/20 dark:to-emerald-800/20 border-green-200 dark:border-green-800">
+              <CardContent className="p-6 text-center">
+                <div className="mb-4">
+                  <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <span className="text-2xl">🌱</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-green-800 dark:text-green-200 mb-2">
+                    Beanstalk Adventure
+                  </h3>
+                  <p className="text-sm text-green-600 dark:text-green-300 mb-4">
+                    Test your knowledge with our interactive climbing game! Answer questions to reach the top.
+                  </p>
+                </div>
+                
+                <Button 
+                  onClick={() => setIsGameModalOpen(true)}
+                  className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium"
+                  size="lg"
+                >
+                  🎮 Play Game
+                </Button>
+                
+                <div className="mt-3 text-xs text-green-500 dark:text-green-400">
+                  ✨ Interactive learning experience
+                </div>
+              </CardContent>
+            </Card>
 
             {/* AI Assistant */}
             <AIAssistantCard 
@@ -547,6 +570,21 @@ const LessonPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Beanstalk Game Modal */}
+      <BeanstalkGameModal
+        isOpen={isGameModalOpen}
+        onClose={() => setIsGameModalOpen(false)}
+        moduleId={moduleId || ''}
+        title={currentModule?.title || ''}
+        content={currentModule?.content || ''}
+        onComplete={(score, height) => {
+          toast({
+            title: '🎉 Game Complete!',
+            description: `You scored ${score} points and reached ${height}m!`,
+          });
+        }}
+      />
     </DashboardLayout>
   );
 };
