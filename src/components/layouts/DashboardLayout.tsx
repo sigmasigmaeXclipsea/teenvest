@@ -135,8 +135,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       >
         <div 
           className={cn(
-            "h-full bg-card border-r border-border flex flex-col transition-all duration-300 ease-out",
-            sidebarExpanded ? "w-52" : "w-16"
+            "h-full bg-card border-r border-border flex flex-col",
+            "transition-[width] duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]",
+            sidebarExpanded ? "w-48" : "w-16"
           )}
         >
           {/* Navigation */}
@@ -148,18 +149,20 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                   key={item.path}
                   onClick={() => navigate(item.path)}
                   className={cn(
-                    "flex items-center gap-3 h-12 rounded-xl transition-all duration-200 overflow-hidden",
-                    sidebarExpanded ? "px-3 w-full" : "justify-center w-12",
+                    "flex items-center h-11 rounded-xl overflow-hidden",
+                    "transition-colors duration-150",
+                    "px-3 min-w-[44px]",
                     isActive
                       ? 'bg-primary text-primary-foreground shadow-md'
                       : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
                   )}
                 >
-                  <item.icon className="w-6 h-6 shrink-0" />
+                  <item.icon className="w-5 h-5 shrink-0" />
                   <span 
                     className={cn(
-                      "text-sm font-medium whitespace-nowrap transition-all duration-300",
-                      sidebarExpanded ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2 w-0"
+                      "ml-3 text-sm font-medium whitespace-nowrap overflow-hidden",
+                      "transition-opacity duration-150",
+                      sidebarExpanded ? "opacity-100" : "opacity-0 w-0 ml-0"
                     )}
                   >
                     {item.label}
@@ -173,16 +176,19 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <div className="p-2 border-t border-border">
             <button
               className={cn(
-                "flex items-center gap-3 h-12 rounded-xl text-muted-foreground hover:bg-secondary hover:text-foreground transition-all duration-200 overflow-hidden",
-                sidebarExpanded ? "px-3 w-full" : "justify-center w-12"
+                "flex items-center h-11 rounded-xl overflow-hidden",
+                "transition-colors duration-150",
+                "px-3 min-w-[44px]",
+                "text-muted-foreground hover:bg-secondary hover:text-foreground"
               )}
               onClick={handleLogout}
             >
-              <LogOut className="w-6 h-6 shrink-0" />
+              <LogOut className="w-5 h-5 shrink-0" />
               <span 
                 className={cn(
-                  "text-sm font-medium whitespace-nowrap transition-all duration-300",
-                  sidebarExpanded ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2 w-0"
+                  "ml-3 text-sm font-medium whitespace-nowrap overflow-hidden",
+                  "transition-opacity duration-150",
+                  sidebarExpanded ? "opacity-100" : "opacity-0 w-0 ml-0"
                 )}
               >
                 Log Out
