@@ -385,38 +385,47 @@ export default function GamifiedGarden() {
     return () => clearInterval(interval);
   }, []);
 
-  // Weather changing system - changes every 5-10 minutes
+  // Weather changing system - changes every 15-30 minutes (much rarer)
   useEffect(() => {
     const changeWeather = () => {
-      const weathers: Weather[] = ['normal', 'rainy', 'frozen', 'candy', 'thunder', 'lunar'];
-      const randomWeather = weathers[Math.floor(Math.random() * weathers.length)];
-      setCurrentWeather(randomWeather);
+      const weatherTypes: Weather[] = ['normal', 'rainy', 'frozen', 'candy', 'thunder', 'lunar'];
+      // 70% chance of normal weather, 30% chance of special weather
+      const randomWeather = Math.random() < 0.7 ? 'normal' : weatherTypes[Math.floor(Math.random() * (weatherTypes.length - 1)) + 1];
       
-      if (randomWeather !== 'normal') {
+      if (randomWeather !== currentWeather) {
         const mutationChance = getWeatherMutationChance(randomWeather);
         const multiplier = getWeatherMultiplier(randomWeather);
-        toast({
-          title: `🌦️ Weather Changed!`,
-          description: `${getWeatherName(randomWeather)} weather is now active! ${mutationChance > 0 ? `${Math.round(mutationChance * 100)}% mutation chance` : 'Growth boost'} with ${multiplier}x value multiplier!`,
-        });
+        
+        setCurrentWeather(randomWeather);
+        
+        if (randomWeather !== 'normal') {
+          toast({ 
+            title: `🌦️ Weather Change!`, 
+            description: `${getWeatherName(randomWeather)} weather is now active! ${mutationChance > 0 ? `${Math.round(mutationChance * 100)}% mutation chance` : 'Growth boost'} with ${multiplier}x value multiplier!` 
+          });
+        } else {
+          toast({ 
+            title: '☀️ Weather Normal', 
+            description: 'Normal growing conditions have returned' 
+          });
+        }
       }
     };
 
-    // Change weather every 5-10 minutes
-    const weatherInterval = setInterval(() => {
+    // Initial weather change
+    const initialDelay = Math.random() * (30 * 60 * 1000 - 15 * 60 * 1000) + 15 * 60 * 1000; // 15-30 minutes
+    const initialTimer = setTimeout(changeWeather, initialDelay);
+    
+    // Subsequent weather changes every 15-30 minutes
+    const interval = setInterval(() => {
       changeWeather();
-    }, 5 * 60 * 1000 + Math.random() * 5 * 60 * 1000);
-
-    // Initial weather change after 1 minute
-    const initialChange = setTimeout(() => {
-      changeWeather();
-    }, 60 * 1000);
+    }, Math.random() * (30 * 60 * 1000 - 15 * 60 * 1000) + 15 * 60 * 1000); // 15-30 minutes
 
     return () => {
-      clearInterval(weatherInterval);
-      clearTimeout(initialChange);
+      clearTimeout(initialTimer);
+      clearInterval(interval);
     };
-  }, []);
+  }, [currentWeather]);
 
   // Initialize and manage shop restocks
   useEffect(() => {
@@ -926,6 +935,7 @@ export default function GamifiedGarden() {
           selectedItem={selectedItem}
           isWateringMode={isWateringMode}
           isSprinklerMode={isSprinklerMode}
+          currentWeather={currentWeather}
           onPlantSeed={(x, y, seed) => {
             plantSeed(x, y, seed);
           }}

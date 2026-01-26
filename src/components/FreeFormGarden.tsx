@@ -53,6 +53,7 @@ interface FreeFormGardenProps {
   selectedItem: Gear | null;
   isWateringMode: boolean;
   isSprinklerMode: boolean;
+  currentWeather: 'normal' | 'rainy' | 'frozen' | 'candy' | 'thunder' | 'lunar';
   onPlantSeed: (x: number, y: number, seed: Seed) => void;
   onWaterPlant: (plantId: string) => void;
   onHarvestPlant: (plantId: string) => void;
@@ -68,6 +69,7 @@ export default function FreeFormGarden({
   selectedItem,
   isWateringMode,
   isSprinklerMode,
+  currentWeather,
   onPlantSeed,
   onWaterPlant,
   onHarvestPlant,
@@ -79,6 +81,18 @@ export default function FreeFormGarden({
   const [hoveredPosition, setHoveredPosition] = useState<{x: number, y: number} | null>(null);
 
   const now = Date.now();
+
+  // Get weather display info
+  const getWeatherInfo = () => {
+    switch (currentWeather) {
+      case 'rainy': return { icon: '🌧️', name: 'Rainy', color: 'text-blue-500' };
+      case 'frozen': return { icon: '❄️', name: 'Frozen', color: 'text-cyan-400' };
+      case 'candy': return { icon: '🍬', name: 'Candy', color: 'text-pink-400' };
+      case 'thunder': return { icon: '⚡', name: 'Thunder', color: 'text-yellow-400' };
+      case 'lunar': return { icon: '🌙', name: 'Lunar', color: 'text-purple-400' };
+      default: return { icon: '☀️', name: 'Normal', color: 'text-yellow-500' };
+    }
+  };
 
   // Check if position is valid for planting (not too close to other plants)
   const isValidPlantingPosition = (x: number, y: number) => {
@@ -149,7 +163,7 @@ export default function FreeFormGarden({
     const scale = 0.3 + progress * 1.2; // More dramatic scaling
     const isReady = progress >= 1;
 
-    // Get variant colors
+    // Get variant colors and effects
     const getVariantStyle = () => {
       switch (plant.variant) {
         case 'golden': return 'filter: sepia(100%) saturate(300%) hue-rotate(10deg) brightness(1.2) drop-shadow(0 0 12px rgba(255, 215, 0, 0.6));';
@@ -165,18 +179,30 @@ export default function FreeFormGarden({
     const baseSize = stage === 'seed' ? 15 : stage === 'sprout' ? 25 : stage === 'growing' ? 40 : stage === 'mature' ? 55 : 70;
     const size = baseSize * scale;
 
-    // Different visual for each growth stage
+    // Different visual for each growth stage with variant effects
     const getStageVisual = () => {
       switch (stage) {
         case 'seed':
           return (
             <div className="relative w-full h-full">
-              {/* Small dark brown seed */}
+              {/* Small dark brown seed with variant effects */}
               <div 
                 className="absolute inset-0 rounded-full"
                 style={{
-                  background: 'radial-gradient(circle at 30% 30%, #4A3018, #2E1A17)',
-                  boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.3)'
+                  background: plant.variant === 'frost' 
+                    ? 'radial-gradient(circle at 30% 30%, #E0F2FE, #BAE6FD)'
+                    : plant.variant === 'candy'
+                    ? 'radial-gradient(circle at 30% 30%, #FCE7F3, #FBCFE8)'
+                    : plant.variant === 'thunder'
+                    ? 'radial-gradient(circle at 30% 30%, #FEF3C7, #FDE68A)'
+                    : plant.variant === 'lunar'
+                    ? 'radial-gradient(circle at 30% 30%, #E9D5FF, #D8B4FE)'
+                    : plant.variant === 'golden'
+                    ? 'radial-gradient(circle at 30% 30%, #FEF3C7, #FCD34D)'
+                    : 'radial-gradient(circle at 30% 30%, #4A3018, #2E1A17)',
+                  boxShadow: plant.variant !== 'normal' 
+                    ? 'inset 0 1px 2px rgba(255,255,255,0.5), 0 1px 3px rgba(0,0,0,0.3)'
+                    : 'inset 0 1px 2px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.3)'
                 }}
               />
             </div>
@@ -184,20 +210,36 @@ export default function FreeFormGarden({
         case 'sprout':
           return (
             <div className="relative w-full h-full">
-              {/* Small green sprout */}
+              {/* Small sprout with variant colors */}
               <div className="absolute inset-0 flex items-center justify-center">
                 <span 
-                  className="text-green-500"
+                  className={plant.variant === 'frost' ? 'text-cyan-300' : 
+                         plant.variant === 'candy' ? 'text-pink-300' :
+                         plant.variant === 'thunder' ? 'text-yellow-300' :
+                         plant.variant === 'lunar' ? 'text-purple-300' :
+                         plant.variant === 'golden' ? 'text-yellow-200' :
+                         plant.variant === 'rainbow' ? 'text-purple-300' :
+                         'text-green-500'}
                   style={{ fontSize: size * 0.6 }}
                 >
-                  🌱
+                  {plant.variant === 'frost' ? '❄️' :
+                   plant.variant === 'candy' ? '🍬' :
+                   plant.variant === 'thunder' ? '⚡' :
+                   plant.variant === 'lunar' ? '🌙' :
+                   plant.variant === 'golden' ? '✨' :
+                   plant.variant === 'rainbow' ? '🌈' :
+                   '🌱'}
                 </span>
               </div>
-              {/* Small soil mound */}
+              {/* Variant soil mound */}
               <div 
                 className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 h-1/3 rounded-t-full"
                 style={{
-                  background: 'radial-gradient(ellipse at center, #3E2723, #2E1A17)',
+                  background: plant.variant === 'frozen' 
+                    ? 'radial-gradient(ellipse at center, #E0F2FE, #BAE6FD)'
+                    : plant.variant === 'candy'
+                    ? 'radial-gradient(ellipse at center, #FCE7F3, #FBCFE8)'
+                    : 'radial-gradient(ellipse at center, #3E2723, #2E1A17)',
                   opacity: 0.8
                 }}
               />
@@ -206,86 +248,150 @@ export default function FreeFormGarden({
         case 'growing':
           return (
             <div className="relative w-full h-full">
-              {/* Medium plant */}
+              {/* Medium plant with variant effects */}
               <div className="absolute inset-0 flex items-center justify-center">
                 <span 
-                  className="text-green-600"
+                  className={plant.variant === 'frost' ? 'text-cyan-400' : 
+                         plant.variant === 'candy' ? 'text-pink-400' :
+                         plant.variant === 'thunder' ? 'text-yellow-400' :
+                         plant.variant === 'lunar' ? 'text-purple-400' :
+                         plant.variant === 'golden' ? 'text-yellow-300' :
+                         plant.variant === 'rainbow' ? 'text-purple-400' :
+                         'text-green-600'}
                   style={{ fontSize: size * 0.7 }}
                 >
-                  🌿
+                  {plant.variant === 'frost' ? '🌨️' :
+                   plant.variant === 'candy' ? '🧁' :
+                   plant.variant === 'thunder' ? '⚡' :
+                   plant.variant === 'lunar' ? '🌙' :
+                   plant.variant === 'golden' ? '✨' :
+                   plant.variant === 'rainbow' ? '🌈' :
+                   '🌿'}
                 </span>
               </div>
-              {/* Leaves effect */}
-              <div 
-                className="absolute top-1/4 left-1/4 w-2 h-2 bg-green-500 rounded-full opacity-60"
-                style={{ filter: 'blur(1px)' }}
-              />
-              <div 
-                className="absolute top-1/3 right-1/4 w-2 h-2 bg-green-500 rounded-full opacity-60"
-                style={{ filter: 'blur(1px)' }}
-              />
+              {/* Variant leaves */}
+              {[...Array(2)].map((_, i) => (
+                <div 
+                  key={i}
+                  className={`absolute w-2 h-2 rounded-full opacity-60`}
+                  style={{
+                    top: `${25 + i * 15}%`,
+                    left: `${25 + i * 10}%`,
+                    background: plant.variant === 'frost' ? '#67E8F9' :
+                             plant.variant === 'candy' ? '#F472B6' :
+                             plant.variant === 'thunder' ? '#FCD34D' :
+                             plant.variant === 'lunar' ? '#C084FC' :
+                             plant.variant === 'golden' ? '#FCD34D' :
+                             plant.variant === 'rainbow' ? '#C084FC' :
+                             '#22C55E',
+                    filter: 'blur(1px)'
+                  }}
+                />
+              ))}
             </div>
           );
         case 'mature':
           return (
             <div className="relative w-full h-full">
-              {/* Large plant */}
+              {/* Large plant with variant effects */}
               <div className="absolute inset-0 flex items-center justify-center">
                 <span 
-                  className="text-green-700"
+                  className={plant.variant === 'frost' ? 'text-cyan-500' : 
+                         plant.variant === 'candy' ? 'text-pink-500' :
+                         plant.variant === 'thunder' ? 'text-yellow-500' :
+                         plant.variant === 'lunar' ? 'text-purple-500' :
+                         plant.variant === 'golden' ? 'text-yellow-400' :
+                         plant.variant === 'rainbow' ? 'text-purple-500' :
+                         'text-green-700'}
                   style={{ fontSize: size * 0.8 }}
                 >
-                  🌾
+                  {plant.variant === 'frost' ? '❄️' :
+                   plant.variant === 'candy' ? '🍭' :
+                   plant.variant === 'thunder' ? '⚡' :
+                   plant.variant === 'lunar' ? '🌙' :
+                   plant.variant === 'golden' ? '⭐' :
+                   plant.variant === 'rainbow' ? '🌈' :
+                   '🌾'}
                 </span>
               </div>
-              {/* More leaves */}
-              <div 
-                className="absolute top-1/5 left-1/5 w-3 h-3 bg-green-600 rounded-full opacity-50"
-                style={{ filter: 'blur(1px)' }}
-              />
-              <div 
-                className="absolute top-1/4 right-1/5 w-3 h-3 bg-green-600 rounded-full opacity-50"
-                style={{ filter: 'blur(1px)' }}
-              />
-              <div 
-                className="absolute bottom-1/3 left-1/3 w-2 h-2 bg-green-500 rounded-full opacity-40"
-                style={{ filter: 'blur(1px)' }}
-              />
+              {/* More variant leaves */}
+              {[...Array(3)].map((_, i) => (
+                <div 
+                  key={i}
+                  className={`absolute w-3 h-3 rounded-full opacity-50`}
+                  style={{
+                    top: `${20 + i * 10}%`,
+                    left: `${20 + i * 8}%`,
+                    background: plant.variant === 'frost' ? '#06B6D4' :
+                             plant.variant === 'candy' ? '#EC4899' :
+                             plant.variant === 'thunder' ? '#F59E0B' :
+                             plant.variant === 'lunar' ? '#9333EA' :
+                             plant.variant === 'golden' ? '#F59E0B' :
+                             plant.variant === 'rainbow' ? '#9333EA' :
+                             '#16A34A',
+                    filter: 'blur(1px)'
+                  }}
+                />
+              ))}
             </div>
           );
         case 'ready':
           return (
             <div className="relative w-full h-full">
-              {/* Ready to harvest - full grown */}
+              {/* Ready to harvest - full grown with variant effects */}
               <div className="absolute inset-0 flex items-center justify-center">
                 <span 
-                  className="text-green-800"
+                  className={plant.variant === 'frost' ? 'text-cyan-600' : 
+                         plant.variant === 'candy' ? 'text-pink-600' :
+                         plant.variant === 'thunder' ? 'text-yellow-600' :
+                         plant.variant === 'lunar' ? 'text-purple-600' :
+                         plant.variant === 'golden' ? 'text-yellow-500' :
+                         plant.variant === 'rainbow' ? 'text-purple-600' :
+                         'text-green-800'}
                   style={{ fontSize: size * 0.9 }}
                 >
-                  {plant.icon || '🌻'}
+                  {plant.variant === 'frost' ? '🧊' :
+                   plant.variant === 'candy' ? '🍬' :
+                   plant.variant === 'thunder' ? '⚡' :
+                   plant.variant === 'lunar' ? '🌙' :
+                   plant.variant === 'golden' ? '⭐' :
+                   plant.variant === 'rainbow' ? '🌈' :
+                   (plant.icon || '🌻')}
                 </span>
               </div>
               {/* Glowing effect for ready plants */}
               <div 
                 className="absolute inset-0 rounded-full animate-pulse"
                 style={{
-                  background: 'radial-gradient(circle at center, rgba(34, 197, 94, 0.3), transparent 70%)',
+                  background: plant.variant === 'frost' ? 'radial-gradient(circle at center, rgba(6, 182, 212, 0.3), transparent 70%)' :
+                           plant.variant === 'candy' ? 'radial-gradient(circle at center, rgba(236, 72, 153, 0.3), transparent 70%)' :
+                           plant.variant === 'thunder' ? 'radial-gradient(circle at center, rgba(245, 158, 11, 0.3), transparent 70%)' :
+                           plant.variant === 'lunar' ? 'radial-gradient(circle at center, rgba(147, 51, 234, 0.3), transparent 70%)' :
+                           plant.variant === 'golden' ? 'radial-gradient(circle at center, rgba(245, 158, 11, 0.3), transparent 70%)' :
+                           plant.variant === 'rainbow' ? 'radial-gradient(circle at center, rgba(147, 51, 234, 0.3), transparent 70%)' :
+                           'radial-gradient(circle at center, rgba(34, 197, 94, 0.3), transparent 70%)',
                   filter: 'blur(8px)'
                 }}
               />
               {/* Decorative elements */}
-              <div 
-                className="absolute top-1/6 left-1/6 w-4 h-4 bg-green-600 rounded-full opacity-40"
-                style={{ filter: 'blur(2px)' }}
-              />
-              <div 
-                className="absolute top-1/5 right-1/6 w-4 h-4 bg-green-600 rounded-full opacity-40"
-                style={{ filter: 'blur(2px)' }}
-              />
-              <div 
-                className="absolute bottom-1/4 left-1/4 w-3 h-3 bg-green-500 rounded-full opacity-30"
-                style={{ filter: 'blur(1px)' }}
-              />
+              {[...Array(3)].map((_, i) => (
+                <div 
+                  key={i}
+                  className={`absolute w-4 h-4 rounded-full opacity-40`}
+                  style={{
+                    top: `${15 + i * 8}%`,
+                    left: `${15 + i * 6}%`,
+                    background: plant.variant === 'frost' ? '#0891B2' :
+                             plant.variant === 'candy' ? '#DB2777' :
+                             plant.variant === 'thunder' ? '#D97706' :
+                             plant.variant === 'lunar' ? '#7C3AED' :
+                             plant.variant === 'golden' ? '#D97706' :
+                             plant.variant === 'rainbow' ? '#7C3AED' :
+                             '#15803D',
+                    filter: 'blur(2px)'
+                  }}
+                />
+              ))}
             </div>
           );
         default:
@@ -349,6 +455,152 @@ export default function FreeFormGarden({
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
       >
+        {/* Weather effects overlay */}
+        {currentWeather !== 'normal' && (
+          <div className="absolute inset-0 pointer-events-none">
+            {currentWeather === 'rainy' && (
+              <div className="absolute inset-0">
+                {/* Rain drops */}
+                {[...Array(15)].map((_, i) => (
+                  <div
+                    key={`rain-${i}`}
+                    className="absolute w-0.5 h-3 bg-blue-400 opacity-30 animate-pulse"
+                    style={{
+                      left: `${Math.random() * 100}%`,
+                      top: `${Math.random() * 100}%`,
+                      animationDelay: `${Math.random() * 3}s`,
+                      animationDuration: '2s',
+                      transform: 'rotate(15deg)'
+                    }}
+                  />
+                ))}
+                {/* Moist soil effect */}
+                <div 
+                  className="absolute inset-0 opacity-20"
+                  style={{
+                    background: 'radial-gradient(ellipse at center, rgba(59, 130, 246, 0.1), transparent 70%)',
+                    filter: 'blur(20px)'
+                  }}
+                />
+              </div>
+            )}
+            {currentWeather === 'frozen' && (
+              <div className="absolute inset-0">
+                {/* Frost crystals */}
+                {[...Array(20)].map((_, i) => (
+                  <div
+                    key={`frost-${i}`}
+                    className="absolute w-2 h-2 bg-white opacity-40 rounded-full"
+                    style={{
+                      left: `${Math.random() * 100}%`,
+                      top: `${Math.random() * 100}%`,
+                      filter: 'blur(1px)',
+                      transform: 'scale(0.5)'
+                    }}
+                  />
+                ))}
+                {/* Cold overlay */}
+                <div 
+                  className="absolute inset-0 opacity-15"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(135, 206, 235, 0.2), rgba(176, 224, 230, 0.1))',
+                    filter: 'blur(15px)'
+                  }}
+                />
+              </div>
+            )}
+            {currentWeather === 'candy' && (
+              <div className="absolute inset-0">
+                {/* Candy sparkles */}
+                {[...Array(12)].map((_, i) => (
+                  <div
+                    key={`candy-${i}`}
+                    className="absolute w-1 h-1 bg-pink-400 opacity-50 rounded-full animate-pulse"
+                    style={{
+                      left: `${Math.random() * 100}%`,
+                      top: `${Math.random() * 100}%`,
+                      animationDelay: `${Math.random() * 2}s`,
+                      filter: 'blur(0.5px)'
+                    }}
+                  />
+                ))}
+                {/* Sweet overlay */}
+                <div 
+                  className="absolute inset-0 opacity-10"
+                  style={{
+                    background: 'radial-gradient(ellipse at center, rgba(255, 105, 180, 0.15), transparent 70%)',
+                    filter: 'blur(25px)'
+                  }}
+                />
+              </div>
+            )}
+            {currentWeather === 'thunder' && (
+              <div className="absolute inset-0">
+                {/* Lightning flashes */}
+                {[...Array(3)].map((_, i) => (
+                  <div
+                    key={`thunder-${i}`}
+                    className="absolute w-8 h-1 bg-yellow-400 opacity-20 animate-pulse"
+                    style={{
+                      left: `${Math.random() * 100}%`,
+                      top: `${Math.random() * 100}%`,
+                      animationDelay: `${Math.random() * 4}s`,
+                      animationDuration: '1s',
+                      filter: 'blur(2px)'
+                    }}
+                  />
+                ))}
+                {/* Electric overlay */}
+                <div 
+                  className="absolute inset-0 opacity-10"
+                  style={{
+                    background: 'linear-gradient(45deg, rgba(255, 255, 0, 0.1), transparent 50%)',
+                    filter: 'blur(20px)'
+                  }}
+                />
+              </div>
+            )}
+            {currentWeather === 'lunar' && (
+              <div className="absolute inset-0">
+                {/* Moonbeams */}
+                {[...Array(8)].map((_, i) => (
+                  <div
+                    key={`lunar-${i}`}
+                    className="absolute w-1 h-8 bg-purple-300 opacity-20 animate-pulse"
+                    style={{
+                      left: `${Math.random() * 100}%`,
+                      top: `${Math.random() * 100}%`,
+                      animationDelay: `${Math.random() * 3}s`,
+                      animationDuration: '3s',
+                      filter: 'blur(1px)'
+                    }}
+                  />
+                ))}
+                {/* Mystical overlay */}
+                <div 
+                  className="absolute inset-0 opacity-15"
+                  style={{
+                    background: 'radial-gradient(ellipse at center, rgba(147, 51, 234, 0.2), transparent 70%)',
+                    filter: 'blur(30px)'
+                  }}
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Weather corner display */}
+        {currentWeather !== 'normal' && (
+          <div className="absolute top-4 right-4 bg-black/20 backdrop-blur-sm rounded-lg p-2 pointer-events-none">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">{getWeatherInfo().icon}</span>
+              <span className={`text-xs font-medium ${getWeatherInfo().color}`}>
+                {getWeatherInfo().name}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Soil texture specks */}
         <div 
           className="absolute inset-0 opacity-30"
