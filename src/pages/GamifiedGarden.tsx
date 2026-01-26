@@ -29,7 +29,7 @@ interface Plot {
 interface Seed {
   id: string;
   name: string;
-  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'mythic';
+  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
   baseGrowthTime: number; // minutes
   baseSizeKg: number;
   price: number;
@@ -48,7 +48,7 @@ interface Gear {
 
 const MIN_POTS = 3;
 const MAX_POTS = 9;
-const WILT_THRESHOLD = 10 * 60 * 1000; // 10 minutes without water
+const WILT_THRESHOLD = 60 * 60 * 1000; // 60 minutes without water (increased from 10 min)
 const WATER_REDUCTION = 0.5; // watering cuts remaining time by 50%
 const XP_TO_MONEY_RATE = 2; // 1 XP = 2 coins
 
@@ -61,18 +61,52 @@ function getPlotUpgradePrice(currentPots: number): number {
   return Math.round(basePrice * Math.pow(exponent, upgradeIndex));
 }
 
-// 10 different seeds ordered by price (cheapest to most expensive)
+// 35 different seeds ordered by price (cheapest to most expensive) with longer growth times
 const SEED_TEMPLATES: Omit<Seed, 'id'>[] = [
-  { name: 'Radish', rarity: 'common', baseGrowthTime: 1, baseSizeKg: 0.2, price: 10, sellPrice: 18, icon: '🌱' },
-  { name: 'Lettuce', rarity: 'common', baseGrowthTime: 2, baseSizeKg: 0.3, price: 20, sellPrice: 35, icon: '🥬' },
-  { name: 'Carrot', rarity: 'common', baseGrowthTime: 3, baseSizeKg: 0.5, price: 35, sellPrice: 60, icon: '🥕' },
-  { name: 'Tomato', rarity: 'uncommon', baseGrowthTime: 4, baseSizeKg: 0.8, price: 50, sellPrice: 90, icon: '🍅' },
-  { name: 'Potato', rarity: 'uncommon', baseGrowthTime: 5, baseSizeKg: 1.0, price: 75, sellPrice: 140, icon: '🥔' },
-  { name: 'Corn', rarity: 'rare', baseGrowthTime: 6, baseSizeKg: 1.5, price: 120, sellPrice: 220, icon: '🌽' },
-  { name: 'Pumpkin', rarity: 'rare', baseGrowthTime: 8, baseSizeKg: 4.0, price: 200, sellPrice: 380, icon: '🎃' },
-  { name: 'Strawberry', rarity: 'epic', baseGrowthTime: 10, baseSizeKg: 0.4, price: 350, sellPrice: 700, icon: '🍓' },
-  { name: 'Golden Apple', rarity: 'epic', baseGrowthTime: 14, baseSizeKg: 0.5, price: 600, sellPrice: 1200, icon: '🍎' },
-  { name: 'Dragon Fruit', rarity: 'mythic', baseGrowthTime: 18, baseSizeKg: 2.0, price: 1000, sellPrice: 2500, icon: '🐉' },
+  // Common (10 seeds)
+  { name: 'Radish', rarity: 'common', baseGrowthTime: 15, baseSizeKg: 0.2, price: 10, sellPrice: 18, icon: '🌱' },
+  { name: 'Lettuce', rarity: 'common', baseGrowthTime: 20, baseSizeKg: 0.3, price: 20, sellPrice: 35, icon: '🥬' },
+  { name: 'Carrot', rarity: 'common', baseGrowthTime: 25, baseSizeKg: 0.5, price: 35, sellPrice: 60, icon: '🥕' },
+  { name: 'Spinach', rarity: 'common', baseGrowthTime: 18, baseSizeKg: 0.3, price: 25, sellPrice: 45, icon: '🍃' },
+  { name: 'Cabbage', rarity: 'common', baseGrowthTime: 30, baseSizeKg: 0.8, price: 40, sellPrice: 70, icon: '🥬' },
+  { name: 'Peas', rarity: 'common', baseGrowthTime: 22, baseSizeKg: 0.4, price: 30, sellPrice: 55, icon: '🟢' },
+  { name: 'Onion', rarity: 'common', baseGrowthTime: 28, baseSizeKg: 0.6, price: 38, sellPrice: 65, icon: '🧅' },
+  { name: 'Garlic', rarity: 'common', baseGrowthTime: 35, baseSizeKg: 0.2, price: 45, sellPrice: 80, icon: '🧄' },
+  { name: 'Potato', rarity: 'common', baseGrowthTime: 40, baseSizeKg: 1.0, price: 50, sellPrice: 90, icon: '🥔' },
+  { name: 'Turnip', rarity: 'common', baseGrowthTime: 32, baseSizeKg: 0.7, price: 42, sellPrice: 75, icon: '⚪' },
+  
+  // Uncommon (8 seeds)
+  { name: 'Tomato', rarity: 'uncommon', baseGrowthTime: 45, baseSizeKg: 0.8, price: 75, sellPrice: 140, icon: '🍅' },
+  { name: 'Bell Pepper', rarity: 'uncommon', baseGrowthTime: 50, baseSizeKg: 0.6, price: 85, sellPrice: 160, icon: '🫑' },
+  { name: 'Cucumber', rarity: 'uncommon', baseGrowthTime: 42, baseSizeKg: 0.9, price: 80, sellPrice: 150, icon: '🥒' },
+  { name: 'Broccoli', rarity: 'uncommon', baseGrowthTime: 48, baseSizeKg: 0.7, price: 90, sellPrice: 170, icon: '🥦' },
+  { name: 'Eggplant', rarity: 'uncommon', baseGrowthTime: 55, baseSizeKg: 0.8, price: 100, sellPrice: 190, icon: '🍆' },
+  { name: 'Zucchini', rarity: 'uncommon', baseGrowthTime: 38, baseSizeKg: 1.2, price: 70, sellPrice: 130, icon: '🥒' },
+  { name: 'Green Bean', rarity: 'uncommon', baseGrowthTime: 35, baseSizeKg: 0.5, price: 65, sellPrice: 120, icon: '🟩' },
+  { name: 'Chili Pepper', rarity: 'uncommon', baseGrowthTime: 52, baseSizeKg: 0.3, price: 95, sellPrice: 180, icon: '🌶️' },
+  
+  // Rare (8 seeds)
+  { name: 'Corn', rarity: 'rare', baseGrowthTime: 60, baseSizeKg: 1.5, price: 150, sellPrice: 300, icon: '🌽' },
+  { name: 'Pumpkin', rarity: 'rare', baseGrowthTime: 75, baseSizeKg: 4.0, price: 200, sellPrice: 400, icon: '🎃' },
+  { name: 'Watermelon', rarity: 'rare', baseGrowthTime: 80, baseSizeKg: 8.0, price: 250, sellPrice: 500, icon: '🍉' },
+  { name: 'Cauliflower', rarity: 'rare', baseGrowthTime: 65, baseSizeKg: 1.2, price: 175, sellPrice: 350, icon: '🥦' },
+  { name: 'Asparagus', rarity: 'rare', baseGrowthTime: 70, baseSizeKg: 0.4, price: 190, sellPrice: 380, icon: '🥬' },
+  { name: 'Brussels Sprouts', rarity: 'rare', baseGrowthTime: 68, baseSizeKg: 0.8, price: 185, sellPrice: 370, icon: '🥦' },
+  { name: 'Artichoke', rarity: 'rare', baseGrowthTime: 72, baseSizeKg: 0.6, price: 195, sellPrice: 390, icon: '🌿' },
+  { name: 'Mushroom', rarity: 'rare', baseGrowthTime: 45, baseSizeKg: 0.3, price: 160, sellPrice: 320, icon: '🍄' },
+  
+  // Epic (6 seeds)
+  { name: 'Strawberry', rarity: 'epic', baseGrowthTime: 90, baseSizeKg: 0.4, price: 350, sellPrice: 750, icon: '🍓' },
+  { name: 'Pineapple', rarity: 'epic', baseGrowthTime: 120, baseSizeKg: 2.0, price: 500, sellPrice: 1100, icon: '🍍' },
+  { name: 'Avocado', rarity: 'epic', baseGrowthTime: 100, baseSizeKg: 0.5, price: 450, sellPrice: 1000, icon: '🥑' },
+  { name: 'Mango', rarity: 'epic', baseGrowthTime: 110, baseSizeKg: 1.0, price: 475, sellPrice: 1050, icon: '🥭' },
+  { name: 'Papaya', rarity: 'epic', baseGrowthTime: 95, baseSizeKg: 1.5, price: 425, sellPrice: 950, icon: '🍈' },
+  { name: 'Coconut', rarity: 'epic', baseGrowthTime: 130, baseSizeKg: 2.5, price: 550, sellPrice: 1200, icon: '🥥' },
+  
+  // Legendary (3 seeds) - New rarity
+  { name: 'Golden Apple', rarity: 'legendary', baseGrowthTime: 150, baseSizeKg: 0.5, price: 800, sellPrice: 1800, icon: '🍎' },
+  { name: 'Magic Bean', rarity: 'legendary', baseGrowthTime: 180, baseSizeKg: 1.0, price: 1200, sellPrice: 2800, icon: '🫘' },
+  { name: 'Rainbow Corn', rarity: 'legendary', baseGrowthTime: 200, baseSizeKg: 2.0, price: 1500, sellPrice: 3500, icon: '🌈' },
 ];
 
 // Base gear templates - plot upgrade price is dynamic
@@ -112,7 +146,7 @@ function getRarityColor(rarity: string) {
     case 'uncommon': return 'text-green-600 bg-green-100 dark:bg-green-900';
     case 'rare': return 'text-blue-600 bg-blue-100 dark:bg-blue-900';
     case 'epic': return 'text-purple-600 bg-purple-100 dark:bg-purple-900';
-    case 'mythic': return 'text-orange-500 bg-orange-100 dark:bg-orange-900';
+    case 'legendary': return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900 border-2 border-yellow-400';
     default: return 'text-gray-500 bg-gray-100';
   }
 }
