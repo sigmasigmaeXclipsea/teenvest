@@ -109,7 +109,7 @@ export default function GamifiedGarden() {
   const { settings } = useSettings();
   const { toast } = useToast();
   const [xp, setXp] = useState(0);
-  const [money, setMoney] = useState(500); // Start with 500 coins
+  const [money, setMoney] = useState(50); // Start with 500 coins
   const [gridSize, setGridSize] = useState(GRID_SIZE);
   const [plots, setPlots] = useState<Plot[]>(() => Array.from({ length: GRID_SIZE * GRID_SIZE }, (_, i) => ({ id: `plot-${i}` })));
   const [inventory, setInventory] = useState({ seeds: [] as Seed[], gear: [] as Gear[] });
