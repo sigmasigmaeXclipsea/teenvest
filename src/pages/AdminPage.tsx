@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -120,6 +120,26 @@ const AdminPage = () => {
   const [currentGardenMoney, setCurrentGardenMoney] = useState(0);
   const [currentGardenXp, setCurrentGardenXp] = useState(0);
 
+  const isOwner = user?.email === OWNER_EMAIL;
+
+  // Check if user has admin role
+  const { data: hasAdminRole, isLoading: checkingRole } = useQuery({
+    queryKey: ['admin-role', user?.id],
+    queryFn: async () => {
+      if (!user) return false;
+      if (isOwner) return true;
+      
+      const { data, error } = await supabase.rpc('has_role', {
+        _user_id: user.id,
+        _role: 'admin'
+      });
+      
+      if (error) return false;
+      return data === true;
+    },
+    enabled: !!user,
+  });
+
   // Load current admin garden state
   const { data: adminGardenState, refetch: refetchAdminGarden } = useQuery({
     queryKey: ['admin-garden-state', user?.id],
@@ -141,26 +161,6 @@ const AdminPage = () => {
       setCurrentGardenXp(adminGardenState.xp || 0);
     }
   }, [adminGardenState]);
-  
-  const isOwner = user?.email === OWNER_EMAIL;
-
-  // Check if user has admin role
-  const { data: hasAdminRole, isLoading: checkingRole } = useQuery({
-    queryKey: ['admin-role', user?.id],
-    queryFn: async () => {
-      if (!user) return false;
-      if (isOwner) return true;
-      
-      const { data, error } = await supabase.rpc('has_role', {
-        _user_id: user.id,
-        _role: 'admin'
-      });
-      
-      if (error) return false;
-      return data === true;
-    },
-    enabled: !!user,
-  });
 
   // Platform statistics
   const { data: stats, isLoading: loadingStats, refetch: refetchStats } = useQuery({
