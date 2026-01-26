@@ -460,15 +460,14 @@ export default function FreeFormGarden({
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
             {currentWeather === 'rainy' && (
               <>
-                {[...Array(20)].map((_, i) => (
+                {[...Array(8)].map((_, i) => (
                   <div
                     key={`rain-${i}`}
-                    className="absolute w-2 h-2 bg-blue-400 rounded-full opacity-40"
+                    className="absolute w-1 h-1 bg-blue-400 rounded-full opacity-30"
                     style={{
-                      left: `${Math.random() * 100}%`,
-                      top: `-10px`,
+                      left: `${10 + (i * 12)}%`,
                       animation: `fall ${3 + Math.random() * 2}s linear infinite`,
-                      animationDelay: `${Math.random() * 5}s`
+                      animationDelay: `${Math.random() * 3}s`
                     }}
                   />
                 ))}
@@ -476,15 +475,14 @@ export default function FreeFormGarden({
             )}
             {currentWeather === 'frozen' && (
               <>
-                {[...Array(15)].map((_, i) => (
+                {[...Array(6)].map((_, i) => (
                   <div
                     key={`frost-${i}`}
-                    className="absolute w-3 h-3 bg-cyan-300 rounded-full opacity-50"
+                    className="absolute w-1.5 h-1.5 bg-cyan-300 rounded-full opacity-40"
                     style={{
-                      left: `${Math.random() * 100}%`,
-                      top: `-10px`,
+                      left: `${15 + (i * 15)}%`,
                       animation: `fall ${4 + Math.random() * 2}s linear infinite`,
-                      animationDelay: `${Math.random() * 6}s`
+                      animationDelay: `${Math.random() * 4}s`
                     }}
                   />
                 ))}
@@ -492,15 +490,14 @@ export default function FreeFormGarden({
             )}
             {currentWeather === 'candy' && (
               <>
-                {[...Array(18)].map((_, i) => (
+                {[...Array(7)].map((_, i) => (
                   <div
                     key={`candy-${i}`}
-                    className="absolute w-2 h-2 bg-pink-400 rounded-full opacity-60"
+                    className="absolute w-1 h-1 bg-pink-400 rounded-full opacity-50"
                     style={{
-                      left: `${Math.random() * 100}%`,
-                      top: `-10px`,
+                      left: `${12 + (i * 13)}%`,
                       animation: `fall ${3.5 + Math.random() * 2}s linear infinite`,
-                      animationDelay: `${Math.random() * 4}s`
+                      animationDelay: `${Math.random() * 3.5}s`
                     }}
                   />
                 ))}
@@ -508,15 +505,14 @@ export default function FreeFormGarden({
             )}
             {currentWeather === 'thunder' && (
               <>
-                {[...Array(12)].map((_, i) => (
+                {[...Array(5)].map((_, i) => (
                   <div
                     key={`thunder-${i}`}
-                    className="absolute w-2 h-2 bg-yellow-400 rounded-full opacity-70"
+                    className="absolute w-1 h-1 bg-yellow-400 rounded-full opacity-60"
                     style={{
-                      left: `${Math.random() * 100}%`,
-                      top: `-10px`,
+                      left: `${20 + (i * 16)}%`,
                       animation: `fall ${2 + Math.random() * 1.5}s linear infinite`,
-                      animationDelay: `${Math.random() * 3}s`
+                      animationDelay: `${Math.random() * 2}s`
                     }}
                   />
                 ))}
@@ -524,15 +520,14 @@ export default function FreeFormGarden({
             )}
             {currentWeather === 'lunar' && (
               <>
-                {[...Array(10)].map((_, i) => (
+                {[...Array(4)].map((_, i) => (
                   <div
                     key={`lunar-${i}`}
-                    className="absolute w-2 h-2 bg-purple-400 rounded-full opacity-50"
+                    className="absolute w-1 h-1 bg-purple-400 rounded-full opacity-40"
                     style={{
-                      left: `${Math.random() * 100}%`,
-                      top: `-10px`,
+                      left: `${25 + (i * 18)}%`,
                       animation: `fall ${5 + Math.random() * 2}s linear infinite`,
-                      animationDelay: `${Math.random() * 7}s`
+                      animationDelay: `${Math.random() * 5}s`
                     }}
                   />
                 ))}
@@ -541,6 +536,9 @@ export default function FreeFormGarden({
             <style dangerouslySetInnerHTML={{
               __html: `
                 @keyframes fall {
+                  from {
+                    transform: translateY(-20px);
+                  }
                   to {
                     transform: translateY(${garden.height + 20}px);
                   }
