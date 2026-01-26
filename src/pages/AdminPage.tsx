@@ -270,6 +270,7 @@ const AdminPage = () => {
     mutationFn: async ({ email, money, xp }: { email: string; money?: number; xp?: number }) => {
       // Since garden data is stored in localStorage, we need to create a database-backed approach
       // For now, we'll store garden updates in a separate table
+      // @ts-ignore - Table exists but types haven't been generated yet
       const { data, error } = await supabase
         .from('garden_updates')
         .upsert({
