@@ -52,7 +52,7 @@ const MIN_POTS = 3;
 const MAX_POTS = 20; // Increased from 9 to 20 for more progression
 const WILT_THRESHOLD = 90 * 60 * 1000; // 90 minutes without water (increased from 60 min)
 const WATER_REDUCTION_TIME = 20 * 60 * 1000; // Fixed 20 minutes reduction per watering
-const XP_TO_MONEY_RATE = 5; // 1 XP = 5 coins (increased to make XP more valuable)
+const XP_TO_MONEY_RATE = 2; // 1 XP = 2 coins (reduced from 5 to make progression harder)
 
 // Exponential plot upgrade pricing: more expensive for longer progression
 // Prices: 50, 75, 115, 175, 260, 400, 620, 960, 1480, 2280, 3520, 5440, 8400, 13000, 20000, 31000
@@ -219,7 +219,7 @@ export default function GamifiedGarden() {
   const { settings } = useSettings();
   const { toast } = useToast();
   const [xp, setXp] = useState(0);
-  const [money, setMoney] = useState(50);
+  const [money, setMoney] = useState(0); // Start with 0 coins to make progression harder
   const [numPots, setNumPots] = useState(MIN_POTS);
   const [plots, setPlots] = useState<Plot[]>(() => Array.from({ length: MIN_POTS }, (_, i) => ({ id: `plot-${i}` })));
   const [inventory, setInventory] = useState({ seeds: [] as Seed[], gear: [] as Gear[] });
@@ -246,7 +246,7 @@ export default function GamifiedGarden() {
       try {
         const parsed = JSON.parse(saved);
         setXp(parsed.xp ?? 0);
-        setMoney(parsed.money ?? 50);
+        setMoney(parsed.money ?? 0); // Default to 0 coins
         const savedNumPots = parsed.numPots ?? MIN_POTS;
         setNumPots(savedNumPots);
         setPlots(parsed.plots ?? Array.from({ length: savedNumPots }, (_, i) => ({ id: `plot-${i}` })));
@@ -260,6 +260,19 @@ export default function GamifiedGarden() {
         console.error('Failed to load garden state:', e);
       }
     }
+  }, []);
+
+  // Listen for admin garden updates
+  useEffect(() => {
+    const handleAdminUpdate = (event: CustomEvent) => {
+      const { money, xp } = event.detail;
+      setMoney(money);
+      setXp(xp);
+      toast.success('Admin updated your garden state!');
+    };
+
+    window.addEventListener('adminGardenUpdate', handleAdminUpdate as EventListener);
+    return () => window.removeEventListener('adminGardenUpdate', handleAdminUpdate as EventListener);
   }, []);
 
   // Save to localStorage
