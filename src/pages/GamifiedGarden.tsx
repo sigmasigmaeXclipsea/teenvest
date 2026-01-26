@@ -121,7 +121,7 @@ const SEED_TEMPLATES: Omit<Seed, 'id'>[] = [
 
 // Base gear templates - plot upgrade price is dynamic
 const GEAR_TEMPLATES: Omit<Gear, 'id'>[] = [
-  { name: 'Watering Can', type: 'wateringCan', effect: 'Reduces growth time by 50%', price: 150 },
+  { name: 'Watering Can', type: 'wateringCan', effect: '10 uses - Reduces growth time by 30%', price: 150 },
   { name: 'Basic Sprinkler', type: 'sprinkler', effect: 'Increases golden chance by 10%', price: 400 },
   { name: 'Advanced Sprinkler', type: 'sprinkler', effect: 'Increases golden chance by 20%', price: 800 },
   { name: 'Deluxe Sprinkler', type: 'sprinkler', effect: 'Increases golden chance by 30%', price: 1500 },
@@ -549,9 +549,25 @@ export default function GamifiedGarden() {
               if (action === 'plant' && selectedSeed) {
                 plantSeed(plotId, selectedSeed);
               } else if (action === 'water') {
-                // Show plant info instead of auto-watering
-                if (plot?.plant) {
-                  setSelectedPlant(plot);
+                if (isWateringMode && selectedItem?.type === 'wateringCan' && selectedItem.uses && selectedItem.uses > 0) {
+                  // Actually water the plant when in watering mode
+                  waterPlant(plotId);
+                  // Use one watering can
+                  setInventory(inv => ({
+                    ...inv,
+                    gear: inv.gear.map(g => 
+                      g.id === selectedItem.id 
+                        ? { ...g, uses: (g.uses || 1) - 1 }
+                        : g
+                    ).filter(g => g.uses === undefined || g.uses > 0)
+                  }));
+                  setSelectedItem(null);
+                  setIsWateringMode(false);
+                } else {
+                  // Show plant info if not in watering mode
+                  if (plot?.plant) {
+                    setSelectedPlant(plot);
+                  }
                 }
               } else if (action === 'harvest') {
                 harvestPlant(plotId);
