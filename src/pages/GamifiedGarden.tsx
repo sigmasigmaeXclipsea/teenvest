@@ -51,7 +51,15 @@ const MAX_POTS = 9;
 const WILT_THRESHOLD = 10 * 60 * 1000; // 10 minutes without water
 const WATER_REDUCTION = 0.5; // watering cuts remaining time by 50%
 const XP_TO_MONEY_RATE = 2; // 1 XP = 2 coins
-const PLOT_UPGRADE_PRICE = 500;
+
+// Exponential plot upgrade pricing: starts cheap, grows moderately
+// Prices: 50, 75, 115, 175, 260, 400 (for upgrades 4→5, 5→6, etc.)
+function getPlotUpgradePrice(currentPots: number): number {
+  const basePrice = 50;
+  const exponent = 1.5; // Moderate exponential growth
+  const upgradeIndex = currentPots - MIN_POTS; // 0, 1, 2, 3, 4, 5
+  return Math.round(basePrice * Math.pow(exponent, upgradeIndex));
+}
 
 // 10 different seeds ordered by price (cheapest to most expensive)
 const SEED_TEMPLATES: Omit<Seed, 'id'>[] = [
@@ -67,10 +75,10 @@ const SEED_TEMPLATES: Omit<Seed, 'id'>[] = [
   { name: 'Dragon Fruit', rarity: 'mythic', baseGrowthTime: 18, baseSizeKg: 2.0, price: 1000, sellPrice: 2500, icon: '🐉' },
 ];
 
+// Base gear templates - plot upgrade price is dynamic
 const GEAR_TEMPLATES: Omit<Gear, 'id'>[] = [
   { name: 'Watering Can', type: 'wateringCan', effect: 'Reduces growth time by 50%', price: 150 },
   { name: 'Sprinkler', type: 'sprinkler', effect: 'Increases golden/rainbow chance', price: 400 },
-  { name: 'Plot Upgrade', type: 'plotUpgrade', effect: 'Adds one more pot (max 9)', price: PLOT_UPGRADE_PRICE },
 ];
 
 // Utility
@@ -187,8 +195,21 @@ export default function GamifiedGarden() {
   
   function restockGear() {
     const gear = GEAR_TEMPLATES.map(template => ({ ...template, id: generateId() }));
+    // Add dynamic plot upgrade with current price
+    gear.push({
+      id: generateId(),
+      name: 'Plot Upgrade',
+      type: 'plotUpgrade',
+      effect: `Adds one more pot (${numPots}/${MAX_POTS})`,
+      price: getPlotUpgradePrice(numPots),
+    });
     setShopGear(gear);
   }
+  
+  // Update gear shop when numPots changes to reflect new price
+  useEffect(() => {
+    restockGear();
+  }, [numPots]);
 
   // Plant seed
   function plantSeed(plotId: string, seed: Seed) {
