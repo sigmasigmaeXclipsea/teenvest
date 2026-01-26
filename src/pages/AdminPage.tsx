@@ -22,6 +22,87 @@ import DashboardLayout from '@/components/layouts/DashboardLayout';
 
 const OWNER_EMAIL = '2landonl10@gmail.com';
 
+type RecentTradeRow = {
+  id: string;
+  user_email?: string | null;
+  user_name?: string | null;
+  symbol?: string | null;
+  trade_type?: string | null;
+  shares?: number | null;
+  price?: number | null;
+  total_amount?: number | null;
+  created_at: string;
+};
+
+type RecentTrade = {
+  id: string;
+  user_email: string;
+  user_name: string;
+  symbol: string;
+  trade_type: 'buy' | 'sell';
+  shares: number;
+  price: number;
+  total_amount: number;
+  created_at: string;
+};
+
+type AchievementOption = {
+  id: string;
+  name: string;
+  icon: string;
+  description?: string | null;
+};
+
+type AdminEntry = {
+  user_id: string;
+  email: string;
+  created_at: string;
+};
+
+type LookupUser = {
+  found: boolean;
+  display_name?: string | null;
+  email?: string | null;
+  created_at?: string | null;
+  cash_balance?: number | null;
+  starting_balance?: number | null;
+  holdings_count?: number | null;
+  trades_count?: number | null;
+  total_invested?: number | null;
+  lessons_completed?: number | null;
+  achievements_earned?: number | null;
+};
+
+type AdminResult = {
+  success?: boolean;
+  error?: string;
+};
+
+type ResetPortfolioResult = AdminResult & {
+  reset_balance?: number;
+};
+
+type GrantAchievementResult = AdminResult & {
+  achievement?: string;
+};
+
+type StartingBalanceResult = AdminResult & {
+  new_balance?: number;
+};
+
+type CashBalanceResult = AdminResult & {
+  new_balance?: number;
+};
+
+type GardenUpdateRow = {
+  id?: string;
+  user_email: string;
+  money?: number | null;
+  xp?: number | null;
+  updated_at?: string;
+  created_at?: string;
+};
+
 const AdminPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -97,16 +178,16 @@ const AdminPage = () => {
         throw error;
       }
       // Ensure data is an array and has all required fields
-      const trades = Array.isArray(data) ? data : [];
-      return trades.map((trade: any) => ({
+      const trades = Array.isArray(data) ? (data as RecentTradeRow[]) : [];
+      return trades.map((trade): RecentTrade => ({
         id: trade.id,
         user_email: trade.user_email || 'unknown',
         user_name: trade.user_name || trade.user_email || 'Unknown User',
         symbol: trade.symbol || '',
-        trade_type: trade.trade_type || 'buy',
+        trade_type: trade.trade_type === 'sell' ? 'sell' : 'buy',
         shares: Number(trade.shares) || 0,
         price: Number(trade.price) || 0,
-        total_amount: Number(trade.total_amount || (trade.shares * trade.price)) || 0,
+        total_amount: Number(trade.total_amount ?? (Number(trade.shares) || 0) * (Number(trade.price) || 0)) || 0,
         created_at: trade.created_at,
       }));
     },
@@ -120,7 +201,7 @@ const AdminPage = () => {
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_all_achievements');
       if (error) throw error;
-      return data || [];
+      return (data as AchievementOption[]) || [];
     },
     enabled: hasAdminRole === true,
   });
@@ -131,22 +212,22 @@ const AdminPage = () => {
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_all_admins');
       if (error) return [];
-      return data || [];
+      return (data as AdminEntry[]) || [];
     },
     enabled: isOwner,
   });
 
   // User lookup state
-  const [lookedUpUser, setLookedUpUser] = useState<any>(null);
+  const [lookedUpUser, setLookedUpUser] = useState<LookupUser | null>(null);
 
   // Mutations
-  const addAdminMutation = useMutation({
+  const addAdminMutation = useMutation<AdminResult, Error, string>({
     mutationFn: async (email: string) => {
       const { data, error } = await supabase.rpc('add_admin_by_email', { _email: email });
       if (error) throw error;
-      return data;
+      return data as AdminResult;
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data) => {
       if (data?.success) {
         toast.success('Admin added successfully');
         setNewAdminEmail('');
@@ -155,31 +236,32 @@ const AdminPage = () => {
         toast.error(data?.error || 'Failed to add admin');
       }
     },
-    onError: (error: any) => toast.error(getUserFriendlyError(error)),
+    onError: (error: unknown) => toast.error(getUserFriendlyError(error)),
   });
 
-  const removeAdminMutation = useMutation({
+  const removeAdminMutation = useMutation<AdminResult, Error, string>({
     mutationFn: async (email: string) => {
       const { data, error } = await supabase.rpc('remove_admin_by_email', { _email: email });
       if (error) throw error;
-      return data;
+      return data as AdminResult;
     },
     onSuccess: () => {
       toast.success('Admin removed');
       queryClient.invalidateQueries({ queryKey: ['all-admins'] });
     },
-    onError: (error: any) => toast.error(getUserFriendlyError(error)),
+    onError: (error: unknown) => toast.error(getUserFriendlyError(error)),
   });
 
-  const resetPortfolioMutation = useMutation({
+  const resetPortfolioMutation = useMutation<ResetPortfolioResult, Error, string>({
     mutationFn: async (email: string) => {
       const { data, error } = await supabase.rpc('admin_reset_portfolio', { _target_email: email });
       if (error) throw error;
-      return data;
+      return data as ResetPortfolioResult;
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data) => {
       if (data?.success) {
-        toast.success(`Portfolio reset to $${data.reset_balance.toLocaleString()}`);
+        const resetBalance = data.reset_balance ?? 0;
+        toast.success(`Portfolio reset to $${resetBalance.toLocaleString()}`);
         setResetEmail('');
         queryClient.invalidateQueries({ queryKey: ['portfolio'] });
         refetchStats();
@@ -187,63 +269,66 @@ const AdminPage = () => {
         toast.error(data?.error || 'Failed to reset portfolio');
       }
     },
-    onError: (error: any) => toast.error(getUserFriendlyError(error)),
+    onError: (error: unknown) => toast.error(getUserFriendlyError(error)),
   });
 
-  const grantAchievementMutation = useMutation({
+  const grantAchievementMutation = useMutation<GrantAchievementResult, Error, { email: string; achievement: string }>({
     mutationFn: async ({ email, achievement }: { email: string; achievement: string }) => {
       const { data, error } = await supabase.rpc('admin_grant_achievement', { 
         _email: email, 
         _achievement_name: achievement 
       });
       if (error) throw error;
-      return data;
+      return data as GrantAchievementResult;
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data) => {
       if (data?.success) {
-        toast.success(`Achievement "${data.achievement}" granted!`);
+        const achievementName = data.achievement ?? 'Achievement';
+        toast.success(`Achievement "${achievementName}" granted!`);
         setAchievementEmail('');
         setSelectedAchievement('');
       } else {
         toast.error(data?.error || 'Failed to grant achievement');
       }
     },
-    onError: (error: any) => toast.error(getUserFriendlyError(error)),
+    onError: (error: unknown) => toast.error(getUserFriendlyError(error)),
   });
 
-  const setStartingBalanceMutation = useMutation({
+  const setStartingBalanceMutation = useMutation<StartingBalanceResult, Error, { email: string; balance: number }>({
     mutationFn: async ({ email, balance }: { email: string; balance: number }) => {
       const { data, error } = await supabase.rpc('admin_set_starting_balance', { 
         _email: email, 
         _new_balance: balance 
       });
       if (error) throw error;
-      return data;
+      return data as StartingBalanceResult;
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data) => {
       if (data?.success) {
-        toast.success(`Starting balance set to $${data.new_balance.toLocaleString()}`);
+        const newBalance = data.new_balance ?? 0;
+        toast.success(`Starting balance set to $${newBalance.toLocaleString()}`);
         setStartingBalanceEmail('');
         setNewStartingBalance('');
       } else {
         toast.error(data?.error || 'Failed to update starting balance');
       }
     },
-    onError: (error: any) => toast.error(getUserFriendlyError(error)),
+    onError: (error: unknown) => toast.error(getUserFriendlyError(error)),
   });
 
-  const updateCashBalanceMutation = useMutation({
+  const updateCashBalanceMutation = useMutation<CashBalanceResult, Error, { email: string; balance: number }>({
     mutationFn: async ({ email, balance }: { email: string; balance: number }) => {
       const { data, error } = await supabase.rpc('admin_update_cash_balance', { 
         _email: email, 
         _new_balance: balance 
       });
       if (error) throw error;
-      return data;
+      return data as CashBalanceResult;
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data) => {
       if (data?.success) {
-        toast.success(`Cash balance updated to $${data.new_balance.toLocaleString()}`);
+        const newBalance = data.new_balance ?? 0;
+        toast.success(`Cash balance updated to $${newBalance.toLocaleString()}`);
         setCashBalanceEmail('');
         setNewCashBalanceForUser('');
         queryClient.invalidateQueries({ queryKey: ['portfolio'] });
@@ -252,8 +337,10 @@ const AdminPage = () => {
           const refreshLookup = async () => {
             try {
               const { data, error } = await supabase.rpc('admin_lookup_user', { _email: lookupEmail.trim() });
-              if (!error && data) setLookedUpUser(data);
-            } catch {}
+              if (!error && data) setLookedUpUser(data as LookupUser);
+            } catch (lookupError: unknown) {
+              console.warn('Failed to refresh lookup', lookupError);
+            }
           };
           refreshLookup();
         }
@@ -261,10 +348,10 @@ const AdminPage = () => {
         toast.error(data?.error || 'Failed to update cash balance');
       }
     },
-    onError: (error: any) => toast.error(getUserFriendlyError(error)),
+    onError: (error: unknown) => toast.error(getUserFriendlyError(error)),
   });
 
-  const updateGardenMoneyMutation = useMutation({
+  const updateGardenMoneyMutation = useMutation<GardenUpdateRow, Error, { email: string; money?: number; xp?: number }>({
     mutationFn: async ({ email, money, xp }: { email: string; money?: number; xp?: number }) => {
       const { data, error } = await supabase
         .from('garden_updates')
@@ -278,7 +365,7 @@ const AdminPage = () => {
         .single();
       
       if (error) throw error;
-      return data;
+      return data as GardenUpdateRow;
     },
     onSuccess: (data) => {
       toast.success(`Garden money/XP updated for ${gardenMoneyEmail}`);
@@ -286,7 +373,7 @@ const AdminPage = () => {
       setNewGardenMoney('');
       setNewGardenXp('');
     },
-    onError: (error: any) => toast.error(getUserFriendlyError(error)),
+    onError: (error: unknown) => toast.error(getUserFriendlyError(error)),
   });
 
   const handleUpdateCash = async (e: React.FormEvent) => {
@@ -311,7 +398,7 @@ const AdminPage = () => {
       queryClient.invalidateQueries({ queryKey: ['portfolio'] });
       toast.success(`Cash balance updated to $${cashValue.toLocaleString()}`);
       setNewCashBalance('');
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(getUserFriendlyError(error));
     } finally {
       setIsUpdating(false);
@@ -339,12 +426,12 @@ const AdminPage = () => {
     try {
       const { data, error } = await supabase.rpc('admin_lookup_user', { _email: lookupEmail.trim() });
       if (error) throw error;
-      const userData = data as { found: boolean; [key: string]: any } | null;
+      const userData = data as LookupUser | null;
       setLookedUpUser(userData);
       if (!userData?.found) {
         toast.error('User not found');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(getUserFriendlyError(error));
     }
   };
@@ -511,7 +598,7 @@ const AdminPage = () => {
                 ) : recentTrades && recentTrades.length > 0 ? (
                   <div className="space-y-2 max-h-[500px] overflow-y-auto">
                     <div className="grid grid-cols-1 gap-2">
-                      {recentTrades.map((trade: any) => (
+                      {recentTrades.map((trade) => (
                         <div key={trade.id} className="flex items-center justify-between p-4 rounded-lg bg-secondary/50 border border-border/50 hover:bg-secondary/70 transition-colors">
                           <div className="flex items-center gap-4 flex-1">
                             <div className={`p-2 rounded-lg ${trade.trade_type === 'buy' ? 'bg-primary/20' : 'bg-destructive/20'}`}>
@@ -781,7 +868,7 @@ const AdminPage = () => {
                       <SelectValue placeholder="Select achievement" />
                     </SelectTrigger>
                     <SelectContent>
-                      {achievements?.map((a: any) => (
+                      {achievements?.map((a) => (
                         <SelectItem key={a.id} value={a.name}>
                           {a.icon} {a.name}
                         </SelectItem>
@@ -973,7 +1060,7 @@ const AdminPage = () => {
                       </div>
                     ) : admins && admins.length > 0 ? (
                       <div className="space-y-2">
-                        {admins.map((admin: any) => (
+                        {admins.map((admin) => (
                           <div key={admin.user_id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
                             <div>
                               <p className="font-medium">{admin.email}</p>

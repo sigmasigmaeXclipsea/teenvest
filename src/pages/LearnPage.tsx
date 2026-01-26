@@ -253,9 +253,13 @@ const LearnPage = () => {
                       const locked = false; // No locking: all lessons accessible
                       const difficulty = getDifficulty(globalIndex, totalModules);
                       const isPerfectScore = quizScore && quizScore.score === quizScore.total_questions;
-                      const interactiveBlocks = Array.isArray(module.interactive_blocks) ? module.interactive_blocks : [];
+                      const interactiveBlocks = Array.isArray(module.interactive_blocks)
+                        ? (module.interactive_blocks as Array<{ type?: string }>)
+                        : [];
                       const interactiveTypes = new Set(
-                        interactiveBlocks.map((block: any) => block?.type).filter(Boolean)
+                        interactiveBlocks
+                          .map((block) => block?.type)
+                          .filter((type): type is string => Boolean(type))
                       );
                       
                       return (

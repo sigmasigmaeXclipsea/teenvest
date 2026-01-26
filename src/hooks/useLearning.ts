@@ -10,7 +10,7 @@ export interface LearningModule {
   order_index: number;
   duration_minutes: number;
   created_at: string;
-  interactive_blocks?: any[] | null;
+  interactive_blocks?: unknown[] | null;
 }
 
 export interface UserProgress {

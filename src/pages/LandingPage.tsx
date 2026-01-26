@@ -6,6 +6,27 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useState, useEffect, useMemo, memo, useRef, useCallback, type ReactNode, type ElementType, type FC, type MouseEvent } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+type DashboardStock = {
+  symbol: string;
+  name: string;
+  price: number;
+  change: string;
+  color: string;
+  isPositive: boolean;
+};
+
+type TickerStock = {
+  symbol: string;
+  price: string;
+  change: string;
+};
+
+type FinnhubResponse = {
+  error?: string;
+  quote?: { c?: number; dp?: number };
+  profile?: { name?: string; ticker?: string };
+};
+
 // Infinite recycling carousel component - like an airport carousel
 const InfiniteCarousel = ({ children, direction = 'left', speed = 1 }: { children: React.ReactNode[], direction?: 'left' | 'right', speed?: number }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -453,7 +474,7 @@ const FloatingParticles = memo(() => {
 
 // Dashboard preview with smooth cursor tracking, pulsing glow, and 3D scroll effects
 const DashboardPreview: FC = () => {
-  const [stocks, setStocks] = useState<any[]>([
+  const [stocks, setStocks] = useState<DashboardStock[]>([
     { symbol: 'AAPL', name: 'Apple Inc.', price: 248.00, change: '+1.2%', color: 'from-blue-500 to-blue-600', isPositive: true },
     { symbol: 'TSLA', name: 'Tesla Inc.', price: 242.84, change: '-0.8%', color: 'from-red-500 to-red-600', isPositive: false },
     { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 875.28, change: '+3.4%', color: 'from-green-500 to-green-600', isPositive: true },
@@ -476,9 +497,9 @@ const DashboardPreview: FC = () => {
           try {
             const response = await fetch(`https://finnhub-stock-api-5xrj.onrender.com/api/stock/${symbol}`);
             if (!response.ok) throw new Error('API request failed');
-            const data = await response.json();
+            const data = (await response.json()) as FinnhubResponse;
             
-            if (data.error) throw new Error(data.error);
+            if (data?.error) throw new Error(data.error);
             
             // API returns nested structure: { quote: { c, d, dp }, profile: { name } }
             const price = data.quote?.c || 0;
@@ -495,7 +516,7 @@ const DashboardPreview: FC = () => {
             };
           } catch (err) {
             console.warn(`Failed to fetch ${symbol}, using fallback`);
-            const fallbackData: Record<string, { symbol: string; name: string; price: number; change: string; isPositive: boolean }> = {
+            const fallbackData: Record<string, Omit<DashboardStock, 'color'>> = {
               'AAPL': { symbol: 'AAPL', name: 'Apple Inc.', price: 248.00, change: '+1.2%', isPositive: true },
               'TSLA': { symbol: 'TSLA', name: 'Tesla Inc.', price: 449.00, change: '-0.1%', isPositive: false },
               'NVDA': { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 187.00, change: '+1.5%', isPositive: true },
@@ -1058,7 +1079,7 @@ const FeatureCard: FC<FeatureCardProps> = ({ icon: Icon, title, desc, gradient, 
 const LandingPage = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [tickerStocks, setTickerStocks] = useState<any[]>([
+  const [tickerStocks, setTickerStocks] = useState<TickerStock[]>([
     { symbol: 'AAPL', price: '$248.00', change: '+1.2%' },
     { symbol: 'TSLA', price: '$242.84', change: '-0.8%' },
     { symbol: 'GOOGL', price: '$168.50', change: '+0.5%' },
@@ -1081,9 +1102,9 @@ const LandingPage = () => {
           try {
             const response = await fetch(`https://finnhub-stock-api-5xrj.onrender.com/api/stock/${symbol}`);
             if (!response.ok) throw new Error('API request failed');
-            const data = await response.json();
+            const data = (await response.json()) as FinnhubResponse;
             
-            if (data.error) throw new Error(data.error);
+            if (data?.error) throw new Error(data.error);
             
             // API returns nested structure: { quote: { c, d, dp }, profile: { name } }
             const price = data.quote?.c || 0;
