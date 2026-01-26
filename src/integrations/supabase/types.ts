@@ -120,6 +120,7 @@ export type Database = {
           description: string
           duration_minutes: number
           id: string
+          interactive_blocks: Json
           order_index: number
           title: string
         }
@@ -129,6 +130,7 @@ export type Database = {
           description: string
           duration_minutes?: number
           id?: string
+          interactive_blocks?: Json
           order_index: number
           title: string
         }
@@ -138,6 +140,7 @@ export type Database = {
           description?: string
           duration_minutes?: number
           id?: string
+          interactive_blocks?: Json
           order_index?: number
           title?: string
         }
