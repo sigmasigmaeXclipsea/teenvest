@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import { 
   Lock, DollarSign, ArrowLeft, Shield, UserPlus, Trash2, Crown, Loader2,
   Users, TrendingUp, BarChart3, RefreshCw, Search, Award, Activity,
-  BookOpen, Briefcase, ArrowUpRight, ArrowDownRight
+  BookOpen, Briefcase, ArrowUpRight, ArrowDownRight, Sprout, Coins, Zap
 } from 'lucide-react';
 import { getUserFriendlyError } from '@/lib/errorMessages';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
@@ -111,6 +111,15 @@ const AdminPage = () => {
   const [newStartingBalance, setNewStartingBalance] = useState('');
   const [cashBalanceEmail, setCashBalanceEmail] = useState('');
   const [newCashBalanceForUser, setNewCashBalanceForUser] = useState('');
+  
+  // Garden money management state
+  const [gardenMoneyEmail, setGardenMoneyEmail] = useState('');
+  const [newGardenMoney, setNewGardenMoney] = useState('');
+  const [gardenXpEmail, setGardenXpEmail] = useState('');
+  const [newGardenXp, setNewGardenXp] = useState('');
+  const [currentGardenMoney, setCurrentGardenMoney] = useState(0);
+  const [currentGardenXp, setCurrentGardenXp] = useState(0);
+  
   const isOwner = user?.email === OWNER_EMAIL;
 
   // Check if user has admin role
@@ -311,37 +320,85 @@ const AdminPage = () => {
       });
       if (lookupError || !userId) throw new Error('User not found');
       
-      // Update portfolio directly
-      const { error: updateError } = await supabase
-        .from('portfolios')
-        .update({ cash_balance: balance, updated_at: new Date().toISOString() })
-        .eq('user_id', userId);
-      
-      if (updateError) throw updateError;
-      return { success: true, new_balance: balance };
+      // Update cash balance
+      const { data, error } = await supabase.rpc('admin_update_cash_balance', { 
+        _user_id: userId, 
+        _new_balance: balance 
+      });
+      if (error) throw error;
+      return data as CashBalanceResult;
     },
-    onSuccess: (data) => {
-      if (data?.success) {
-        const newBalance = data.new_balance ?? 0;
-        toast.success(`Cash balance updated to $${newBalance.toLocaleString()}`);
-        setCashBalanceEmail('');
-        setNewCashBalanceForUser('');
-        queryClient.invalidateQueries({ queryKey: ['portfolio'] });
-        // Refresh user lookup if currently viewing a user
-        if (lookedUpUser?.found && lookupEmail.trim()) {
-          const refreshLookup = async () => {
-            try {
-              const { data, error } = await supabase.rpc('admin_lookup_user', { _email: lookupEmail.trim() });
-              if (!error && data) setLookedUpUser(data as LookupUser);
-            } catch (lookupError: unknown) {
-              console.warn('Failed to refresh lookup', lookupError);
-            }
-          };
-          refreshLookup();
-        }
-      } else {
-        toast.error(data?.error || 'Failed to update cash balance');
-      }
+    onSuccess: (data, variables) => {
+      toast.success(`Updated cash balance for ${variables.email} to $${variables.balance.toLocaleString()}`);
+      setNewCashBalanceForUser('');
+      queryClient.invalidateQueries({ queryKey: ['user-lookup', lookupEmail] });
+    },
+    onError: (error: unknown) => toast.error(getUserFriendlyError(error)),
+  });
+
+  const updateGardenMoneyMutation = useMutation<any, Error, { email: string; money: number }>({
+    mutationFn: async ({ email, money }: { email: string; money: number }) => {
+      // Get user ID from email first
+      const { data: userId, error: lookupError } = await supabase.rpc('get_user_id_by_email', { 
+        _email: email 
+      });
+      if (lookupError || !userId) throw new Error('User not found');
+      
+      // Update garden money
+      const { data, error } = await supabase.rpc('admin_update_garden_money', { 
+        _user_id: userId, 
+        _new_money: money 
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data, variables) => {
+      toast.success(`Updated garden money for ${variables.email} to ${variables.money} coins`);
+      setNewGardenMoney('');
+      queryClient.invalidateQueries({ queryKey: ['user-lookup', gardenMoneyEmail] });
+    },
+    onError: (error: unknown) => toast.error(getUserFriendlyError(error)),
+  });
+
+  const updateGardenXpMutation = useMutation<any, Error, { email: string; xp: number }>({
+    mutationFn: async ({ email, xp }: { email: string; xp: number }) => {
+      // Get user ID from email first
+      const { data: userId, error: lookupError } = await supabase.rpc('get_user_id_by_email', { 
+        _email: email 
+      });
+      if (lookupError || !userId) throw new Error('User not found');
+      
+      // Update garden XP
+      const { data, error } = await supabase.rpc('admin_update_garden_xp', { 
+        _user_id: userId, 
+        _new_xp: xp 
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data, variables) => {
+      toast.success(`Updated garden XP for ${variables.email} to ${variables.xp} XP`);
+      setNewGardenXp('');
+      queryClient.invalidateQueries({ queryKey: ['user-lookup', gardenXpEmail] });
+    },
+    onError: (error: unknown) => toast.error(getUserFriendlyError(error)),
+  });
+
+  const updateCurrentUserGardenMutation = useMutation<any, Error, { money: number; xp: number }>({
+    mutationFn: async ({ money, xp }: { money: number; xp: number }) => {
+      // Update current user's garden state directly
+      const { data, error } = await supabase.rpc('admin_update_garden_state', { 
+        _user_id: user?.id, 
+        _new_money: money, 
+        _new_xp: xp 
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data, variables) => {
+      toast.success(`Updated your garden: ${variables.money} coins, ${variables.xp} XP`);
+      setCurrentGardenMoney(variables.money);
+      setCurrentGardenXp(variables.xp);
     },
     onError: (error: unknown) => toast.error(getUserFriendlyError(error)),
   });
@@ -878,6 +935,147 @@ const AdminPage = () => {
                     className="w-full"
                   >
                     Update Starting Balance
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Garden Money Management */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Sprout className="w-5 h-5 text-green-600" />
+                    My Garden State
+                  </CardTitle>
+                  <CardDescription>Update your own garden money and XP</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-3 rounded-lg bg-secondary/50">
+                      <p className="text-sm text-muted-foreground">Current Money</p>
+                      <p className="text-xl font-bold text-green-600">
+                        {currentGardenMoney.toLocaleString()} coins
+                      </p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-secondary/50">
+                      <p className="text-sm text-muted-foreground">Current XP</p>
+                      <p className="text-xl font-bold text-purple-600">
+                        {currentGardenXp.toLocaleString()} XP
+                      </p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="relative">
+                      <Coins className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        type="number"
+                        min="0"
+                        value={newGardenMoney}
+                        onChange={(e) => setNewGardenMoney(e.target.value)}
+                        placeholder="1000"
+                        className="pl-9"
+                      />
+                    </div>
+                    <div className="relative">
+                      <Zap className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        type="number"
+                        min="0"
+                        value={newGardenXp}
+                        onChange={(e) => setNewGardenXp(e.target.value)}
+                        placeholder="500"
+                        className="pl-9"
+                      />
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => updateCurrentUserGardenMutation.mutate({ 
+                      money: parseInt(newGardenMoney) || currentGardenMoney, 
+                      xp: parseInt(newGardenXp) || currentGardenXp 
+                    })}
+                    disabled={updateCurrentUserGardenMutation.isPending}
+                    className="w-full"
+                  >
+                    {updateCurrentUserGardenMutation.isPending ? 'Updating...' : 'Update My Garden'}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Set User Garden Money */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Coins className="w-5 h-5 text-green-600" />
+                    Set User Garden Money
+                  </CardTitle>
+                  <CardDescription>Update any user's garden money balance</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Input
+                    type="email"
+                    value={gardenMoneyEmail}
+                    onChange={(e) => setGardenMoneyEmail(e.target.value)}
+                    placeholder="user@example.com"
+                  />
+                  <div className="relative">
+                    <Coins className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      type="number"
+                      min="0"
+                      value={newGardenMoney}
+                      onChange={(e) => setNewGardenMoney(e.target.value)}
+                      placeholder="1000"
+                      className="pl-9"
+                    />
+                  </div>
+                  <Button
+                    onClick={() => updateGardenMoneyMutation.mutate({ 
+                      email: gardenMoneyEmail, 
+                      money: parseInt(newGardenMoney) 
+                    })}
+                    disabled={updateGardenMoneyMutation.isPending || !gardenMoneyEmail || !newGardenMoney}
+                    className="w-full"
+                  >
+                    {updateGardenMoneyMutation.isPending ? 'Updating...' : 'Update Garden Money'}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Set User Garden XP */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Zap className="w-5 h-5 text-purple-600" />
+                    Set User Garden XP
+                  </CardTitle>
+                  <CardDescription>Update any user's garden XP level</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Input
+                    type="email"
+                    value={gardenXpEmail}
+                    onChange={(e) => setGardenXpEmail(e.target.value)}
+                    placeholder="user@example.com"
+                  />
+                  <div className="relative">
+                    <Zap className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      type="number"
+                      min="0"
+                      value={newGardenXp}
+                      onChange={(e) => setNewGardenXp(e.target.value)}
+                      placeholder="500"
+                      className="pl-9"
+                    />
+                  </div>
+                  <Button
+                    onClick={() => updateGardenXpMutation.mutate({ 
+                      email: gardenXpEmail, 
+                      xp: parseInt(newGardenXp) 
+                    })}
+                    disabled={updateGardenXpMutation.isPending || !gardenXpEmail || !newGardenXp}
+                    className="w-full"
+                  >
+                    {updateGardenXpMutation.isPending ? 'Updating...' : 'Update Garden XP'}
                   </Button>
                 </CardContent>
               </Card>
