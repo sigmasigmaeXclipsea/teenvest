@@ -192,6 +192,15 @@ function calculateSize(base: number): number {
   return Math.round(base * factor * 10) / 10;
 }
 
+function calculateSellPrice(basePrice: number, actualSize: number, baseSize: number): number {
+  // Calculate sell price based on actual size compared to base size
+  const sizeRatio = actualSize / baseSize;
+  const dynamicPrice = Math.round(basePrice * sizeRatio);
+  
+  // Ensure minimum price is at least 1 coin
+  return Math.max(1, dynamicPrice);
+}
+
 function getRarityColor(rarity: string) {
   switch (rarity) {
     case 'common': return 'text-gray-500 bg-gray-100 dark:bg-gray-800';
@@ -312,6 +321,7 @@ export default function GamifiedGarden() {
   function plantSeed(plotId: string, seed: Seed) {
     setPlots(p => p.map(plot => {
       if (plot.id === plotId && !plot.plant) {
+        const actualSize = calculateSize(seed.baseSizeKg);
         const plant: Plant = {
           id: generateId(),
           seedType: seed.name,
@@ -320,8 +330,8 @@ export default function GamifiedGarden() {
           lastWateredAt: Date.now(),
           isWilted: false,
           variant: 'normal',
-          sizeKg: calculateSize(seed.baseSizeKg),
-          sellPrice: seed.sellPrice,
+          sizeKg: actualSize,
+          sellPrice: calculateSellPrice(seed.sellPrice, actualSize, seed.baseSizeKg),
         };
         setInventory(inv => ({ ...inv, seeds: inv.seeds.filter(s => s.id !== seed.id) }));
         return { ...plot, plant };
