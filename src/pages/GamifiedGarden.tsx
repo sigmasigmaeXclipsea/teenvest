@@ -52,7 +52,7 @@ const MIN_POTS = 3;
 const MAX_POTS = 20; // Increased from 9 to 20 for more progression
 const WILT_THRESHOLD = 90 * 60 * 1000; // 90 minutes without water (increased from 60 min)
 const WATER_REDUCTION_TIME = 20 * 60 * 1000; // Fixed 20 minutes reduction per watering
-const XP_TO_MONEY_RATE = 2; // 1 XP = 2 coins (reduced from 5 to make progression harder)
+const XP_TO_MONEY_RATE = 0.125; // 8 XP = 1 coin (much harder progression)
 
 // Exponential plot upgrade pricing: more expensive for longer progression
 // Prices: 50, 75, 115, 175, 260, 400, 620, 960, 1480, 2280, 3520, 5440, 8400, 13000, 20000, 31000
@@ -529,7 +529,7 @@ export default function GamifiedGarden() {
         <div className="bg-card rounded-xl shadow-sm p-4 border">
           <h3 className="font-bold mb-3 flex items-center gap-2 text-foreground">
             <ArrowRightLeft className="w-5 h-5" /> XP Exchange
-            <span className="text-xs font-normal text-muted-foreground ml-2">(1 XP = {XP_TO_MONEY_RATE} coins)</span>
+            <span className="text-xs font-normal text-muted-foreground ml-2">(8 XP = 1 coin)</span>
           </h3>
           <div className="flex gap-2 items-center flex-wrap">
             <Input
