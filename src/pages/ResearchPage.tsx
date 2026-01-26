@@ -487,7 +487,7 @@ const ResearchPage = () => {
                     </div>
 
                     {/* Professional Full-Width Candlestick Chart with Volume (real data) - Only in Advanced Mode */}
-                    {!settingsLoading && settings?.advancedMode && (
+                    {!settingsLoading && settings?.advancedMode ? (
                       <ProfessionalCandlestickChart
                         symbol={stockData.symbol}
                         currentPrice={stockData.price}
@@ -496,6 +496,15 @@ const ResearchPage = () => {
                         low={stockData.low}
                         open={stockData.open}
                       />
+                    ) : (
+                      <Card>
+                        <CardContent className="text-center py-12">
+                          <BarChart3 className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+                          <h3 className="text-lg font-semibold text-foreground mb-2">Candlestick Chart</h3>
+                          <p className="text-sm text-muted-foreground mb-4">Advanced trading charts are disabled</p>
+                          <p className="text-xs text-muted-foreground">Enable Advanced Mode in Settings to access professional candlestick charts with volume analysis</p>
+                        </CardContent>
+                      </Card>
                     )}
                   </div>
                 ) : (

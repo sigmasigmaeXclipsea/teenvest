@@ -336,7 +336,7 @@ const TradePage = () => {
               open={Number(currentQuote.open) || 0}
             />
 
-            {!settingsLoading && settings?.advancedMode && (
+            {!settingsLoading && settings?.advancedMode ? (
               <ProfessionalCandlestickChart
                 symbol={selectedStock.symbol}
                 currentPrice={Number(currentQuote.price) || 0}
@@ -345,6 +345,15 @@ const TradePage = () => {
                 low={Number(currentQuote.low) || 0}
                 open={Number(currentQuote.open) || 0}
               />
+            ) : (
+              <Card className="h-full flex items-center justify-center">
+                <CardContent className="text-center py-8">
+                  <BarChart3 className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                  <h3 className="font-semibold text-foreground mb-2">Candlestick Chart</h3>
+                  <p className="text-sm text-muted-foreground mb-4">Advanced trading charts are disabled</p>
+                  <p className="text-xs text-muted-foreground">Enable Advanced Mode in Settings to access professional candlestick charts</p>
+                </CardContent>
+              </Card>
             )}
           </div>
         )}
