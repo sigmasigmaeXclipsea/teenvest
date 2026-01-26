@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   BookOpen, Clock, CheckCircle, ChevronRight, GraduationCap, Award, 
-  Sparkles, Trophy, Flame, Target, Brain, Star, Zap, Lock, Search
+  Sparkles, Trophy, Flame, Target, Brain, Star, Zap, Lock, Search, TrendingUp, BarChart3, HelpCircle
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -253,6 +253,10 @@ const LearnPage = () => {
                       const locked = false; // No locking: all lessons accessible
                       const difficulty = getDifficulty(globalIndex, totalModules);
                       const isPerfectScore = quizScore && quizScore.score === quizScore.total_questions;
+                      const interactiveBlocks = Array.isArray(module.interactive_blocks) ? module.interactive_blocks : [];
+                      const interactiveTypes = new Set(
+                        interactiveBlocks.map((block: any) => block?.type).filter(Boolean)
+                      );
                       
                       return (
                         <Link to={`/learn/${module.id}`}>
@@ -297,6 +301,12 @@ const LearnPage = () => {
                                         <Clock className="w-3 h-3" />
                                         {module.duration_minutes} min
                                       </span>
+                                      {interactiveBlocks.length > 0 && (
+                                        <Badge className="gap-1 text-xs bg-primary/10 text-primary border-0">
+                                          <Sparkles className="w-3 h-3" />
+                                          Interactive
+                                        </Badge>
+                                      )}
                                       {quizScore && (
                                         <Badge variant="secondary" className="gap-1 text-xs">
                                           <Award className="w-3 h-3" />
@@ -312,6 +322,28 @@ const LearnPage = () => {
                                     </div>
                                     <h3 className="text-lg font-semibold mb-0.5 line-clamp-1">{module.title}</h3>
                                     <p className="text-sm text-muted-foreground line-clamp-1">{module.description}</p>
+                                    {interactiveBlocks.length > 0 && (
+                                      <div className="flex flex-wrap gap-2 mt-2 text-xs text-muted-foreground">
+                                        {interactiveTypes.has('mini_quiz') && (
+                                          <span className="inline-flex items-center gap-1 rounded-full bg-secondary/70 px-2 py-0.5">
+                                            <HelpCircle className="w-3 h-3" />
+                                            Quick quiz
+                                          </span>
+                                        )}
+                                        {interactiveTypes.has('trade_sim') && (
+                                          <span className="inline-flex items-center gap-1 rounded-full bg-secondary/70 px-2 py-0.5">
+                                            <TrendingUp className="w-3 h-3" />
+                                            Trade sim
+                                          </span>
+                                        )}
+                                        {interactiveTypes.has('interactive_chart') && (
+                                          <span className="inline-flex items-center gap-1 rounded-full bg-secondary/70 px-2 py-0.5">
+                                            <BarChart3 className="w-3 h-3" />
+                                            Interactive chart
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
                                   </div>
 
                                   {/* Arrow / XP */}

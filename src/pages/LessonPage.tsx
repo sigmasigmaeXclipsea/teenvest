@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, CheckCircle, BookOpen, HelpCircle, Award, ChevronLeft, ChevronRight, XCircle, CheckCircle2, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Clock, CheckCircle, BookOpen, HelpCircle, Award, ChevronLeft, ChevronRight, XCircle, CheckCircle2, MessageCircle, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,7 @@ import { useLearningModules, useUserProgress, useCompleteModule } from '@/hooks/
 import { useQuizQuestions, useQuizResults, useSaveQuizResult } from '@/hooks/useQuiz';
 import { useToast } from '@/hooks/use-toast';
 import AIAssistantCard from '@/components/AIAssistantCard';
+import InteractiveBlockRenderer, { type InteractiveBlock } from '@/components/learn/InteractiveBlockRenderer';
 
 const LessonPage = () => {
   const { moduleId } = useParams<{ moduleId: string }>();
@@ -36,6 +37,9 @@ const LessonPage = () => {
   const isCompleted = progress?.some(p => p.module_id === moduleId && p.completed);
   const quizScore = quizResults?.find(r => r.module_id === moduleId);
   const currentQuestion = quizQuestions?.[currentQuestionIndex];
+  const interactiveBlocks = Array.isArray(currentModule?.interactive_blocks)
+    ? (currentModule?.interactive_blocks as InteractiveBlock[])
+    : [];
 
   const nextModule = modules?.[moduleIndex + 1];
   const prevModule = modules?.[moduleIndex - 1];
@@ -226,6 +230,12 @@ const LessonPage = () => {
                   {quizQuestions.length} Quiz Questions
                 </Badge>
               )}
+              {interactiveBlocks.length > 0 && (
+                <Badge variant="outline" className="gap-1 bg-primary/10 text-primary border-primary/20">
+                  <Sparkles className="w-3 h-3" />
+                  Interactive
+                </Badge>
+              )}
               {quizScore && (
                 <Badge variant="outline" className="gap-1 bg-primary/10">
                   <Award className="w-3 h-3 text-primary" />
@@ -274,6 +284,16 @@ const LessonPage = () => {
                   <article className="prose prose-lg dark:prose-invert max-w-none">
                     {renderContent(currentModule.content)}
                   </article>
+
+                  {interactiveBlocks.length > 0 && (
+                    <div className="mt-10 space-y-4">
+                      <div className="flex items-center gap-2 text-sm font-semibold text-primary">
+                        <Sparkles className="w-4 h-4" />
+                        Hands-on practice
+                      </div>
+                      <InteractiveBlockRenderer blocks={interactiveBlocks} />
+                    </div>
+                  )}
 
                   {/* Action Buttons */}
                   <div className="flex flex-wrap gap-3 mt-10 pt-6 border-t">

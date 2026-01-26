@@ -3,18 +3,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
-import { useLeaderboard } from '@/hooks/useLeaderboard';
+import { useLeaderboard, type LeaderboardEntry } from '@/hooks/useLeaderboard';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
-
-interface LeaderboardEntry {
-  user_id: string;
-  display_name: string;
-  total_value: number;
-  gain_percent: number;
-  rank: number;
-  profile_public: boolean;
-}
 
 const LeaderboardPage = () => {
   const { data: leaderboard, isLoading } = useLeaderboard();
@@ -79,7 +70,7 @@ const LeaderboardPage = () => {
                     <p className="text-2xl font-bold text-primary">
                       ${entry.total_value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">Portfolio Value</p>
+                    <p className="text-xs text-muted-foreground mt-1">Cash Balance</p>
                   </div>
                   {entry.profile_public && entry.user_id !== user?.id && (
                     <Link to={`/profile/${entry.user_id}`}>
@@ -98,7 +89,7 @@ const LeaderboardPage = () => {
         <Card>
           <CardHeader>
             <CardTitle>All Rankings</CardTitle>
-            <CardDescription>Top 10 performers by portfolio gain</CardDescription>
+            <CardDescription>Top 10 performers by cash growth</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">

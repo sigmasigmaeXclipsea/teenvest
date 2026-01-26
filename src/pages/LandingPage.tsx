@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { TrendingUp, BookOpen, Trophy, Shield, ArrowRight, BarChart3, Briefcase, Target, Bot, Sparkles, Zap, Flame, Rocket, User, LogOut, Play, Star } from 'lucide-react';
+import { TrendingUp, TrendingDown, BookOpen, Trophy, Shield, ArrowRight, BarChart3, Briefcase, Target, Bot, Sparkles, Zap, Flame, Rocket, User, LogOut, Play, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { motion, useSpring, useMotionValue, useTransform, animate, AnimatePresence } from 'framer-motion';
+import { motion, useSpring, useTransform, animate, AnimatePresence, useScroll } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useState, useEffect, useMemo, memo, useRef, useCallback, type ReactNode, type ElementType, type FC, type MouseEvent } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,9 +10,10 @@ import { supabase } from '@/integrations/supabase/client';
 const InfiniteCarousel = ({ children, direction = 'left', speed = 1 }: { children: React.ReactNode[], direction?: 'left' | 'right', speed?: number }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
-  const [isPaused, setIsPaused] = useState(false);
+  const isPausedRef = useRef(false);
   const positionRef = useRef(0);
   const animationRef = useRef<number>();
+  const initializedRef = useRef(false);
 
   useEffect(() => {
     const track = trackRef.current;
@@ -25,13 +26,14 @@ const InfiniteCarousel = ({ children, direction = 'left', speed = 1 }: { childre
     const cardWidth = cards[0].offsetWidth + 24; // width + gap
     const totalWidth = cardWidth * cards.length;
 
-    // Set initial position for reverse direction
-    if (direction === 'right') {
+    // Set initial position for reverse direction (only once)
+    if (direction === 'right' && !initializedRef.current) {
       positionRef.current = -cardWidth * (cards.length / 2);
+      initializedRef.current = true;
     }
 
     const animate = () => {
-      if (!isPaused) {
+      if (!isPausedRef.current) {
         if (direction === 'left') {
           positionRef.current -= speed;
           // When first card is fully off screen, move it to the end
@@ -65,14 +67,14 @@ const InfiniteCarousel = ({ children, direction = 'left', speed = 1 }: { childre
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [direction, speed, isPaused]);
+  }, [direction, speed]); // Note: isPaused is read via ref pattern in animation loop
 
   return (
     <div 
       ref={containerRef}
       className="relative w-screen overflow-hidden -ml-48 -mr-4"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
+      onMouseEnter={() => { isPausedRef.current = true; }}
+      onMouseLeave={() => { isPausedRef.current = false; }}
     >
       <div ref={trackRef} className="flex gap-6">
         {children}
@@ -301,6 +303,113 @@ const AnimatedCounter = ({ value, prefix = '', suffix = '' }: { value: number; p
   return <span>{prefix}{count.toLocaleString()}{suffix}</span>;
 };
 
+const MiniQuizPreview = () => {
+  const [choice, setChoice] = useState<number | null>(null);
+  const correctIndex = 1;
+  const isCorrect = choice === correctIndex;
+
+  return (
+    <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card to-card/60 p-4">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-semibold text-primary">Quick Quiz</span>
+        <Sparkles className="w-4 h-4 text-primary" />
+      </div>
+      <p className="text-sm font-semibold mb-3">What does diversification reduce?</p>
+      <div className="grid gap-2 text-xs">
+        {['Fees', 'Risk', 'Time', 'Taxes'].map((option, index) => {
+          const isSelected = choice === index;
+          return (
+            <button
+              key={option}
+              type="button"
+              onClick={() => setChoice(index)}
+              className={`rounded-lg border px-2.5 py-2 text-left transition-colors ${
+                isSelected ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/40'
+              }`}
+            >
+              {option}
+            </button>
+          );
+        })}
+      </div>
+      {choice !== null && (
+        <p className={`mt-3 text-xs ${isCorrect ? 'text-emerald-600' : 'text-destructive'}`}>
+          {isCorrect ? 'Correct. Diversification reduces risk.' : 'Not quite. It reduces risk.'}
+        </p>
+      )}
+    </div>
+  );
+};
+
+const MiniChartPreview = () => {
+  const [years, setYears] = useState(10);
+  const result = 100 * Math.pow(1 + 0.08, years);
+  const maxResult = 100 * Math.pow(1 + 0.08, 30);
+  const percent = Math.min(100, (result / maxResult) * 100);
+
+  return (
+    <div className="rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 via-card to-card/60 p-4">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-semibold text-emerald-600">Compounding</span>
+        <BarChart3 className="w-4 h-4 text-emerald-500" />
+      </div>
+      <p className="text-sm font-semibold mb-2">Drag to see growth</p>
+      <input
+        type="range"
+        min={1}
+        max={30}
+        step={1}
+        value={years}
+        onChange={(event) => setYears(Number(event.target.value))}
+        className="w-full accent-emerald-500"
+      />
+      <div className="mt-3">
+        <p className="text-xs text-muted-foreground">After {years} years</p>
+        <p className="text-lg font-bold">${result.toFixed(0)}</p>
+        <div className="mt-2 h-2 w-full rounded-full bg-emerald-500/10">
+          <div className="h-2 rounded-full bg-emerald-500" style={{ width: `${percent}%` }} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const TradeSimPreview = () => {
+  const changes = [0.015, -0.012, 0.02, -0.01];
+  const [price, setPrice] = useState(100);
+  const [step, setStep] = useState(0);
+  const change = changes[step % changes.length];
+
+  return (
+    <div className="rounded-2xl border border-accent/20 bg-gradient-to-br from-accent/10 via-card to-card/60 p-4">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-semibold text-accent">Trade Sim</span>
+        {change >= 0 ? (
+          <TrendingUp className="w-4 h-4 text-emerald-500" />
+        ) : (
+          <TrendingDown className="w-4 h-4 text-destructive" />
+        )}
+      </div>
+      <p className="text-sm font-semibold mb-2">AAPL live ticks</p>
+      <div className="flex items-center justify-between rounded-lg border border-border/60 bg-secondary/40 px-3 py-2">
+        <span className="text-xs text-muted-foreground">Price</span>
+        <span className="text-lg font-bold">${price.toFixed(2)}</span>
+      </div>
+      <button
+        type="button"
+        onClick={() => {
+          const nextPrice = price * (1 + change);
+          setPrice(Number(nextPrice.toFixed(2)));
+          setStep((prev) => prev + 1);
+        }}
+        className="mt-3 w-full rounded-lg border border-accent/30 bg-accent/10 py-2 text-xs font-semibold text-accent hover:bg-accent/20"
+      >
+        Run next tick
+      </button>
+    </div>
+  );
+};
+
 // Floating particles component
 const FloatingParticles = memo(() => {
   const particles = useMemo(() => 
@@ -342,7 +451,7 @@ const FloatingParticles = memo(() => {
   );
 });
 
-// Dashboard preview with smooth cursor tracking and pulsing glow
+// Dashboard preview with smooth cursor tracking, pulsing glow, and 3D scroll effects
 const DashboardPreview: FC = () => {
   const [stocks, setStocks] = useState<any[]>([
     { symbol: 'AAPL', name: 'Apple Inc.', price: 248.00, change: '+1.2%', color: 'from-blue-500 to-blue-600', isPositive: true },
@@ -423,19 +532,45 @@ const DashboardPreview: FC = () => {
   }, []);
   
   const containerRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isHovering, setIsHovering] = useState(false);
   const [pulsePhase, setPulsePhase] = useState(0);
   
-  // Spring-based mouse tracking for smooth movement
-  const springConfig = { stiffness: 80, damping: 20, mass: 1.2 };
-  const slowReturnConfig = { stiffness: 30, damping: 15, mass: 2 }; // Slower return when leaving
-  const rotateX = useSpring(0, slowReturnConfig);
-  const rotateY = useSpring(0, slowReturnConfig);
-  const glowX = useSpring(50, springConfig);
-  const glowY = useSpring(50, springConfig);
-  const glowOpacity = useSpring(0, { stiffness: 50, damping: 20, mass: 1.5 });
-  const cursorGlowX = useSpring(0, { stiffness: 300, damping: 30 });
-  const cursorGlowY = useSpring(0, { stiffness: 300, damping: 30 });
+  // Scroll-based 3D parallax effects
+  const { scrollYProgress } = useScroll({
+    target: scrollContainerRef,
+    offset: ["start end", "end start"]
+  });
+  
+  // Transform scroll progress into 3D effects
+  const scrollRotateX = useTransform(scrollYProgress, [0, 0.5, 1], [15, 0, -15]);
+  const scrollRotateY = useTransform(scrollYProgress, [0, 0.5, 1], [-10, 0, 10]);
+  const scrollY = useTransform(scrollYProgress, [0, 1], [100, -100]);
+  const scrollScale = useTransform(scrollYProgress, [0, 0.3, 0.7, 1], [0.85, 1, 1, 0.85]);
+  const scrollOpacity = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0.6, 1, 1, 0.6]);
+  
+  // Floating elements parallax (different speeds for depth)
+  const floatY1 = useTransform(scrollYProgress, [0, 1], [150, -150]);
+  const floatY2 = useTransform(scrollYProgress, [0, 1], [200, -200]);
+  const floatY3 = useTransform(scrollYProgress, [0, 1], [80, -80]);
+  const floatX1 = useTransform(scrollYProgress, [0, 1], [-50, 50]);
+  const floatX2 = useTransform(scrollYProgress, [0, 1], [30, -30]);
+  const floatRotate = useTransform(scrollYProgress, [0, 1], [0, 360]);
+  
+  // Bottom glow scroll effects - synced with dashboard, scale and intensity changes
+  const glowScale = useTransform(scrollYProgress, [0, 0.3, 0.5, 0.7, 1], [0.7, 1, 1.2, 1, 0.7]);
+  const glowIntensity = useTransform(scrollYProgress, [0, 0.3, 0.5, 0.7, 1], [0.3, 0.7, 1, 0.7, 0.3]);
+  
+  // Spring-based mouse tracking - snappy response, smooth return
+  const responsiveConfig = { stiffness: 200, damping: 25, mass: 0.5 }; // Fast, responsive interaction
+  const glowConfig = { stiffness: 150, damping: 20, mass: 0.6 }; // Slightly smoother glow follow
+  const rotateX = useSpring(0, responsiveConfig);
+  const rotateY = useSpring(0, responsiveConfig);
+  const glowX = useSpring(50, glowConfig);
+  const glowY = useSpring(50, glowConfig);
+  const glowOpacity = useSpring(0, { stiffness: 120, damping: 20, mass: 0.8 });
+  const cursorGlowX = useSpring(0, { stiffness: 400, damping: 30 });
+  const cursorGlowY = useSpring(0, { stiffness: 400, damping: 30 });
 
   // Pulsing animation synced with cursor
   useEffect(() => {
@@ -455,9 +590,9 @@ const DashboardPreview: FC = () => {
     const x = (e.clientX - rect.left) / rect.width;
     const y = (e.clientY - rect.top) / rect.height;
     
-    // Subtle 3D tilt effect
-    rotateX.set((y - 0.5) * -6);
-    rotateY.set((x - 0.5) * 6);
+    // 3D tilt effect - more pronounced for better feedback
+    rotateX.set((y - 0.5) * -12);
+    rotateY.set((x - 0.5) * 12);
     
     // Glow position
     glowX.set(x * 100);
@@ -475,11 +610,13 @@ const DashboardPreview: FC = () => {
 
   const handleMouseLeave = useCallback(() => {
     setIsHovering(false);
-    rotateX.set(0);
-    rotateY.set(0);
-    glowX.set(50);
-    glowY.set(50);
-    glowOpacity.set(0);
+    // Use animate() with slower spring for smooth return (not jarring snap)
+    const slowReturnTransition = { type: 'spring', stiffness: 50, damping: 15, mass: 1.5 };
+    animate(rotateX, 0, slowReturnTransition);
+    animate(rotateY, 0, slowReturnTransition);
+    animate(glowX, 50, { type: 'spring', stiffness: 80, damping: 20 });
+    animate(glowY, 50, { type: 'spring', stiffness: 80, damping: 20 });
+    animate(glowOpacity, 0, { type: 'spring', stiffness: 60, damping: 20 });
   }, [rotateX, rotateY, glowX, glowY, glowOpacity]);
 
   const colors = useMemo(
@@ -491,12 +628,69 @@ const DashboardPreview: FC = () => {
   const pulseIntensity = Math.sin(pulsePhase * Math.PI / 180) * 0.3 + 0.7;
   
   return (
-    <div className="relative w-full max-w-2xl mx-auto" style={{ perspective: '1200px' }}>
+    <div ref={scrollContainerRef} className="relative w-full max-w-2xl mx-auto" style={{ perspective: '1200px' }}>
       {/* Floating particles behind */}
       <FloatingParticles />
       
-      {/* Outer ambient glow rings - smoother flowing */}
-      <div className="absolute -inset-20 pointer-events-none">
+      {/* 3D Floating elements that respond to scroll - creates depth */}
+      <div className="absolute inset-0 pointer-events-none" style={{ perspective: '800px' }}>
+        {/* Floating coin/chart icons */}
+        <motion.div
+          className="absolute -left-16 top-1/4 w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/30 backdrop-blur-sm flex items-center justify-center shadow-lg"
+          style={{ y: floatY1, x: floatX1, rotateY: floatRotate }}
+        >
+          <span className="text-2xl">📈</span>
+        </motion.div>
+        
+        <motion.div
+          className="absolute -right-12 top-1/3 w-10 h-10 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-500/20 border border-green-500/30 backdrop-blur-sm flex items-center justify-center shadow-lg"
+          style={{ y: floatY2, x: floatX2 }}
+        >
+          <span className="text-xl">💰</span>
+        </motion.div>
+        
+        <motion.div
+          className="absolute -left-8 bottom-1/4 w-8 h-8 rounded-full bg-gradient-to-br from-warning/20 to-orange-500/20 border border-warning/30 backdrop-blur-sm flex items-center justify-center shadow-lg"
+          style={{ y: floatY3, rotate: floatRotate }}
+        >
+          <span className="text-sm">⭐</span>
+        </motion.div>
+        
+        <motion.div
+          className="absolute -right-16 bottom-1/3 w-14 h-14 rounded-2xl bg-gradient-to-br from-accent/20 to-purple-500/20 border border-accent/30 backdrop-blur-sm flex items-center justify-center shadow-lg"
+          style={{ y: floatY1, x: floatX2 }}
+        >
+          <span className="text-2xl">🚀</span>
+        </motion.div>
+        
+        {/* Decorative geometric shapes */}
+        <motion.div
+          className="absolute -left-20 top-1/2 w-6 h-6 border-2 border-primary/40 rounded-md"
+          style={{ y: floatY2, rotate: floatRotate }}
+        />
+        <motion.div
+          className="absolute -right-20 top-1/4 w-4 h-4 bg-accent/30 rounded-full"
+          style={{ y: floatY3, x: floatX1 }}
+        />
+        <motion.div
+          className="absolute left-1/4 -top-8 w-3 h-3 bg-primary/40 rotate-45"
+          style={{ y: floatY1 }}
+        />
+        <motion.div
+          className="absolute right-1/4 -top-12 w-5 h-5 border border-green-500/40 rounded-full"
+          style={{ y: floatY2, rotate: floatRotate }}
+        />
+      </div>
+      
+      {/* Outer ambient glow rings - synced with dashboard scroll */}
+      <motion.div 
+        className="absolute -inset-20 pointer-events-none"
+        style={{ 
+          y: scrollY,  // Synced with dashboard movement
+          scale: glowScale,  // Grows when dashboard is centered
+          opacity: glowIntensity,  // Intensifies when in focus
+        }}
+      >
         <motion.div 
           className="absolute inset-0 rounded-full blur-3xl"
           animate={{
@@ -525,16 +719,16 @@ const DashboardPreview: FC = () => {
           }}
           transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
         />
-      </div>
+      </motion.div>
       
-      {/* Circle light effect under dashboard */}
+      {/* Circle light effect under dashboard - synced with dashboard scroll */}
       <motion.div
         className="absolute -bottom-16 left-1/2 -translate-x-1/2 w-[120%] h-32 pointer-events-none"
-        animate={{
-          opacity: [0.4, 0.7, 0.4],
-          scale: [1, 1.1, 1],
+        style={{ 
+          y: scrollY,  // Synced with dashboard movement
+          scale: glowScale,  // Grows when dashboard is centered
+          opacity: glowIntensity,  // Intensifies when in focus
         }}
-        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
       >
         <div className="absolute inset-0 bg-gradient-to-t from-primary/30 via-primary/10 to-transparent rounded-full blur-2xl" />
         <div className="absolute inset-4 bg-gradient-to-t from-accent/20 via-transparent to-transparent rounded-full blur-xl" />
@@ -651,22 +845,22 @@ const DashboardPreview: FC = () => {
         animate={{ 
           opacity: 1, 
           y: 0,
-          rotateX: isHovering ? undefined : [0, 1, 0, -1, 0],
-          rotateY: isHovering ? undefined : [0, 1.5, 0, -1.5, 0],
         }}
         transition={{ 
           opacity: { delay: 0.3, duration: 0.5 },
           y: { delay: 0.3, duration: 0.5 },
-          rotateX: { duration: 6, repeat: Infinity, ease: 'easeInOut' },
-          rotateY: { duration: 8, repeat: Infinity, ease: 'easeInOut' },
         }}
         onMouseMove={handleMouseMove}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         className="relative will-change-transform group"
         style={{
-          rotateX: isHovering ? rotateX : undefined,
-          rotateY: isHovering ? rotateY : undefined,
+          // Combine scroll-based and hover-based transforms
+          rotateX: isHovering ? rotateX : scrollRotateX,
+          rotateY: isHovering ? rotateY : scrollRotateY,
+          y: scrollY,
+          scale: scrollScale,
+          opacity: scrollOpacity,
           transformStyle: 'preserve-3d',
         }}
       >
@@ -864,6 +1058,7 @@ const FeatureCard: FC<FeatureCardProps> = ({ icon: Icon, title, desc, gradient, 
 const LandingPage = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const landingLogOnceRef = useRef(false);
   const [tickerStocks, setTickerStocks] = useState<any[]>([
     { symbol: 'AAPL', price: '$248.00', change: '+1.2%' },
     { symbol: 'TSLA', price: '$242.84', change: '-0.8%' },
@@ -944,6 +1139,15 @@ const LandingPage = () => {
     await signOut();
     navigate('/');
   };
+
+  useEffect(() => {
+    if (landingLogOnceRef.current) return;
+    landingLogOnceRef.current = true;
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/744e271c-c7d9-439f-a2cd-18d8a6231997',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:1054',message:'landing render context',data:{innerWidth:window.innerWidth,innerHeight:window.innerHeight,devicePixelRatio:window.devicePixelRatio,prefersReducedMotion},timestamp:Date.now(),sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H4'})}).catch(()=>{});
+    // #endregion
+  }, []);
 
   return (
     <div className="min-h-screen bg-background relative overflow-x-hidden">
@@ -1029,9 +1233,9 @@ const LandingPage = () => {
             className="relative z-10"
           >
             <div className="inline-flex items-center gap-2 bg-primary/10 text-foreground px-3 py-1.5 rounded-full text-xs font-medium mb-6 border border-primary/20">
+              <Sparkles className="w-3 h-3 text-primary" />
+              <span>Interactive quests, XP, and streaks</span>
               <Flame className="w-3 h-3 text-warning" />
-              <span>Start Building Wealth Today</span>
-              <Star className="w-3 h-3 text-warning" />
             </div>
             
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight mb-6 leading-tight relative">
@@ -1075,10 +1279,25 @@ const LandingPage = () => {
               <span className="gradient-text">Financial Empire</span>
             </h1>
             
-            <p className="text-lg text-muted-foreground mb-8 max-w-lg">
-              Master investing with <span className="text-primary font-semibold">zero risk</span>. 
-              Trade stocks, crush the leaderboard, and build skills that'll set you apart.
+            <p className="text-lg text-muted-foreground mb-6 max-w-lg">
+              Master investing with <span className="text-primary font-semibold">zero risk</span>.
+              Trade stocks, complete challenges, and level up your money skills.
             </p>
+
+            <div className="grid grid-cols-3 gap-3 max-w-md mb-8">
+              <div className="rounded-xl bg-card/70 border border-primary/20 px-3 py-2 backdrop-blur">
+                <p className="text-[11px] text-muted-foreground">XP Earned</p>
+                <p className="text-lg font-bold text-primary">1,200</p>
+              </div>
+              <div className="rounded-xl bg-card/70 border border-accent/20 px-3 py-2 backdrop-blur">
+                <p className="text-[11px] text-muted-foreground">Streak</p>
+                <p className="text-lg font-bold text-warning">7 days</p>
+              </div>
+              <div className="rounded-xl bg-card/70 border border-emerald-500/20 px-3 py-2 backdrop-blur">
+                <p className="text-[11px] text-muted-foreground">Level</p>
+                <p className="text-lg font-bold text-emerald-500">3</p>
+              </div>
+            </div>
             
             <div className="flex flex-col sm:flex-row items-start gap-3 mb-8">
               <Link to={user ? "/dashboard" : "/signup"}>
@@ -1128,6 +1347,60 @@ const LandingPage = () => {
             );
           })}
         </Marquee>
+      </section>
+
+      {/* Interactive Learning Path */}
+      <section className="py-16 md:py-20 relative">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-10"
+          >
+            <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Hands-on Learning</p>
+            <h2 className="text-3xl md:text-4xl font-black tracking-tight">
+              Your Interactive <span className="gradient-text">Learning Path</span>
+            </h2>
+            <p className="text-muted-foreground mt-2">
+              Short lessons, quick quizzes, and mini trading sims to build real skill fast.
+            </p>
+          </motion.div>
+
+          <div className="grid gap-4 md:grid-cols-4 max-w-6xl mx-auto">
+            {[
+              { step: '01', title: 'Learn', desc: 'Bite-sized lessons you can finish in minutes.', icon: BookOpen, color: 'from-primary/20 to-primary/5' },
+              { step: '02', title: 'Practice', desc: 'Interactive quizzes and charts to test ideas.', icon: Sparkles, color: 'from-accent/20 to-accent/5' },
+              { step: '03', title: 'Trade', desc: 'Simulated trades to learn with zero risk.', icon: Briefcase, color: 'from-emerald-500/20 to-emerald-500/5' },
+              { step: '04', title: 'Level Up', desc: 'Earn XP, streaks, and new achievements.', icon: Trophy, color: 'from-warning/20 to-warning/5' },
+            ].map((step) => (
+              <motion.div
+                key={step.step}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4 }}
+                className={`rounded-2xl border border-border/50 bg-gradient-to-br ${step.color} p-5`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-semibold text-muted-foreground">{step.step}</span>
+                  <step.icon className="w-5 h-5 text-primary" />
+                </div>
+                <h3 className="font-bold text-lg mb-1">{step.title}</h3>
+                <p className="text-sm text-muted-foreground">{step.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="max-w-3xl mx-auto mt-8 rounded-full border border-primary/20 bg-card/60 backdrop-blur px-4 py-3">
+            <div className="flex items-center gap-3">
+              <div className="h-2 flex-1 rounded-full bg-primary/10">
+                <div className="h-2 w-2/3 rounded-full bg-gradient-to-r from-primary to-accent" />
+              </div>
+              <span className="text-xs text-muted-foreground">Path progress preview</span>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* Time Is Your Superpower */}
@@ -1229,7 +1502,7 @@ const LandingPage = () => {
             {[
               { value: 10, suffix: 'K', label: 'Virtual Cash', icon: '💰', prefix: '$' },
               { value: 5000, suffix: '+', label: 'Real Stocks', icon: '📈' },
-              { value: 500, suffix: '', label: 'Real Risk', icon: '🛡️' },
+              { value: 0, suffix: '%', label: 'Real Risk', icon: '🛡️' },
               { value: 100, suffix: '%', label: 'Free Forever', icon: '⭐' },
             ].map((stat, i) => (
               <motion.div
@@ -1345,6 +1618,12 @@ const LandingPage = () => {
               Everything You Need
             </h2>
           </motion.div>
+
+          <div className="grid gap-4 md:grid-cols-3 max-w-5xl mx-auto mb-10">
+            <MiniQuizPreview />
+            <MiniChartPreview />
+            <TradeSimPreview />
+          </div>
 
           {/* First Carousel - First 3 Features */}
           <div className="mb-8">

@@ -234,9 +234,7 @@ const AdminPage = () => {
 
   const updateCashBalanceMutation = useMutation({
     mutationFn: async ({ email, balance }: { email: string; balance: number }) => {
-      // Note: backend function may not be present in generated types in some environments.
-      // Casting avoids build-time type mismatch while still calling the intended RPC.
-      const { data, error } = await (supabase as any).rpc('admin_update_cash_balance', { 
+      const { data, error } = await supabase.rpc('admin_update_cash_balance', { 
         _email: email, 
         _new_balance: balance 
       });
@@ -268,9 +266,6 @@ const AdminPage = () => {
 
   const updateGardenMoneyMutation = useMutation({
     mutationFn: async ({ email, money, xp }: { email: string; money?: number; xp?: number }) => {
-      // Since garden data is stored in localStorage, we need to create a database-backed approach
-      // For now, we'll store garden updates in a separate table
-      // @ts-ignore - Table exists but types haven't been generated yet
       const { data, error } = await supabase
         .from('garden_updates')
         .upsert({
