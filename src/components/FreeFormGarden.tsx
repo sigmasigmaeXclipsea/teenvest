@@ -463,7 +463,7 @@ export default function FreeFormGarden({
                 {[...Array(20)].map((_, i) => (
                   <div
                     key={`rain-${i}`}
-                    className="absolute w-2 h-2 bg-blue-400 rounded-full opacity-40 animate-bounce"
+                    className="absolute w-2 h-2 bg-blue-400 rounded-full opacity-40"
                     style={{
                       left: `${Math.random() * 100}%`,
                       top: `-10px`,
@@ -472,13 +472,6 @@ export default function FreeFormGarden({
                     }}
                   />
                 ))}
-                <style jsx>{`
-                  @keyframes fall {
-                    to {
-                      transform: translateY(${garden.height + 20}px);
-                    }
-                  }
-                `}</style>
               </>
             )}
             {currentWeather === 'frozen' && (
@@ -486,7 +479,7 @@ export default function FreeFormGarden({
                 {[...Array(15)].map((_, i) => (
                   <div
                     key={`frost-${i}`}
-                    className="absolute w-3 h-3 bg-cyan-300 rounded-full opacity-50 animate-bounce"
+                    className="absolute w-3 h-3 bg-cyan-300 rounded-full opacity-50"
                     style={{
                       left: `${Math.random() * 100}%`,
                       top: `-10px`,
@@ -495,13 +488,6 @@ export default function FreeFormGarden({
                     }}
                   />
                 ))}
-                <style jsx>{`
-                  @keyframes fall {
-                    to {
-                      transform: translateY(${garden.height + 20}px);
-                    }
-                  }
-                `}</style>
               </>
             )}
             {currentWeather === 'candy' && (
@@ -509,7 +495,7 @@ export default function FreeFormGarden({
                 {[...Array(18)].map((_, i) => (
                   <div
                     key={`candy-${i}`}
-                    className="absolute w-2 h-2 bg-pink-400 rounded-full opacity-60 animate-bounce"
+                    className="absolute w-2 h-2 bg-pink-400 rounded-full opacity-60"
                     style={{
                       left: `${Math.random() * 100}%`,
                       top: `-10px`,
@@ -518,13 +504,6 @@ export default function FreeFormGarden({
                     }}
                   />
                 ))}
-                <style jsx>{`
-                  @keyframes fall {
-                    to {
-                      transform: translateY(${garden.height + 20}px);
-                    }
-                  }
-                `}</style>
               </>
             )}
             {currentWeather === 'thunder' && (
@@ -532,7 +511,7 @@ export default function FreeFormGarden({
                 {[...Array(12)].map((_, i) => (
                   <div
                     key={`thunder-${i}`}
-                    className="absolute w-2 h-2 bg-yellow-400 rounded-full opacity-70 animate-bounce"
+                    className="absolute w-2 h-2 bg-yellow-400 rounded-full opacity-70"
                     style={{
                       left: `${Math.random() * 100}%`,
                       top: `-10px`,
@@ -541,13 +520,6 @@ export default function FreeFormGarden({
                     }}
                   />
                 ))}
-                <style jsx>{`
-                  @keyframes fall {
-                    to {
-                      transform: translateY(${garden.height + 20}px);
-                    }
-                  }
-                `}</style>
               </>
             )}
             {currentWeather === 'lunar' && (
@@ -555,7 +527,7 @@ export default function FreeFormGarden({
                 {[...Array(10)].map((_, i) => (
                   <div
                     key={`lunar-${i}`}
-                    className="absolute w-2 h-2 bg-purple-400 rounded-full opacity-50 animate-bounce"
+                    className="absolute w-2 h-2 bg-purple-400 rounded-full opacity-50"
                     style={{
                       left: `${Math.random() * 100}%`,
                       top: `-10px`,
@@ -564,15 +536,17 @@ export default function FreeFormGarden({
                     }}
                   />
                 ))}
-                <style jsx>{`
-                  @keyframes fall {
-                    to {
-                      transform: translateY(${garden.height + 20}px);
-                    }
-                  }
-                `}</style>
               </>
             )}
+            <style dangerouslySetInnerHTML={{
+              __html: `
+                @keyframes fall {
+                  to {
+                    transform: translateY(${garden.height + 20}px);
+                  }
+                }
+              `
+            }} />
           </div>
         )}
 
