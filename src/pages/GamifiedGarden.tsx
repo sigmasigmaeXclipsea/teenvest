@@ -95,13 +95,15 @@ const SEED_TEMPLATES: Omit<Seed, 'id'>[] = [
   { name: 'Artichoke', rarity: 'rare', baseGrowthTime: 72, baseSizeKg: 0.6, price: 195, sellPrice: 390, icon: '🌿' },
   { name: 'Mushroom', rarity: 'rare', baseGrowthTime: 45, baseSizeKg: 0.3, price: 160, sellPrice: 320, icon: '🍄' },
   
-  // Epic (6 seeds)
+  // Epic (8 seeds) - Added 2 more epic seeds
   { name: 'Strawberry', rarity: 'epic', baseGrowthTime: 90, baseSizeKg: 0.4, price: 350, sellPrice: 750, icon: '🍓' },
   { name: 'Pineapple', rarity: 'epic', baseGrowthTime: 120, baseSizeKg: 2.0, price: 500, sellPrice: 1100, icon: '🍍' },
   { name: 'Avocado', rarity: 'epic', baseGrowthTime: 100, baseSizeKg: 0.5, price: 450, sellPrice: 1000, icon: '🥑' },
   { name: 'Mango', rarity: 'epic', baseGrowthTime: 110, baseSizeKg: 1.0, price: 475, sellPrice: 1050, icon: '🥭' },
   { name: 'Papaya', rarity: 'epic', baseGrowthTime: 95, baseSizeKg: 1.5, price: 425, sellPrice: 950, icon: '🍈' },
   { name: 'Coconut', rarity: 'epic', baseGrowthTime: 130, baseSizeKg: 2.5, price: 550, sellPrice: 1200, icon: '🥥' },
+  { name: 'Durian', rarity: 'epic', baseGrowthTime: 140, baseSizeKg: 3.0, price: 650, sellPrice: 1400, icon: '🦥' },
+  { name: 'Jackfruit', rarity: 'epic', baseGrowthTime: 160, baseSizeKg: 4.0, price: 750, sellPrice: 1600, icon: '🟡' },
   
   // Mythic (1 seed) - The ultimate fruit!
   { name: 'Dragon Fruit', rarity: 'mythic', baseGrowthTime: 180, baseSizeKg: 3.0, price: 2000, sellPrice: 5000, icon: '🐉' },
