@@ -46,30 +46,13 @@ const BeanstalkGame = ({ moduleId, title, content }: BeanstalkGameProps) => {
   const [clouds, setClouds] = useState<Array<{ x: number; y: number; size: number }>>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Generate questions using Gemini
+  // Generate questions using Lovable AI edge function
   const generateQuestions = async () => {
     setIsLoading(true);
     try {
-      // @ts-ignore - Table exists but types haven't been generated yet
-      const { data: config } = await supabase
-        .from('ai_config')
-        .select('gemini_api_key')
-        .eq('service', 'gemini')
-        .single();
-
-      if (!config?.gemini_api_key) {
-        throw new Error('Gemini API key not configured');
-      }
-
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-exp:generateContent?key=${config.gemini_api_key}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{
-              parts: [{
-                text: `Create 5 multiple choice questions based on this lesson. Each question should have 4 options with one correct answer.
+      const { data, error } = await supabase.functions.invoke('learning-ai', {
+        body: {
+          prompt: `Create 5 multiple choice questions based on this lesson. Each question should have 4 options with one correct answer.
 
 Title: ${title}
 Content: ${content}
@@ -83,21 +66,14 @@ Return the response as a JSON array in this exact format:
   }
 ]
 
-Make sure the JSON is valid and properly formatted.`
-              }]
-            }],
-            generationConfig: {
-              temperature: 0.3,
-              maxOutputTokens: 2000,
-            }
-          })
+Make sure the JSON is valid and properly formatted.`,
+          context: 'quiz_generation'
         }
-      );
+      });
 
-      if (!response.ok) throw new Error('Failed to generate questions');
-      
-      const data = await response.json();
-      const text = data.candidates[0].content.parts[0].text;
+      if (error) throw error;
+
+      const text = data?.response || '';
       const jsonMatch = text.match(/\[[\s\S]*\]/);
       
       if (jsonMatch) {

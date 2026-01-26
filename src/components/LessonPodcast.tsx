@@ -19,54 +19,28 @@ const LessonPodcast = ({ moduleId, title, content }: LessonPodcastProps) => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const { toast } = useToast();
 
-  // Generate podcast script using Gemini
+  // Generate podcast script using Lovable AI edge function
   const generatePodcast = async () => {
     setIsLoading(true);
     try {
-      // Get API key from database
-      // @ts-ignore - Table exists but types haven't been generated yet
-      const { data: config } = await supabase
-        .from('ai_config')
-        .select('gemini_api_key')
-        .eq('service', 'gemini')
-        .single();
-
-      if (!config?.gemini_api_key) {
-        throw new Error('Gemini API key not configured');
-      }
-
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-exp:generateContent?key=${config.gemini_api_key}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{
-              parts: [{
-                text: `Convert this lesson into an engaging podcast script. Make it conversational, easy to understand, and suitable for audio narration. Keep it under 500 words.
+      const { data, error } = await supabase.functions.invoke('learning-ai', {
+        body: {
+          prompt: `Convert this lesson into an engaging podcast script. Make it conversational, easy to understand, and suitable for audio narration. Keep it under 500 words.
 
 Title: ${title}
 Content: ${content}
 
-Return the script in a conversational podcast format with natural speaking patterns.`
-              }]
-            }],
-            generationConfig: {
-              temperature: 0.7,
-              maxOutputTokens: 1000,
-            }
-          })
+Return the script in a conversational podcast format with natural speaking patterns.`,
+          context: 'podcast_generation'
         }
-      );
+      });
 
-      if (!response.ok) throw new Error('Failed to generate podcast');
-      
-      const data = await response.json();
-      const script = data.candidates[0].content.parts[0].text;
+      if (error) throw error;
+
+      const script = data?.response || '';
       setPodcastScript(script);
       
-      // For now, we'll use text-to-speech in the browser
-      // In production, you might want to use a service like ElevenLabs or OpenAI TTS
+      // Use text-to-speech in the browser
       speakText(script);
       
     } catch (error: any) {

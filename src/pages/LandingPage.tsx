@@ -631,13 +631,12 @@ const DashboardPreview: FC = () => {
 
   const handleMouseLeave = useCallback(() => {
     setIsHovering(false);
-    // Use animate() with slower spring for smooth return (not jarring snap)
-    const slowReturnTransition = { type: 'spring', stiffness: 50, damping: 15, mass: 1.5 };
-    animate(rotateX, 0, slowReturnTransition);
-    animate(rotateY, 0, slowReturnTransition);
-    animate(glowX, 50, { type: 'spring', stiffness: 80, damping: 20 });
-    animate(glowY, 50, { type: 'spring', stiffness: 80, damping: 20 });
-    animate(glowOpacity, 0, { type: 'spring', stiffness: 60, damping: 20 });
+    // Use set() for immediate updates, then spring will animate
+    rotateX.set(0);
+    rotateY.set(0);
+    glowX.set(50);
+    glowY.set(50);
+    glowOpacity.set(0);
   }, [rotateX, rotateY, glowX, glowY, glowOpacity]);
 
   const colors = useMemo(
