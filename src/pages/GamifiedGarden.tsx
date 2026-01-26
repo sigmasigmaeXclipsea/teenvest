@@ -43,79 +43,80 @@ interface Gear {
   type: 'wateringCan' | 'sprinkler' | 'plotUpgrade';
   effect: string;
   price: number;
-  quantity?: number;
+  quantity?: number; // For consumable items like watering cans
+  uses?: number; // Number of uses remaining for consumables
 }
 
 const MIN_POTS = 3;
-const MAX_POTS = 9;
-const WILT_THRESHOLD = 60 * 60 * 1000; // 60 minutes without water (increased from 10 min)
-const WATER_REDUCTION = 0.5; // watering cuts remaining time by 50%
-const XP_TO_MONEY_RATE = 2; // 1 XP = 2 coins
+const MAX_POTS = 20; // Increased from 9 to 20 for more progression
+const WILT_THRESHOLD = 90 * 60 * 1000; // 90 minutes without water (increased from 60 min)
+const WATER_REDUCTION = 0.3; // watering cuts remaining time by 30% (reduced from 50%)
+const XP_TO_MONEY_RATE = 5; // 1 XP = 5 coins (increased to make XP more valuable)
 
-// Exponential plot upgrade pricing: starts cheap, grows moderately
-// Prices: 50, 75, 115, 175, 260, 400 (for upgrades 4→5, 5→6, etc.)
+// Exponential plot upgrade pricing: more expensive for longer progression
+// Prices: 50, 75, 115, 175, 260, 400, 620, 960, 1480, 2280, 3520, 5440, 8400, 13000, 20000, 31000
 function getPlotUpgradePrice(currentPots: number): number {
   const basePrice = 50;
-  const exponent = 1.5; // Moderate exponential growth
-  const upgradeIndex = currentPots - MIN_POTS; // 0, 1, 2, 3, 4, 5
+  const exponent = 1.6; // Increased exponent for faster growth
+  const upgradeIndex = currentPots - MIN_POTS; // 0, 1, 2, 3, 4, 5, etc.
   return Math.round(basePrice * Math.pow(exponent, upgradeIndex));
 }
 
-// 40 different seeds ordered by price (cheapest to most expensive) with longer growth times and RNG sizes
+// 40 different seeds ordered by price (cheapest to most expensive) with slower progression and balanced sell prices
 const SEED_TEMPLATES: Omit<Seed, 'id'>[] = [
-  // Common (10 seeds)
-  { name: 'Radish', rarity: 'common', baseGrowthTime: 15, baseSizeKg: 0.2, price: 10, sellPrice: 18, icon: '🌱' },
-  { name: 'Lettuce', rarity: 'common', baseGrowthTime: 20, baseSizeKg: 0.3, price: 20, sellPrice: 35, icon: '🥬' },
-  { name: 'Carrot', rarity: 'common', baseGrowthTime: 25, baseSizeKg: 0.5, price: 35, sellPrice: 60, icon: '🥕' },
-  { name: 'Spinach', rarity: 'common', baseGrowthTime: 18, baseSizeKg: 0.3, price: 25, sellPrice: 45, icon: '🍃' },
-  { name: 'Cabbage', rarity: 'common', baseGrowthTime: 30, baseSizeKg: 0.8, price: 40, sellPrice: 70, icon: '🥬' },
-  { name: 'Peas', rarity: 'common', baseGrowthTime: 22, baseSizeKg: 0.4, price: 30, sellPrice: 55, icon: '🟢' },
-  { name: 'Onion', rarity: 'common', baseGrowthTime: 28, baseSizeKg: 0.6, price: 38, sellPrice: 65, icon: '🧅' },
-  { name: 'Garlic', rarity: 'common', baseGrowthTime: 35, baseSizeKg: 0.2, price: 45, sellPrice: 80, icon: '🧄' },
-  { name: 'Potato', rarity: 'common', baseGrowthTime: 40, baseSizeKg: 1.0, price: 50, sellPrice: 90, icon: '🥔' },
-  { name: 'Turnip', rarity: 'common', baseGrowthTime: 32, baseSizeKg: 0.7, price: 42, sellPrice: 75, icon: '⚪' },
+  // Common (10 seeds) - Much slower growth and lower sell prices
+  { name: 'Radish', rarity: 'common', baseGrowthTime: 30, baseSizeKg: 0.2, price: 10, sellPrice: 12, icon: '🌱' },
+  { name: 'Lettuce', rarity: 'common', baseGrowthTime: 40, baseSizeKg: 0.3, price: 20, sellPrice: 25, icon: '🥬' },
+  { name: 'Carrot', rarity: 'common', baseGrowthTime: 50, baseSizeKg: 0.5, price: 35, sellPrice: 40, icon: '🥕' },
+  { name: 'Spinach', rarity: 'common', baseGrowthTime: 35, baseSizeKg: 0.3, price: 25, sellPrice: 30, icon: '🍃' },
+  { name: 'Cabbage', rarity: 'common', baseGrowthTime: 60, baseSizeKg: 0.8, price: 40, sellPrice: 45, icon: '🥬' },
+  { name: 'Peas', rarity: 'common', baseGrowthTime: 45, baseSizeKg: 0.4, price: 30, sellPrice: 35, icon: '🟢' },
+  { name: 'Onion', rarity: 'common', baseGrowthTime: 55, baseSizeKg: 0.6, price: 38, sellPrice: 42, icon: '🧅' },
+  { name: 'Garlic', rarity: 'common', baseGrowthTime: 70, baseSizeKg: 0.2, price: 45, sellPrice: 50, icon: '🧄' },
+  { name: 'Potato', rarity: 'common', baseGrowthTime: 80, baseSizeKg: 1.0, price: 50, sellPrice: 55, icon: '🥔' },
+  { name: 'Turnip', rarity: 'common', baseGrowthTime: 65, baseSizeKg: 0.7, price: 42, sellPrice: 48, icon: '⚪' },
   
-  // Uncommon (8 seeds)
-  { name: 'Tomato', rarity: 'uncommon', baseGrowthTime: 45, baseSizeKg: 0.8, price: 75, sellPrice: 140, icon: '🍅' },
-  { name: 'Bell Pepper', rarity: 'uncommon', baseGrowthTime: 50, baseSizeKg: 0.6, price: 85, sellPrice: 160, icon: '🫑' },
-  { name: 'Cucumber', rarity: 'uncommon', baseGrowthTime: 42, baseSizeKg: 0.9, price: 80, sellPrice: 150, icon: '🥒' },
-  { name: 'Broccoli', rarity: 'uncommon', baseGrowthTime: 48, baseSizeKg: 0.7, price: 90, sellPrice: 170, icon: '🥦' },
-  { name: 'Eggplant', rarity: 'uncommon', baseGrowthTime: 55, baseSizeKg: 0.8, price: 100, sellPrice: 190, icon: '🍆' },
-  { name: 'Zucchini', rarity: 'uncommon', baseGrowthTime: 38, baseSizeKg: 1.2, price: 70, sellPrice: 130, icon: '🥒' },
-  { name: 'Green Bean', rarity: 'uncommon', baseGrowthTime: 35, baseSizeKg: 0.5, price: 65, sellPrice: 120, icon: '🟩' },
-  { name: 'Chili Pepper', rarity: 'uncommon', baseGrowthTime: 52, baseSizeKg: 0.3, price: 95, sellPrice: 180, icon: '🌶️' },
+  // Uncommon (8 seeds) - Slower growth and balanced sell prices
+  { name: 'Tomato', rarity: 'uncommon', baseGrowthTime: 90, baseSizeKg: 0.8, price: 75, sellPrice: 85, icon: '🍅' },
+  { name: 'Bell Pepper', rarity: 'uncommon', baseGrowthTime: 100, baseSizeKg: 0.6, price: 85, sellPrice: 95, icon: '🫑' },
+  { name: 'Cucumber', rarity: 'uncommon', baseGrowthTime: 85, baseSizeKg: 0.9, price: 80, sellPrice: 90, icon: '🥒' },
+  { name: 'Broccoli', rarity: 'uncommon', baseGrowthTime: 95, baseSizeKg: 0.7, price: 90, sellPrice: 100, icon: '🥦' },
+  { name: 'Eggplant', rarity: 'uncommon', baseGrowthTime: 110, baseSizeKg: 0.8, price: 100, sellPrice: 110, icon: '🍆' },
+  { name: 'Zucchini', rarity: 'uncommon', baseGrowthTime: 75, baseSizeKg: 1.2, price: 70, sellPrice: 80, icon: '🥒' },
+  { name: 'Green Bean', rarity: 'uncommon', baseGrowthTime: 70, baseSizeKg: 0.5, price: 65, sellPrice: 75, icon: '🟩' },
+  { name: 'Chili Pepper', rarity: 'uncommon', baseGrowthTime: 105, baseSizeKg: 0.3, price: 95, sellPrice: 105, icon: '🌶️' },
   
-  // Rare (8 seeds)
-  { name: 'Corn', rarity: 'rare', baseGrowthTime: 60, baseSizeKg: 1.5, price: 150, sellPrice: 300, icon: '🌽' },
-  { name: 'Pumpkin', rarity: 'rare', baseGrowthTime: 75, baseSizeKg: 4.0, price: 200, sellPrice: 400, icon: '🎃' },
-  { name: 'Watermelon', rarity: 'rare', baseGrowthTime: 80, baseSizeKg: 8.0, price: 250, sellPrice: 500, icon: '🍉' },
-  { name: 'Cauliflower', rarity: 'rare', baseGrowthTime: 65, baseSizeKg: 1.2, price: 175, sellPrice: 350, icon: '🥦' },
-  { name: 'Asparagus', rarity: 'rare', baseGrowthTime: 70, baseSizeKg: 0.4, price: 190, sellPrice: 380, icon: '🥬' },
-  { name: 'Brussels Sprouts', rarity: 'rare', baseGrowthTime: 68, baseSizeKg: 0.8, price: 185, sellPrice: 370, icon: '🥦' },
-  { name: 'Artichoke', rarity: 'rare', baseGrowthTime: 72, baseSizeKg: 0.6, price: 195, sellPrice: 390, icon: '🌿' },
-  { name: 'Mushroom', rarity: 'rare', baseGrowthTime: 45, baseSizeKg: 0.3, price: 160, sellPrice: 320, icon: '🍄' },
+  // Rare (8 seeds) - Much slower growth with better sell prices
+  { name: 'Corn', rarity: 'rare', baseGrowthTime: 120, baseSizeKg: 1.5, price: 150, sellPrice: 180, icon: '🌽' },
+  { name: 'Pumpkin', rarity: 'rare', baseGrowthTime: 150, baseSizeKg: 4.0, price: 200, sellPrice: 240, icon: '🎃' },
+  { name: 'Watermelon', rarity: 'rare', baseGrowthTime: 160, baseSizeKg: 8.0, price: 250, sellPrice: 300, icon: '🍉' },
+  { name: 'Cauliflower', rarity: 'rare', baseGrowthTime: 130, baseSizeKg: 1.2, price: 175, sellPrice: 210, icon: '🥦' },
+  { name: 'Asparagus', rarity: 'rare', baseGrowthTime: 140, baseSizeKg: 0.4, price: 190, sellPrice: 225, icon: '🥬' },
+  { name: 'Brussels Sprouts', rarity: 'rare', baseGrowthTime: 135, baseSizeKg: 0.8, price: 185, sellPrice: 220, icon: '🥦' },
+  { name: 'Artichoke', rarity: 'rare', baseGrowthTime: 145, baseSizeKg: 0.6, price: 195, sellPrice: 230, icon: '🌿' },
+  { name: 'Mushroom', rarity: 'rare', baseGrowthTime: 90, baseSizeKg: 0.3, price: 160, sellPrice: 190, icon: '🍄' },
   
-  // Epic (8 seeds) - Added 2 more epic seeds
-  { name: 'Strawberry', rarity: 'epic', baseGrowthTime: 90, baseSizeKg: 0.4, price: 350, sellPrice: 750, icon: '🍓' },
-  { name: 'Pineapple', rarity: 'epic', baseGrowthTime: 120, baseSizeKg: 2.0, price: 500, sellPrice: 1100, icon: '🍍' },
-  { name: 'Avocado', rarity: 'epic', baseGrowthTime: 100, baseSizeKg: 0.5, price: 450, sellPrice: 1000, icon: '🥑' },
-  { name: 'Mango', rarity: 'epic', baseGrowthTime: 110, baseSizeKg: 1.0, price: 475, sellPrice: 1050, icon: '🥭' },
-  { name: 'Papaya', rarity: 'epic', baseGrowthTime: 95, baseSizeKg: 1.5, price: 425, sellPrice: 950, icon: '🍈' },
-  { name: 'Coconut', rarity: 'epic', baseGrowthTime: 130, baseSizeKg: 2.5, price: 550, sellPrice: 1200, icon: '🥥' },
-  { name: 'Durian', rarity: 'epic', baseGrowthTime: 140, baseSizeKg: 3.0, price: 650, sellPrice: 1400, icon: '🦥' },
-  { name: 'Jackfruit', rarity: 'epic', baseGrowthTime: 160, baseSizeKg: 4.0, price: 750, sellPrice: 1600, icon: '🟡' },
+  // Epic (8 seeds) - Long growth times with good returns
+  { name: 'Strawberry', rarity: 'epic', baseGrowthTime: 180, baseSizeKg: 0.4, price: 350, sellPrice: 420, icon: '🍓' },
+  { name: 'Pineapple', rarity: 'epic', baseGrowthTime: 240, baseSizeKg: 2.0, price: 500, sellPrice: 600, icon: '🍍' },
+  { name: 'Avocado', rarity: 'epic', baseGrowthTime: 200, baseSizeKg: 0.5, price: 450, sellPrice: 540, icon: '🥑' },
+  { name: 'Mango', rarity: 'epic', baseGrowthTime: 220, baseSizeKg: 1.0, price: 475, sellPrice: 570, icon: '🥭' },
+  { name: 'Papaya', rarity: 'epic', baseGrowthTime: 190, baseSizeKg: 1.5, price: 425, sellPrice: 510, icon: '🍈' },
+  { name: 'Coconut', rarity: 'epic', baseGrowthTime: 260, baseSizeKg: 2.5, price: 550, sellPrice: 660, icon: '🥥' },
+  { name: 'Durian', rarity: 'epic', baseGrowthTime: 280, baseSizeKg: 3.0, price: 650, sellPrice: 780, icon: '🦥' },
+  { name: 'Jackfruit', rarity: 'epic', baseGrowthTime: 320, baseSizeKg: 4.0, price: 750, sellPrice: 900, icon: '🟡' },
   
   // Mythic (1 seed) - High tier but not the best
-  { name: 'Dragon Fruit', rarity: 'mythic', baseGrowthTime: 180, baseSizeKg: 3.0, price: 2000, sellPrice: 5000, icon: '🐉' },
+  { name: 'Dragon Fruit', rarity: 'mythic', baseGrowthTime: 360, baseSizeKg: 3.0, price: 2000, sellPrice: 2400, icon: '🐉' },
   
   // Legendary (3 seeds) - Above Dragon Fruit
-  { name: 'Phoenix Feather', rarity: 'legendary', baseGrowthTime: 200, baseSizeKg: 2.0, price: 3000, sellPrice: 8000, icon: '🔥' },
-  { name: 'Unicorn Tear', rarity: 'legendary', baseGrowthTime: 220, baseSizeKg: 1.5, price: 4000, sellPrice: 10000, icon: '🦄' },
-  { name: 'Thunder Crystal', rarity: 'legendary', baseGrowthTime: 240, baseSizeKg: 4.0, price: 5000, sellPrice: 12000, icon: '⚡' },
+  { name: 'Phoenix Feather', rarity: 'legendary', baseGrowthTime: 400, baseSizeKg: 2.0, price: 3000, sellPrice: 3600, icon: '🔥' },
+  { name: 'Unicorn Tear', rarity: 'legendary', baseGrowthTime: 440, baseSizeKg: 1.5, price: 4000, sellPrice: 4800, icon: '🦄' },
+  { name: 'Thunder Crystal', rarity: 'legendary', baseGrowthTime: 480, baseSizeKg: 4.0, price: 5000, sellPrice: 6000, icon: '⚡' },
   
   // Exotic (2 seeds) - The absolute best!
-  { name: 'Cosmic Melon', rarity: 'exotic', baseGrowthTime: 300, baseSizeKg: 10.0, price: 10000, sellPrice: 25000, icon: '🌌' },
-  { name: 'Infinity Star', rarity: 'exotic', baseGrowthTime: 360, baseSizeKg: 5.0, price: 20000, sellPrice: 50000, icon: '⭐' },
+  { name: 'Cosmic Melon', rarity: 'exotic', baseGrowthTime: 600, baseSizeKg: 10.0, price: 10000, sellPrice: 12000, icon: '🌌' },
+  { name: 'Infinity Star', rarity: 'exotic', baseGrowthTime: 720, baseSizeKg: 5.0, price: 20000, sellPrice: 24000, icon: '⭐' },
 ];
 
 // Base gear templates - plot upgrade price is dynamic
@@ -216,6 +217,9 @@ export default function GamifiedGarden() {
   const [shopGear, setShopGear] = useState<Gear[]>([]);
   const [hasSprinkler, setHasSprinkler] = useState<string | null>(null); // null = none, or name of sprinkler
   const [selectedSeed, setSelectedSeed] = useState<Seed | null>(null);
+  const [selectedItem, setSelectedItem] = useState<Gear | null>(null); // For consumable items
+  const [selectedPlant, setSelectedPlant] = useState<Plot | null>(null); // For plant info display
+  const [isWateringMode, setIsWateringMode] = useState(false); // When watering can is selected
   
   // Restock timers
   const [seedRestockTime, setSeedRestockTime] = useState(Date.now() + 60 * 60 * 1000);
@@ -229,24 +233,30 @@ export default function GamifiedGarden() {
   useEffect(() => {
     const saved = localStorage.getItem('garden-state-v4');
     if (saved) {
-      const parsed = JSON.parse(saved);
-      setXp(parsed.xp ?? 0);
-      setMoney(parsed.money ?? 50);
-      const savedNumPots = parsed.numPots ?? MIN_POTS;
-      setNumPots(savedNumPots);
-      setPlots(parsed.plots ?? Array.from({ length: savedNumPots }, (_, i) => ({ id: `plot-${i}` })));
-      setInventory(parsed.inventory ?? { seeds: [], gear: [] });
-      setHasSprinkler(parsed.hasSprinkler ?? null);
-      setSeedRestockTime(parsed.seedRestockTime ?? Date.now() + 60 * 60 * 1000);
-      setGearRestockTime(parsed.gearRestockTime ?? Date.now() + 15 * 60 * 1000);
+      try {
+        const parsed = JSON.parse(saved);
+        setXp(parsed.xp ?? 0);
+        setMoney(parsed.money ?? 50);
+        const savedNumPots = parsed.numPots ?? MIN_POTS;
+        setNumPots(savedNumPots);
+        setPlots(parsed.plots ?? Array.from({ length: savedNumPots }, (_, i) => ({ id: `plot-${i}` })));
+        setInventory(parsed.inventory ?? { seeds: [], gear: [] });
+        setHasSprinkler(parsed.hasSprinkler ?? null);
+        setSeedRestockTime(parsed.seedRestockTime ?? Date.now() + 60 * 60 * 1000);
+        setGearRestockTime(parsed.gearRestockTime ?? Date.now() + 15 * 60 * 1000);
+        setSelectedSeed(parsed.selectedSeed ?? null);
+        setSelectedItem(parsed.selectedItem ?? null);
+      } catch (e) {
+        console.error('Failed to load garden state:', e);
+      }
     }
   }, []);
 
   // Save to localStorage
   useEffect(() => {
-    const state = { xp, money, numPots, plots, inventory, hasSprinkler, seedRestockTime, gearRestockTime };
+    const state = { xp, money, numPots, plots, inventory, hasSprinkler, seedRestockTime, gearRestockTime, selectedSeed, selectedItem };
     localStorage.setItem('garden-state-v4', JSON.stringify(state));
-  }, [xp, money, numPots, plots, inventory, hasSprinkler, seedRestockTime, gearRestockTime]);
+  }, [xp, money, numPots, plots, inventory, hasSprinkler, seedRestockTime, gearRestockTime, selectedSeed, selectedItem]);
 
   // Timer tick for countdowns
   useEffect(() => {
@@ -408,10 +418,16 @@ export default function GamifiedGarden() {
           setPlots(p => [...p, { id: `plot-${newNumPots - 1}` }]);
           toast({ title: 'Plot Upgraded!', description: `You now have ${newNumPots} pots` });
         } else {
-          toast({ title: 'Max pots reached', description: 'You already have 9 pots', variant: 'destructive' });
+          toast({ title: 'Max pots reached', description: `You already have ${MAX_POTS} pots`, variant: 'destructive' });
           setMoney(m => m + gear.price); // Refund
           return;
         }
+      } else if (gear.type === 'wateringCan') {
+        // Add consumable watering can with uses
+        const wateringCanWithUses = { ...gear, uses: 10 }; // 10 uses per watering can
+        setInventory(inv => ({ ...inv, gear: [...inv.gear, wateringCanWithUses] }));
+        toast({ title: 'Purchased', description: `${gear.name} (10 uses)` });
+        return;
       }
       
       setInventory(inv => ({ ...inv, gear: [...inv.gear, gear] }));
@@ -518,20 +534,97 @@ export default function GamifiedGarden() {
             plots={plots}
             selectedSeed={selectedSeed}
             onPlotClick={(plotId, action) => {
+              const plot = plots.find(p => p.id === plotId);
+              
               if (action === 'plant' && selectedSeed) {
                 plantSeed(plotId, selectedSeed);
               } else if (action === 'water') {
-                waterPlant(plotId);
+                // Show plant info instead of auto-watering
+                if (plot?.plant) {
+                  setSelectedPlant(plot);
+                }
               } else if (action === 'harvest') {
                 harvestPlant(plotId);
+              } else if (!plot?.plant) {
+                // Click on empty plot - show plant info if available
+                setSelectedPlant(null);
               }
             }}
             formatTime={formatTime}
           />
           <p className="text-xs text-muted-foreground mt-3 text-center">
-            Click pots to plant, water, or harvest
+            {isWateringMode ? '🚿 Click a plant to water it' : 'Click pots to plant, view plant info, or harvest'}
           </p>
         </div>
+
+        {/* Plant Info Display */}
+        {selectedPlant && selectedPlant.plant && (
+          <div className="bg-card rounded-xl shadow-sm p-4 border">
+            <h3 className="font-bold mb-3 flex items-center gap-2 text-foreground">
+              {selectedPlant.plant.icon} {selectedPlant.plant.seedType}
+            </h3>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Growth:</span>
+                <span>{formatTime(selectedPlant.plant.growthTimeMs - (Date.now() - selectedPlant.plant.plantedAt))}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Size:</span>
+                <span>{selectedPlant.plant.sizeKg.toFixed(1)}kg</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Sell Price:</span>
+                <span>{selectedPlant.plant.sellPrice} coins</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Variant:</span>
+                <span className={`capitalize ${selectedPlant.plant.variant === 'golden' ? 'text-yellow-500' : selectedPlant.plant.variant === 'rainbow' ? 'text-purple-500' : ''}`}>
+                  {selectedPlant.plant.variant}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Status:</span>
+                <span className={selectedPlant.plant.isWilted ? 'text-red-500' : 'text-green-500'}>
+                  {selectedPlant.plant.isWilted ? 'Wilting' : 'Healthy'}
+                </span>
+              </div>
+            </div>
+            <div className="mt-3 flex gap-2">
+              {isWateringMode && selectedItem?.type === 'wateringCan' && selectedItem.uses && selectedItem.uses > 0 && (
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    waterPlant(selectedPlant.id);
+                    // Use one watering can
+                    setInventory(inv => ({
+                      ...inv,
+                      gear: inv.gear.map(g => 
+                        g.id === selectedItem.id 
+                          ? { ...g, uses: (g.uses || 1) - 1 }
+                          : g
+                      ).filter(g => g.uses === undefined || g.uses > 0)
+                    }));
+                    setSelectedItem(null);
+                    setIsWateringMode(false);
+                    setSelectedPlant(null);
+                  }}
+                  className="flex-1"
+                >
+                  <Droplets className="w-4 h-4 mr-1" />
+                  Water ({selectedItem.uses} left)
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setSelectedPlant(null)}
+                className="flex-1"
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Seed Inventory */}
         <div className="bg-card rounded-xl shadow-sm p-4 border">
@@ -563,6 +656,54 @@ export default function GamifiedGarden() {
           {selectedSeed && (
             <p className="mt-2 text-xs text-muted-foreground">
               Selected: {selectedSeed.icon} {selectedSeed.name} - Click an empty pot to plant
+            </p>
+          )}
+        </div>
+
+        {/* Items Inventory */}
+        <div className="bg-card rounded-xl shadow-sm p-4 border">
+          <h3 className="font-bold mb-2 flex items-center gap-2 text-foreground">
+            <Wrench className="w-5 h-5" /> My Items ({inventory.gear.filter(g => g.type === 'wateringCan').length})
+          </h3>
+          {inventory.gear.filter(g => g.type === 'wateringCan').length === 0 ? (
+            <p className="text-sm text-muted-foreground">No items. Buy some from the shop!</p>
+          ) : (
+            <ScrollArea className="h-20">
+              <div className="flex gap-2 flex-wrap pr-4">
+                {inventory.gear.filter(g => g.type === 'wateringCan').map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      if (isWateringMode && selectedItem?.id === item.id) {
+                        // Deselect if already selected
+                        setSelectedItem(null);
+                        setIsWateringMode(false);
+                      } else {
+                        // Select item for use
+                        setSelectedItem(item);
+                        setIsWateringMode(true);
+                        setSelectedSeed(null); // Deselect seed when selecting item
+                      }
+                    }}
+                    className={`px-3 py-1.5 rounded border text-xs flex items-center gap-1 transition-colors ${
+                      selectedItem?.id === item.id && isWateringMode
+                        ? 'bg-blue-100 border-blue-500 dark:bg-blue-900 dark:border-blue-400' 
+                        : 'bg-secondary hover:bg-secondary/80'
+                    }`}
+                  >
+                    <Droplets className="w-3 h-3" />
+                    <span>{item.name}</span>
+                    {item.uses && (
+                      <span className="text-xs text-muted-foreground">({item.uses})</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </ScrollArea>
+          )}
+          {isWateringMode && selectedItem && (
+            <p className="mt-2 text-xs text-blue-600">
+              🚿 Watering can selected - Click a plant to water it
             </p>
           )}
         </div>
