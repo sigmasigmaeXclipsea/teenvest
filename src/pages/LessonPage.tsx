@@ -337,11 +337,35 @@ const LessonPage = () => {
                 </CardContent>
               </Card>
             ) : activeView === 'game' ? (
-              <BeanstalkGame
-                moduleId={moduleId || ''}
-                title={currentModule?.title || ''}
-                content={currentModule?.content || ''}
-              />
+              <Card className="text-center p-8">
+                <div className="mb-6">
+                  <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span className="text-3xl">🌱</span>
+                  </div>
+                  <h3 className="text-xl font-semibold text-green-800 dark:text-green-200 mb-2">
+                    Beanstalk Adventure
+                  </h3>
+                  <p className="text-green-600 dark:text-green-300 mb-6 max-w-md mx-auto">
+                    Test your knowledge with our interactive climbing game! Answer questions correctly to climb the beanstalk and reach the golden castle.
+                  </p>
+                </div>
+                
+                <Button 
+                  onClick={() => setIsGameModalOpen(true)}
+                  className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium px-8 py-3 text-lg"
+                  size="lg"
+                >
+                  🎮 Start Adventure
+                </Button>
+                
+                <div className="mt-6 text-sm text-green-500 dark:text-green-400">
+                  <div className="flex items-center justify-center gap-4">
+                    <span>✨ Interactive Questions</span>
+                    <span>🏆 Score Points</span>
+                    <span>🎯 Reach the Top</span>
+                  </div>
+                </div>
+              </Card>
             ) : showResults ? (
               <Card>
                 <CardContent className="p-8">
