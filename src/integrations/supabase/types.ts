@@ -77,33 +77,6 @@ export type Database = {
         }
         Relationships: []
       }
-      garden_updates: {
-        Row: {
-          id: string
-          user_email: string
-          money: number | null
-          xp: number | null
-          updated_at: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_email: string
-          money?: number | null
-          xp?: number | null
-          updated_at?: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_email?: string
-          money?: number | null
-          xp?: number | null
-          updated_at?: string
-          created_at?: string
-        }
-        Relationships: []
-      }
       holdings: {
         Row: {
           average_cost: number
@@ -566,10 +539,6 @@ export type Database = {
         Args: { _email: string; _new_balance: number }
         Returns: Json
       }
-      admin_update_cash_balance: {
-        Args: { _email: string; _new_balance: number }
-        Returns: Json
-      }
       execute_trade: {
         Args: {
           p_company_name: string
@@ -625,7 +594,6 @@ export type Database = {
           total_amount: number
           trade_type: string
           user_email: string
-          user_name: string
         }[]
       }
       get_user_id_by_email: { Args: { _email: string }; Returns: string }
