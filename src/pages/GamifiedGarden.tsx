@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Droplets, Sprout, Coins, Clock, Package, Wrench, Trees, Star, Zap, Lightbulb, ArrowRightLeft } from 'lucide-react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import { Droplets, Sprout, Coins, Clock, Package, Wrench, Zap, Lightbulb, ArrowRightLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/contexts/SettingsContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import Garden3D from '@/components/Garden3D';
 
 // Types
 interface Plant {
@@ -17,6 +18,7 @@ interface Plant {
   variant: 'normal' | 'golden' | 'rainbow';
   sizeKg: number;
   sellPrice: number;
+  icon?: string;
 }
 
 interface Plot {
@@ -44,7 +46,7 @@ interface Gear {
   quantity?: number;
 }
 
-const GRID_SIZE = 3;
+const NUM_POTS = 3; // Fixed 3 pots for 3D garden
 const WILT_THRESHOLD = 10 * 60 * 1000; // 10 minutes without water
 const WATER_REDUCTION = 0.5; // watering cuts remaining time by 50%
 const XP_TO_MONEY_RATE = 2; // 1 XP = 2 coins
@@ -66,7 +68,6 @@ const SEED_TEMPLATES: Omit<Seed, 'id'>[] = [
 const GEAR_TEMPLATES: Omit<Gear, 'id'>[] = [
   { name: 'Watering Can', type: 'wateringCan', effect: 'Reduces growth time by 50%', price: 150 },
   { name: 'Sprinkler', type: 'sprinkler', effect: 'Increases golden/rainbow chance', price: 400 },
-  { name: 'Plot Upgrade', type: 'plotUpgrade', effect: 'Expands garden grid', price: 500 },
 ];
 
 // Utility
@@ -109,9 +110,8 @@ export default function GamifiedGarden() {
   const { settings } = useSettings();
   const { toast } = useToast();
   const [xp, setXp] = useState(0);
-  const [money, setMoney] = useState(50); // Start with 500 coins
-  const [gridSize, setGridSize] = useState(GRID_SIZE);
-  const [plots, setPlots] = useState<Plot[]>(() => Array.from({ length: GRID_SIZE * GRID_SIZE }, (_, i) => ({ id: `plot-${i}` })));
+  const [money, setMoney] = useState(50);
+  const [plots, setPlots] = useState<Plot[]>(() => Array.from({ length: NUM_POTS }, (_, i) => ({ id: `plot-${i}` })));
   const [inventory, setInventory] = useState({ seeds: [] as Seed[], gear: [] as Gear[] });
   const [shopSeeds, setShopSeeds] = useState<Seed[]>([]);
   const [shopGear, setShopGear] = useState<Gear[]>([]);
@@ -128,13 +128,12 @@ export default function GamifiedGarden() {
 
   // Load from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem('garden-state-v2');
+    const saved = localStorage.getItem('garden-state-v3');
     if (saved) {
       const parsed = JSON.parse(saved);
       setXp(parsed.xp ?? 0);
-      setMoney(parsed.money ?? 500);
-      setGridSize(parsed.gridSize ?? GRID_SIZE);
-      setPlots(parsed.plots ?? Array.from({ length: (parsed.gridSize ?? GRID_SIZE) * (parsed.gridSize ?? GRID_SIZE) }, (_, i) => ({ id: `plot-${i}` })));
+      setMoney(parsed.money ?? 50);
+      setPlots(parsed.plots ?? Array.from({ length: NUM_POTS }, (_, i) => ({ id: `plot-${i}` })));
       setInventory(parsed.inventory ?? { seeds: [], gear: [] });
       setHasSprinkler(parsed.hasSprinkler ?? false);
       setSeedRestockTime(parsed.seedRestockTime ?? Date.now() + 60 * 60 * 1000);
@@ -144,9 +143,9 @@ export default function GamifiedGarden() {
 
   // Save to localStorage
   useEffect(() => {
-    const state = { xp, money, gridSize, plots, inventory, hasSprinkler, seedRestockTime, gearRestockTime };
-    localStorage.setItem('garden-state-v2', JSON.stringify(state));
-  }, [xp, money, gridSize, plots, inventory, hasSprinkler, seedRestockTime, gearRestockTime]);
+    const state = { xp, money, plots, inventory, hasSprinkler, seedRestockTime, gearRestockTime };
+    localStorage.setItem('garden-state-v3', JSON.stringify(state));
+  }, [xp, money, plots, inventory, hasSprinkler, seedRestockTime, gearRestockTime]);
 
   // Timer tick for countdowns
   useEffect(() => {
@@ -266,11 +265,6 @@ export default function GamifiedGarden() {
     if (money >= gear.price) {
       setMoney(m => m - gear.price);
       if (gear.type === 'sprinkler') setHasSprinkler(true);
-      if (gear.type === 'plotUpgrade' && gridSize < 6) {
-        const newSize = gridSize + 1;
-        setGridSize(newSize);
-        setPlots(Array.from({ length: newSize * newSize }, (_, i) => ({ id: `plot-${i}` })));
-      }
       setInventory(inv => ({ ...inv, gear: [...inv.gear, gear] }));
       toast({ title: 'Purchased', description: gear.name });
     } else {
@@ -361,56 +355,32 @@ export default function GamifiedGarden() {
           </div>
         </div>
 
-        {/* Tip */}
-        <div className="bg-muted/50 rounded-lg p-3 flex items-center gap-2 border">
-          <Lightbulb className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-          <span className="text-sm text-muted-foreground">Complete lessons to earn XP, then exchange for coins to buy seeds!</span>
-        </div>
-
-        {/* Garden Grid */}
+        {/* 3D Garden */}
         <div className="bg-card rounded-xl shadow-sm p-4 md:p-6 border">
-          <h2 className="text-lg font-bold mb-4 text-foreground">Garden ({gridSize}x{gridSize})</h2>
-          <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))`, maxWidth: `${gridSize * 56}px` }}>
-            {plots.map(plot => {
-              const plant = plot.plant;
-              const isReady = plant && Date.now() - plant.plantedAt >= plant.growthTimeMs;
-              const timeLeft = plant ? Math.max(0, plant.growthTimeMs - (Date.now() - plant.plantedAt)) : 0;
-              const progress = plant ? Math.min(100, ((Date.now() - plant.plantedAt) / plant.growthTimeMs) * 100) : 0;
-              const color = plant ? (plant.variant === 'rainbow' ? 'bg-gradient-to-br from-red-400 via-yellow-400 to-blue-400' : plant.variant === 'golden' ? 'bg-gradient-to-br from-yellow-300 to-amber-400' : 'bg-green-600') : 'bg-muted';
-              
-              return (
-                <div
-                  key={plot.id}
-                  className={`w-12 h-12 rounded-md border border-dashed border-border flex flex-col items-center justify-center cursor-pointer transition-colors ${plant ? (isReady ? color : 'bg-green-600') : 'bg-muted'} hover:border-green-500`}
-                  onClick={() => {
-                    if (!plant && selectedSeed) plantSeed(plot.id, selectedSeed);
-                    if (plant && !isReady) waterPlant(plot.id);
-                    if (plant && isReady) harvestPlant(plot.id);
-                  }}
-                >
-                  {plant ? (
-                    <>
-                      <div className="w-full px-0.5">
-                        <div className="relative w-full h-0.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                          <div 
-                            className="absolute left-0 top-0 h-full bg-green-400 rounded-full transition-all duration-1000"
-                            style={{ width: `${progress}%` }}
-                          />
-                        </div>
-                      </div>
-                      <Trees className={`w-4 h-4 ${isReady ? 'text-white' : 'text-green-100'}`} />
-                      <span className="text-[8px] text-white text-center leading-tight">
-                        {isReady ? '✓' : formatTime(timeLeft)}
-                      </span>
-                      {plant.isWilted && <span className="text-[8px]">💧</span>}
-                    </>
-                  ) : (
-                    <span className="text-[8px] text-muted-foreground">+</span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          <h2 className="text-lg font-bold mb-4 text-foreground">Garden (3 Pots)</h2>
+          <Suspense fallback={
+            <div className="w-full h-[400px] rounded-xl bg-muted flex items-center justify-center">
+              <span className="text-muted-foreground">Loading 3D Garden...</span>
+            </div>
+          }>
+            <Garden3D 
+              plots={plots}
+              selectedSeed={selectedSeed}
+              onPlotClick={(plotId, action) => {
+                if (action === 'plant' && selectedSeed) {
+                  plantSeed(plotId, selectedSeed);
+                } else if (action === 'water') {
+                  waterPlant(plotId);
+                } else if (action === 'harvest') {
+                  harvestPlant(plotId);
+                }
+              }}
+              formatTime={formatTime}
+            />
+          </Suspense>
+          <p className="text-xs text-muted-foreground mt-3 text-center">
+            Click pots to plant, water, or harvest • Drag to rotate view
+          </p>
         </div>
 
         {/* Seed Inventory */}
@@ -508,7 +478,6 @@ export default function GamifiedGarden() {
             <div className="space-y-2">
               {shopGear.map(gear => {
                 const isOwned = gear.type === 'sprinkler' && hasSprinkler;
-                const maxGrid = gear.type === 'plotUpgrade' && gridSize >= 6;
                 return (
                   <div key={gear.id} className="flex items-center justify-between p-2 border rounded bg-secondary/30">
                     <div>
@@ -517,12 +486,12 @@ export default function GamifiedGarden() {
                     </div>
                     <Button 
                       onClick={() => buyGear(gear)} 
-                      disabled={money < gear.price || isOwned || maxGrid} 
+                      disabled={money < gear.price || isOwned} 
                       size="sm"
                       variant="secondary"
                       className="text-xs"
                     >
-                      {isOwned ? 'Owned' : maxGrid ? 'Max' : (
+                      {isOwned ? 'Owned' : (
                         <>
                           <Coins className="w-3 h-3 mr-1" />
                           {gear.price}
