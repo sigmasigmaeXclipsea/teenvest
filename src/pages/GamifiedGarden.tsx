@@ -29,7 +29,7 @@ interface Plot {
 interface Seed {
   id: string;
   name: string;
-  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'mythic';
+  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'mythic' | 'legendary' | 'exotic';
   baseGrowthTime: number; // minutes
   baseSizeKg: number;
   price: number;
@@ -61,7 +61,7 @@ function getPlotUpgradePrice(currentPots: number): number {
   return Math.round(basePrice * Math.pow(exponent, upgradeIndex));
 }
 
-// 35 different seeds ordered by price (cheapest to most expensive) with longer growth times and RNG sizes
+// 40 different seeds ordered by price (cheapest to most expensive) with longer growth times and RNG sizes
 const SEED_TEMPLATES: Omit<Seed, 'id'>[] = [
   // Common (10 seeds)
   { name: 'Radish', rarity: 'common', baseGrowthTime: 15, baseSizeKg: 0.2, price: 10, sellPrice: 18, icon: '🌱' },
@@ -105,8 +105,17 @@ const SEED_TEMPLATES: Omit<Seed, 'id'>[] = [
   { name: 'Durian', rarity: 'epic', baseGrowthTime: 140, baseSizeKg: 3.0, price: 650, sellPrice: 1400, icon: '🦥' },
   { name: 'Jackfruit', rarity: 'epic', baseGrowthTime: 160, baseSizeKg: 4.0, price: 750, sellPrice: 1600, icon: '🟡' },
   
-  // Mythic (1 seed) - The ultimate fruit!
+  // Mythic (1 seed) - High tier but not the best
   { name: 'Dragon Fruit', rarity: 'mythic', baseGrowthTime: 180, baseSizeKg: 3.0, price: 2000, sellPrice: 5000, icon: '🐉' },
+  
+  // Legendary (3 seeds) - Above Dragon Fruit
+  { name: 'Phoenix Feather', rarity: 'legendary', baseGrowthTime: 200, baseSizeKg: 2.0, price: 3000, sellPrice: 8000, icon: '🔥' },
+  { name: 'Unicorn Tear', rarity: 'legendary', baseGrowthTime: 220, baseSizeKg: 1.5, price: 4000, sellPrice: 10000, icon: '🦄' },
+  { name: 'Thunder Crystal', rarity: 'legendary', baseGrowthTime: 240, baseSizeKg: 4.0, price: 5000, sellPrice: 12000, icon: '⚡' },
+  
+  // Exotic (2 seeds) - The absolute best!
+  { name: 'Cosmic Melon', rarity: 'exotic', baseGrowthTime: 300, baseSizeKg: 10.0, price: 10000, sellPrice: 25000, icon: '🌌' },
+  { name: 'Infinity Star', rarity: 'exotic', baseGrowthTime: 360, baseSizeKg: 5.0, price: 20000, sellPrice: 50000, icon: '⭐' },
 ];
 
 // Base gear templates - plot upgrade price is dynamic
@@ -189,6 +198,8 @@ function getRarityColor(rarity: string) {
     case 'rare': return 'text-blue-600 bg-blue-100 dark:bg-blue-900';
     case 'epic': return 'text-purple-600 bg-purple-100 dark:bg-purple-900';
     case 'mythic': return 'text-red-600 bg-red-100 dark:bg-red-900 border-2 border-red-400 shadow-lg shadow-red-500/50';
+    case 'legendary': return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900 border-2 border-yellow-400 shadow-lg shadow-yellow-500/50 animate-pulse';
+    case 'exotic': return 'text-cyan-600 bg-gradient-to-r from-cyan-100 to-blue-100 dark:from-cyan-900 dark:to-blue-900 border-2 border-cyan-400 shadow-lg shadow-cyan-500/50 animate-pulse';
     default: return 'text-gray-500 bg-gray-100';
   }
 }
@@ -264,7 +275,7 @@ export default function GamifiedGarden() {
   }, [now, seedRestockTime, gearRestockTime]);
 
   function restockSeeds() {
-    // Show all 35 seeds sorted by price
+    // Show all 40 seeds sorted by price
     const seeds = SEED_TEMPLATES.map(template => ({ ...template, id: generateId() }));
     setShopSeeds(seeds);
   }
