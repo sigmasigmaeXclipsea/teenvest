@@ -11,6 +11,7 @@ interface Plant {
   variant: 'normal' | 'golden' | 'rainbow';
   sizeKg: number;
   sellPrice: number;
+  basePrice: number; // Store base price for tooltip display
   icon?: string;
 }
 
@@ -540,8 +541,12 @@ function PlotPot({
                 <span>{plant.sizeKg.toFixed(1)}kg</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Value:</span>
-                <span>{plant.sellPrice} coins</span>
+                <span className="text-muted-foreground">Base Value:</span>
+                <span>{plant.basePrice} coins</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Actual Value:</span>
+                <span className="text-green-600">{plant.sellPrice} coins</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Type:</span>

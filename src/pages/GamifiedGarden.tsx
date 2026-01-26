@@ -18,6 +18,7 @@ interface Plant {
   variant: 'normal' | 'golden' | 'rainbow';
   sizeKg: number;
   sellPrice: number;
+  basePrice: number; // Store base price for tooltip display
   icon?: string;
 }
 
@@ -194,11 +195,11 @@ function calculateSize(base: number): number {
 
 function calculateSellPrice(basePrice: number, actualSize: number, baseSize: number): number {
   // Calculate sell price based on actual size compared to base size
-  const sizeRatio = actualSize / baseSize;
+  // RNG size should only increase value, never decrease below base price
+  const sizeRatio = Math.max(1, actualSize / baseSize); // Minimum 1x multiplier
   const dynamicPrice = Math.round(basePrice * sizeRatio);
   
-  // Ensure minimum price is at least 1 coin
-  return Math.max(1, dynamicPrice);
+  return dynamicPrice; // Always at least base price
 }
 
 function getRarityColor(rarity: string) {
@@ -334,6 +335,8 @@ export default function GamifiedGarden() {
           variant: 'normal',
           sizeKg: actualSize,
           sellPrice: calculateSellPrice(seed.sellPrice, actualSize, seed.baseSizeKg),
+          basePrice: seed.sellPrice, // Store base price for tooltip
+          icon: seed.icon,
         };
         setInventory(inv => ({ ...inv, seeds: inv.seeds.filter(s => s.id !== seed.id) }));
         return { ...plot, plant };
