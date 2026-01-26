@@ -36,7 +36,7 @@ const PlantVisual = ({
 }: { 
   seedType: string; 
   progress: number; 
-  variant: 'normal' | 'golden' | 'rainbow';
+  variant: 'normal' | 'golden' | 'rainbow' | 'frost' | 'candy' | 'thunder';
   isWilted: boolean;
 }) => {
   const stage = progress < 0.33 ? 'sprout' : progress < 0.66 ? 'growing' : progress < 1 ? 'mature' : 'ready';
@@ -46,6 +46,9 @@ const PlantVisual = ({
   const getVariantFilter = () => {
     if (variant === 'golden') return 'sepia(100%) saturate(300%) hue-rotate(10deg) brightness(1.1)';
     if (variant === 'rainbow') return 'saturate(200%) hue-rotate(90deg)';
+    if (variant === 'frost') return 'hue-rotate(180deg) saturate(150%) brightness(1.2)';
+    if (variant === 'candy') return 'hue-rotate(320deg) saturate(200%) brightness(1.1)';
+    if (variant === 'thunder') return 'sepia(50%) saturate(300%) hue-rotate(45deg) brightness(1.3)';
     return 'none';
   };
   
