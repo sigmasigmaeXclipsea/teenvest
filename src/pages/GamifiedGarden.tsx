@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useCallback, Suspense } from 'react';
-import { Droplets, Sprout, Coins, Clock, Package, Wrench, Zap, Lightbulb, ArrowRightLeft } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Droplets, Sprout, Coins, Clock, Package, Wrench, Zap, Lightbulb, ArrowRightLeft, Grid3X3 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/contexts/SettingsContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import Garden3D from '@/components/Garden3D';
+import Garden2D from '@/components/Garden2D';
 
 // Types
 interface Plant {
@@ -46,10 +46,12 @@ interface Gear {
   quantity?: number;
 }
 
-const NUM_POTS = 3; // Fixed 3 pots for 3D garden
+const MIN_POTS = 3;
+const MAX_POTS = 9;
 const WILT_THRESHOLD = 10 * 60 * 1000; // 10 minutes without water
 const WATER_REDUCTION = 0.5; // watering cuts remaining time by 50%
 const XP_TO_MONEY_RATE = 2; // 1 XP = 2 coins
+const PLOT_UPGRADE_PRICE = 500;
 
 // 10 different seeds ordered by price (cheapest to most expensive)
 const SEED_TEMPLATES: Omit<Seed, 'id'>[] = [
@@ -68,6 +70,7 @@ const SEED_TEMPLATES: Omit<Seed, 'id'>[] = [
 const GEAR_TEMPLATES: Omit<Gear, 'id'>[] = [
   { name: 'Watering Can', type: 'wateringCan', effect: 'Reduces growth time by 50%', price: 150 },
   { name: 'Sprinkler', type: 'sprinkler', effect: 'Increases golden/rainbow chance', price: 400 },
+  { name: 'Plot Upgrade', type: 'plotUpgrade', effect: 'Adds one more pot (max 9)', price: PLOT_UPGRADE_PRICE },
 ];
 
 // Utility
@@ -111,7 +114,8 @@ export default function GamifiedGarden() {
   const { toast } = useToast();
   const [xp, setXp] = useState(0);
   const [money, setMoney] = useState(50);
-  const [plots, setPlots] = useState<Plot[]>(() => Array.from({ length: NUM_POTS }, (_, i) => ({ id: `plot-${i}` })));
+  const [numPots, setNumPots] = useState(MIN_POTS);
+  const [plots, setPlots] = useState<Plot[]>(() => Array.from({ length: MIN_POTS }, (_, i) => ({ id: `plot-${i}` })));
   const [inventory, setInventory] = useState({ seeds: [] as Seed[], gear: [] as Gear[] });
   const [shopSeeds, setShopSeeds] = useState<Seed[]>([]);
   const [shopGear, setShopGear] = useState<Gear[]>([]);
@@ -128,12 +132,14 @@ export default function GamifiedGarden() {
 
   // Load from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem('garden-state-v3');
+    const saved = localStorage.getItem('garden-state-v4');
     if (saved) {
       const parsed = JSON.parse(saved);
       setXp(parsed.xp ?? 0);
       setMoney(parsed.money ?? 50);
-      setPlots(parsed.plots ?? Array.from({ length: NUM_POTS }, (_, i) => ({ id: `plot-${i}` })));
+      const savedNumPots = parsed.numPots ?? MIN_POTS;
+      setNumPots(savedNumPots);
+      setPlots(parsed.plots ?? Array.from({ length: savedNumPots }, (_, i) => ({ id: `plot-${i}` })));
       setInventory(parsed.inventory ?? { seeds: [], gear: [] });
       setHasSprinkler(parsed.hasSprinkler ?? false);
       setSeedRestockTime(parsed.seedRestockTime ?? Date.now() + 60 * 60 * 1000);
@@ -143,9 +149,9 @@ export default function GamifiedGarden() {
 
   // Save to localStorage
   useEffect(() => {
-    const state = { xp, money, plots, inventory, hasSprinkler, seedRestockTime, gearRestockTime };
-    localStorage.setItem('garden-state-v3', JSON.stringify(state));
-  }, [xp, money, plots, inventory, hasSprinkler, seedRestockTime, gearRestockTime]);
+    const state = { xp, money, numPots, plots, inventory, hasSprinkler, seedRestockTime, gearRestockTime };
+    localStorage.setItem('garden-state-v4', JSON.stringify(state));
+  }, [xp, money, numPots, plots, inventory, hasSprinkler, seedRestockTime, gearRestockTime]);
 
   // Timer tick for countdowns
   useEffect(() => {
@@ -264,9 +270,26 @@ export default function GamifiedGarden() {
   function buyGear(gear: Gear) {
     if (money >= gear.price) {
       setMoney(m => m - gear.price);
-      if (gear.type === 'sprinkler') setHasSprinkler(true);
+      
+      if (gear.type === 'sprinkler') {
+        setHasSprinkler(true);
+      } else if (gear.type === 'plotUpgrade') {
+        if (numPots < MAX_POTS) {
+          const newNumPots = numPots + 1;
+          setNumPots(newNumPots);
+          setPlots(p => [...p, { id: `plot-${newNumPots - 1}` }]);
+          toast({ title: 'Plot Upgraded!', description: `You now have ${newNumPots} pots` });
+        } else {
+          toast({ title: 'Max pots reached', description: 'You already have 9 pots', variant: 'destructive' });
+          setMoney(m => m + gear.price); // Refund
+          return;
+        }
+      }
+      
       setInventory(inv => ({ ...inv, gear: [...inv.gear, gear] }));
-      toast({ title: 'Purchased', description: gear.name });
+      if (gear.type !== 'plotUpgrade') {
+        toast({ title: 'Purchased', description: gear.name });
+      }
     } else {
       toast({ title: 'Not enough coins', description: `Need ${gear.price} coins`, variant: 'destructive' });
     }
@@ -306,8 +329,6 @@ export default function GamifiedGarden() {
   const seedRestockRemaining = Math.max(0, seedRestockTime - now);
   const gearRestockRemaining = Math.max(0, gearRestockTime - now);
 
-  const isDark = settings.darkMode;
-
   return (
     <div className="p-4 md:p-6">
       <div className="max-w-6xl mx-auto space-y-4">
@@ -324,6 +345,10 @@ export default function GamifiedGarden() {
             <div className="flex items-center gap-1 px-3 py-1.5 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
               <Coins className="w-4 h-4 text-amber-600" />
               <span className="font-semibold text-sm text-foreground">{money.toLocaleString()}</span>
+            </div>
+            <div className="flex items-center gap-1 px-3 py-1.5 bg-green-100 dark:bg-green-900/30 rounded-lg">
+              <Grid3X3 className="w-4 h-4 text-green-600" />
+              <span className="font-semibold text-sm text-foreground">{numPots}/{MAX_POTS}</span>
             </div>
           </div>
         </div>
@@ -355,31 +380,28 @@ export default function GamifiedGarden() {
           </div>
         </div>
 
-        {/* 3D Garden */}
+        {/* 2D Garden */}
         <div className="bg-card rounded-xl shadow-sm p-4 md:p-6 border">
-          <h2 className="text-lg font-bold mb-4 text-foreground">Garden (3 Pots)</h2>
-          <Suspense fallback={
-            <div className="w-full h-[400px] rounded-xl bg-muted flex items-center justify-center">
-              <span className="text-muted-foreground">Loading 3D Garden...</span>
-            </div>
-          }>
-            <Garden3D 
-              plots={plots}
-              selectedSeed={selectedSeed}
-              onPlotClick={(plotId, action) => {
-                if (action === 'plant' && selectedSeed) {
-                  plantSeed(plotId, selectedSeed);
-                } else if (action === 'water') {
-                  waterPlant(plotId);
-                } else if (action === 'harvest') {
-                  harvestPlant(plotId);
-                }
-              }}
-              formatTime={formatTime}
-            />
-          </Suspense>
+          <h2 className="text-lg font-bold mb-4 text-foreground flex items-center gap-2">
+            <Sprout className="w-5 h-5 text-green-500" />
+            Garden ({numPots} Pots)
+          </h2>
+          <Garden2D 
+            plots={plots}
+            selectedSeed={selectedSeed}
+            onPlotClick={(plotId, action) => {
+              if (action === 'plant' && selectedSeed) {
+                plantSeed(plotId, selectedSeed);
+              } else if (action === 'water') {
+                waterPlant(plotId);
+              } else if (action === 'harvest') {
+                harvestPlant(plotId);
+              }
+            }}
+            formatTime={formatTime}
+          />
           <p className="text-xs text-muted-foreground mt-3 text-center">
-            Click pots to plant, water, or harvest • Drag to rotate view
+            Click pots to plant, water, or harvest
           </p>
         </div>
 
@@ -412,7 +434,7 @@ export default function GamifiedGarden() {
           )}
           {selectedSeed && (
             <p className="mt-2 text-xs text-muted-foreground">
-              Selected: {selectedSeed.icon} {selectedSeed.name} - Click an empty plot to plant
+              Selected: {selectedSeed.icon} {selectedSeed.name} - Click an empty pot to plant
             </p>
           )}
         </div>
@@ -478,20 +500,30 @@ export default function GamifiedGarden() {
             <div className="space-y-2">
               {shopGear.map(gear => {
                 const isOwned = gear.type === 'sprinkler' && hasSprinkler;
+                const isMaxPlots = gear.type === 'plotUpgrade' && numPots >= MAX_POTS;
+                const disabled = money < gear.price || isOwned || isMaxPlots;
+                
                 return (
                   <div key={gear.id} className="flex items-center justify-between p-2 border rounded bg-secondary/30">
                     <div>
-                      <div className="font-semibold text-sm text-foreground">{gear.name}</div>
+                      <div className="font-semibold text-sm text-foreground flex items-center gap-2">
+                        {gear.name}
+                        {gear.type === 'plotUpgrade' && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 dark:bg-green-900 text-green-600">
+                            {numPots}/{MAX_POTS}
+                          </span>
+                        )}
+                      </div>
                       <div className="text-xs text-muted-foreground">{gear.effect}</div>
                     </div>
                     <Button 
                       onClick={() => buyGear(gear)} 
-                      disabled={money < gear.price || isOwned} 
+                      disabled={disabled} 
                       size="sm"
                       variant="secondary"
                       className="text-xs"
                     >
-                      {isOwned ? 'Owned' : (
+                      {isOwned ? 'Owned' : isMaxPlots ? 'Maxed' : (
                         <>
                           <Coins className="w-3 h-3 mr-1" />
                           {gear.price}
