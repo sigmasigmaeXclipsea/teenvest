@@ -92,8 +92,19 @@ const LearnPage = () => {
   const totalModules = modules?.length || 0;
   const progressPercent = totalModules > 0 ? (completedCount / totalModules) * 100 : 0;
   
-  // Calculate streak & XP from completed modules
-  const baseXP = completedCount * 100 + (quizResults?.reduce((acc, r) => acc + (r.score * 20), 0) || 0);
+  // Calculate XP based on quiz performance - need 80%+ score for 50 XP reward
+  const calculateXP = () => {
+    let totalXP = 0;
+    quizResults?.forEach(result => {
+      const scorePercent = (result.score / result.total_questions) * 100;
+      if (scorePercent >= 80) {
+        totalXP += 50; // 50 XP for 80%+ score
+      }
+    });
+    return totalXP;
+  };
+  
+  const baseXP = calculateXP();
   const [xp, setXp] = useState(baseXP);
   const level = Math.floor(xp / 500) + 1;
 
@@ -447,10 +458,10 @@ const LearnPage = () => {
                 <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
                   <div className="flex items-center gap-2">
                     <Award className="w-4 h-4 text-amber-500" />
-                    <span className="text-sm">Perfect Quizzes</span>
+                    <span className="text-sm">Qualified Quizzes (80%+)</span>
                   </div>
                   <span className="font-bold">
-                    {quizResults?.filter(r => r.score === r.total_questions).length || 0}
+                    {quizResults?.filter(r => (r.score / r.total_questions) >= 0.8).length || 0}
                   </span>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">

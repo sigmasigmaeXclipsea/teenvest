@@ -36,6 +36,8 @@ interface Seed {
   price: number;
   sellPrice: number;
   icon: string;
+  stockRate: number; // 0-1 probability of being in stock
+  inStock: boolean; // Whether currently in stock
 }
 
 interface Gear {
@@ -66,58 +68,58 @@ function getPlotUpgradePrice(currentPots: number): number {
 // 40 different seeds ordered by price (cheapest to most expensive) with slower progression and balanced sell prices
 const SEED_TEMPLATES: Omit<Seed, 'id'>[] = [
   // Common (10 seeds) - Much slower growth and lower sell prices
-  { name: 'Radish', rarity: 'common', baseGrowthTime: 30, baseSizeKg: 0.2, price: 10, sellPrice: 12, icon: '🌱' },
-  { name: 'Lettuce', rarity: 'common', baseGrowthTime: 40, baseSizeKg: 0.3, price: 20, sellPrice: 25, icon: '🥬' },
-  { name: 'Carrot', rarity: 'common', baseGrowthTime: 50, baseSizeKg: 0.5, price: 35, sellPrice: 40, icon: '🥕' },
-  { name: 'Spinach', rarity: 'common', baseGrowthTime: 35, baseSizeKg: 0.3, price: 25, sellPrice: 30, icon: '🍃' },
-  { name: 'Cabbage', rarity: 'common', baseGrowthTime: 60, baseSizeKg: 0.8, price: 40, sellPrice: 45, icon: '🥬' },
-  { name: 'Peas', rarity: 'common', baseGrowthTime: 45, baseSizeKg: 0.4, price: 30, sellPrice: 35, icon: '🟢' },
-  { name: 'Onion', rarity: 'common', baseGrowthTime: 55, baseSizeKg: 0.6, price: 38, sellPrice: 42, icon: '🧅' },
-  { name: 'Garlic', rarity: 'common', baseGrowthTime: 70, baseSizeKg: 0.2, price: 45, sellPrice: 50, icon: '🧄' },
-  { name: 'Potato', rarity: 'common', baseGrowthTime: 80, baseSizeKg: 1.0, price: 50, sellPrice: 55, icon: '🥔' },
-  { name: 'Turnip', rarity: 'common', baseGrowthTime: 65, baseSizeKg: 0.7, price: 42, sellPrice: 48, icon: '⚪' },
+  { name: 'Radish', rarity: 'common', baseGrowthTime: 30, baseSizeKg: 0.2, price: 10, sellPrice: 12, icon: '🌱', stockRate: 1.0 },
+  { name: 'Lettuce', rarity: 'common', baseGrowthTime: 40, baseSizeKg: 0.3, price: 20, sellPrice: 25, icon: '🥬', stockRate: 1.0 },
+  { name: 'Carrot', rarity: 'common', baseGrowthTime: 50, baseSizeKg: 0.5, price: 35, sellPrice: 40, icon: '🥕', stockRate: 1.0 },
+  { name: 'Spinach', rarity: 'common', baseGrowthTime: 35, baseSizeKg: 0.3, price: 25, sellPrice: 30, icon: '🍃', stockRate: 1.0 },
+  { name: 'Cabbage', rarity: 'common', baseGrowthTime: 60, baseSizeKg: 0.8, price: 40, sellPrice: 45, icon: '🥬', stockRate: 1.0 },
+  { name: 'Peas', rarity: 'common', baseGrowthTime: 45, baseSizeKg: 0.4, price: 30, sellPrice: 35, icon: '🟢', stockRate: 1.0 },
+  { name: 'Onion', rarity: 'common', baseGrowthTime: 55, baseSizeKg: 0.6, price: 38, sellPrice: 42, icon: '🧅', stockRate: 1.0 },
+  { name: 'Garlic', rarity: 'common', baseGrowthTime: 70, baseSizeKg: 0.2, price: 45, sellPrice: 50, icon: '🧄', stockRate: 1.0 },
+  { name: 'Potato', rarity: 'common', baseGrowthTime: 80, baseSizeKg: 1.0, price: 50, sellPrice: 55, icon: '🥔', stockRate: 1.0 },
+  { name: 'Turnip', rarity: 'common', baseGrowthTime: 65, baseSizeKg: 0.7, price: 42, sellPrice: 48, icon: '⚪', stockRate: 1.0 },
   
   // Uncommon (8 seeds) - Slower growth and balanced sell prices
-  { name: 'Tomato', rarity: 'uncommon', baseGrowthTime: 90, baseSizeKg: 0.8, price: 75, sellPrice: 85, icon: '🍅' },
-  { name: 'Bell Pepper', rarity: 'uncommon', baseGrowthTime: 100, baseSizeKg: 0.6, price: 85, sellPrice: 95, icon: '🫑' },
-  { name: 'Cucumber', rarity: 'uncommon', baseGrowthTime: 85, baseSizeKg: 0.9, price: 80, sellPrice: 90, icon: '🥒' },
-  { name: 'Broccoli', rarity: 'uncommon', baseGrowthTime: 95, baseSizeKg: 0.7, price: 90, sellPrice: 100, icon: '🥦' },
-  { name: 'Eggplant', rarity: 'uncommon', baseGrowthTime: 110, baseSizeKg: 0.8, price: 100, sellPrice: 110, icon: '🍆' },
-  { name: 'Zucchini', rarity: 'uncommon', baseGrowthTime: 75, baseSizeKg: 1.2, price: 70, sellPrice: 80, icon: '🥒' },
-  { name: 'Green Bean', rarity: 'uncommon', baseGrowthTime: 70, baseSizeKg: 0.5, price: 65, sellPrice: 75, icon: '🟩' },
-  { name: 'Chili Pepper', rarity: 'uncommon', baseGrowthTime: 105, baseSizeKg: 0.3, price: 95, sellPrice: 105, icon: '🌶️' },
+  { name: 'Tomato', rarity: 'uncommon', baseGrowthTime: 90, baseSizeKg: 0.8, price: 75, sellPrice: 85, icon: '🍅', stockRate: 1.0 },
+  { name: 'Bell Pepper', rarity: 'uncommon', baseGrowthTime: 100, baseSizeKg: 0.6, price: 85, sellPrice: 95, icon: '🫑', stockRate: 1.0 },
+  { name: 'Cucumber', rarity: 'uncommon', baseGrowthTime: 85, baseSizeKg: 0.9, price: 80, sellPrice: 90, icon: '🥒', stockRate: 1.0 },
+  { name: 'Broccoli', rarity: 'uncommon', baseGrowthTime: 95, baseSizeKg: 0.7, price: 90, sellPrice: 100, icon: '🥦', stockRate: 1.0 },
+  { name: 'Eggplant', rarity: 'uncommon', baseGrowthTime: 110, baseSizeKg: 0.8, price: 100, sellPrice: 110, icon: '🍆', stockRate: 1.0 },
+  { name: 'Zucchini', rarity: 'uncommon', baseGrowthTime: 75, baseSizeKg: 1.2, price: 70, sellPrice: 80, icon: '🥒', stockRate: 1.0 },
+  { name: 'Green Bean', rarity: 'uncommon', baseGrowthTime: 70, baseSizeKg: 0.5, price: 65, sellPrice: 75, icon: '🟩', stockRate: 1.0 },
+  { name: 'Chili Pepper', rarity: 'uncommon', baseGrowthTime: 105, baseSizeKg: 0.3, price: 95, sellPrice: 105, icon: '🌶️', stockRate: 1.0 },
   
   // Rare (8 seeds) - Much slower growth with better sell prices
-  { name: 'Corn', rarity: 'rare', baseGrowthTime: 120, baseSizeKg: 1.5, price: 150, sellPrice: 180, icon: '🌽' },
-  { name: 'Pumpkin', rarity: 'rare', baseGrowthTime: 150, baseSizeKg: 4.0, price: 200, sellPrice: 240, icon: '🎃' },
-  { name: 'Watermelon', rarity: 'rare', baseGrowthTime: 160, baseSizeKg: 8.0, price: 250, sellPrice: 300, icon: '🍉' },
-  { name: 'Cauliflower', rarity: 'rare', baseGrowthTime: 130, baseSizeKg: 1.2, price: 175, sellPrice: 210, icon: '🥦' },
-  { name: 'Asparagus', rarity: 'rare', baseGrowthTime: 140, baseSizeKg: 0.4, price: 190, sellPrice: 225, icon: '🥬' },
-  { name: 'Brussels Sprouts', rarity: 'rare', baseGrowthTime: 135, baseSizeKg: 0.8, price: 185, sellPrice: 220, icon: '🥦' },
-  { name: 'Artichoke', rarity: 'rare', baseGrowthTime: 145, baseSizeKg: 0.6, price: 195, sellPrice: 230, icon: '🌿' },
-  { name: 'Mushroom', rarity: 'rare', baseGrowthTime: 90, baseSizeKg: 0.3, price: 160, sellPrice: 190, icon: '🍄' },
+  { name: 'Corn', rarity: 'rare', baseGrowthTime: 120, baseSizeKg: 1.5, price: 150, sellPrice: 180, icon: '🌽', stockRate: 0.3 },
+  { name: 'Pumpkin', rarity: 'rare', baseGrowthTime: 150, baseSizeKg: 4.0, price: 200, sellPrice: 240, icon: '🎃', stockRate: 0.3 },
+  { name: 'Watermelon', rarity: 'rare', baseGrowthTime: 160, baseSizeKg: 8.0, price: 250, sellPrice: 300, icon: '🍉', stockRate: 0.3 },
+  { name: 'Cauliflower', rarity: 'rare', baseGrowthTime: 130, baseSizeKg: 1.2, price: 175, sellPrice: 210, icon: '🥦', stockRate: 0.3 },
+  { name: 'Asparagus', rarity: 'rare', baseGrowthTime: 140, baseSizeKg: 0.4, price: 190, sellPrice: 225, icon: '🥬', stockRate: 0.3 },
+  { name: 'Brussels Sprouts', rarity: 'rare', baseGrowthTime: 135, baseSizeKg: 0.8, price: 185, sellPrice: 220, icon: '🥦', stockRate: 0.3 },
+  { name: 'Artichoke', rarity: 'rare', baseGrowthTime: 145, baseSizeKg: 0.6, price: 195, sellPrice: 230, icon: '🌿', stockRate: 0.3 },
+  { name: 'Mushroom', rarity: 'rare', baseGrowthTime: 90, baseSizeKg: 0.3, price: 160, sellPrice: 190, icon: '🍄', stockRate: 0.3 },
   
   // Epic (8 seeds) - Long growth times with good returns
-  { name: 'Strawberry', rarity: 'epic', baseGrowthTime: 180, baseSizeKg: 0.4, price: 350, sellPrice: 420, icon: '🍓' },
-  { name: 'Pineapple', rarity: 'epic', baseGrowthTime: 240, baseSizeKg: 2.0, price: 500, sellPrice: 600, icon: '🍍' },
-  { name: 'Avocado', rarity: 'epic', baseGrowthTime: 200, baseSizeKg: 0.5, price: 450, sellPrice: 540, icon: '🥑' },
-  { name: 'Mango', rarity: 'epic', baseGrowthTime: 220, baseSizeKg: 1.0, price: 475, sellPrice: 570, icon: '🥭' },
-  { name: 'Papaya', rarity: 'epic', baseGrowthTime: 190, baseSizeKg: 1.5, price: 425, sellPrice: 510, icon: '🍈' },
-  { name: 'Coconut', rarity: 'epic', baseGrowthTime: 260, baseSizeKg: 2.5, price: 550, sellPrice: 660, icon: '🥥' },
-  { name: 'Durian', rarity: 'epic', baseGrowthTime: 280, baseSizeKg: 3.0, price: 650, sellPrice: 780, icon: '🦥' },
-  { name: 'Jackfruit', rarity: 'epic', baseGrowthTime: 320, baseSizeKg: 4.0, price: 750, sellPrice: 900, icon: '🟡' },
+  { name: 'Strawberry', rarity: 'epic', baseGrowthTime: 180, baseSizeKg: 0.4, price: 350, sellPrice: 420, icon: '🍓', stockRate: 0.2 },
+  { name: 'Pineapple', rarity: 'epic', baseGrowthTime: 240, baseSizeKg: 2.0, price: 500, sellPrice: 600, icon: '🍍', stockRate: 0.2 },
+  { name: 'Avocado', rarity: 'epic', baseGrowthTime: 200, baseSizeKg: 0.5, price: 450, sellPrice: 540, icon: '🥑', stockRate: 0.2 },
+  { name: 'Mango', rarity: 'epic', baseGrowthTime: 220, baseSizeKg: 1.0, price: 475, sellPrice: 570, icon: '🥭', stockRate: 0.2 },
+  { name: 'Papaya', rarity: 'epic', baseGrowthTime: 190, baseSizeKg: 1.5, price: 425, sellPrice: 510, icon: '🍈', stockRate: 0.2 },
+  { name: 'Coconut', rarity: 'epic', baseGrowthTime: 260, baseSizeKg: 2.5, price: 550, sellPrice: 660, icon: '🥥', stockRate: 0.2 },
+  { name: 'Durian', rarity: 'epic', baseGrowthTime: 280, baseSizeKg: 3.0, price: 650, sellPrice: 780, icon: '🦥', stockRate: 0.2 },
+  { name: 'Jackfruit', rarity: 'epic', baseGrowthTime: 320, baseSizeKg: 4.0, price: 750, sellPrice: 900, icon: '🟡', stockRate: 0.2 },
   
   // Mythic (1 seed) - High tier but not the best
-  { name: 'Dragon Fruit', rarity: 'mythic', baseGrowthTime: 360, baseSizeKg: 3.0, price: 2000, sellPrice: 2400, icon: '🐉' },
+  { name: 'Dragon Fruit', rarity: 'mythic', baseGrowthTime: 360, baseSizeKg: 3.0, price: 2000, sellPrice: 2400, icon: '🐉', stockRate: 0.05 },
   
   // Legendary (3 seeds) - Above Dragon Fruit
-  { name: 'Phoenix Feather', rarity: 'legendary', baseGrowthTime: 400, baseSizeKg: 2.0, price: 3000, sellPrice: 3600, icon: '🔥' },
-  { name: 'Unicorn Tear', rarity: 'legendary', baseGrowthTime: 440, baseSizeKg: 1.5, price: 4000, sellPrice: 4800, icon: '🦄' },
-  { name: 'Thunder Crystal', rarity: 'legendary', baseGrowthTime: 480, baseSizeKg: 4.0, price: 5000, sellPrice: 6000, icon: '⚡' },
+  { name: 'Phoenix Feather', rarity: 'legendary', baseGrowthTime: 400, baseSizeKg: 2.0, price: 3000, sellPrice: 3600, icon: '🔥', stockRate: 0.02 },
+  { name: 'Unicorn Tear', rarity: 'legendary', baseGrowthTime: 440, baseSizeKg: 1.5, price: 4000, sellPrice: 4800, icon: '🦄', stockRate: 0.02 },
+  { name: 'Thunder Crystal', rarity: 'legendary', baseGrowthTime: 480, baseSizeKg: 4.0, price: 5000, sellPrice: 6000, icon: '⚡', stockRate: 0.02 },
   
   // Exotic (2 seeds) - The absolute best!
-  { name: 'Cosmic Melon', rarity: 'exotic', baseGrowthTime: 600, baseSizeKg: 10.0, price: 10000, sellPrice: 12000, icon: '🌌' },
-  { name: 'Infinity Star', rarity: 'exotic', baseGrowthTime: 720, baseSizeKg: 5.0, price: 20000, sellPrice: 24000, icon: '⭐' },
+  { name: 'Cosmic Melon', rarity: 'exotic', baseGrowthTime: 600, baseSizeKg: 10.0, price: 10000, sellPrice: 12000, icon: '🌌', stockRate: 0.01 },
+  { name: 'Infinity Star', rarity: 'exotic', baseGrowthTime: 720, baseSizeKg: 5.0, price: 20000, sellPrice: 24000, icon: '⭐', stockRate: 0.01 },
 ];
 
 // Base gear templates - plot upgrade price is dynamic
@@ -230,6 +232,7 @@ export default function GamifiedGarden() {
   const [selectedItem, setSelectedItem] = useState<Gear | null>(null); // For consumable items
   const [selectedPlant, setSelectedPlant] = useState<Plot | null>(null); // For plant info display
   const [isWateringMode, setIsWateringMode] = useState(false); // When watering can is selected
+  const [achievements, setAchievements] = useState<string[]>([]); // Achievement tracking
   
   // Restock timers
   const [seedRestockTime, setSeedRestockTime] = useState(Date.now() + 60 * 60 * 1000);
@@ -308,8 +311,12 @@ export default function GamifiedGarden() {
   }, [now, seedRestockTime, gearRestockTime]);
 
   function restockSeeds() {
-    // Show all 40 seeds sorted by price
-    const seeds = SEED_TEMPLATES.map(template => ({ ...template, id: generateId() }));
+    // Show seeds based on stock rates - some may be out of stock
+    const seeds = SEED_TEMPLATES.map(template => ({ 
+      ...template, 
+      id: generateId(),
+      inStock: Math.random() < template.stockRate // Determine if in stock based on stock rate
+    }));
     setShopSeeds(seeds);
   }
   
@@ -381,6 +388,65 @@ export default function GamifiedGarden() {
     }));
   }
 
+  // Achievement system
+  function checkAchievements(plant: Plant) {
+    const newAchievements: string[] = [];
+    
+    // Check for rare plant harvests
+    if (plant.variant === 'golden' && !achievements.includes('first_golden')) {
+      newAchievements.push('first_golden');
+    }
+    
+    if (plant.variant === 'rainbow' && !achievements.includes('first_rainbow')) {
+      newAchievements.push('first_rainbow');
+    }
+    
+    // Check for rare seed harvests
+    const seedTemplate = SEED_TEMPLATES.find(s => s.name === plant.seedType);
+    if (seedTemplate) {
+      if (seedTemplate.rarity === 'rare' && !achievements.includes('first_rare_harvest')) {
+        newAchievements.push('first_rare_harvest');
+      }
+      
+      if (seedTemplate.rarity === 'epic' && !achievements.includes('first_epic_harvest')) {
+        newAchievements.push('first_epic_harvest');
+      }
+      
+      if (seedTemplate.rarity === 'mythic' && !achievements.includes('first_mythic_harvest')) {
+        newAchievements.push('first_mythic_harvest');
+      }
+      
+      if (seedTemplate.rarity === 'legendary' && !achievements.includes('first_legendary_harvest')) {
+        newAchievements.push('first_legendary_harvest');
+      }
+      
+      if (seedTemplate.rarity === 'exotic' && !achievements.includes('first_exotic_harvest')) {
+        newAchievements.push('first_exotic_harvest');
+      }
+    }
+    
+    // Award new achievements
+    if (newAchievements.length > 0) {
+      setAchievements(prev => [...prev, ...newAchievements]);
+      newAchievements.forEach(achievement => {
+        const achievementNames = {
+          first_golden: '🌟 Golden Touch',
+          first_rainbow: '🌈 Rainbow Harvester',
+          first_rare_harvest: '💎 Rare Collector',
+          first_epic_harvest: '🏆 Epic Harvester',
+          first_mythic_harvest: '⚡ Mythic Finder',
+          first_legendary_harvest: '👑 Legendary Farmer',
+          first_exotic_harvest: '🌌 Exotic Explorer'
+        };
+        
+        toast({ 
+          title: '🏆 Achievement Unlocked!',
+          description: achievementNames[achievement as keyof typeof achievementNames] 
+        });
+      });
+    }
+  }
+
   // Harvest plant - now gives money instead of XP
   function harvestPlant(plotId: string) {
     const plot = plots.find(p => p.id === plotId);
@@ -392,10 +458,12 @@ export default function GamifiedGarden() {
     const multiplier = finalVariant === 'rainbow' ? 5 : finalVariant === 'golden' ? 2 : 1;
     const seedTemplate = SEED_TEMPLATES.find(s => s.name === plant.seedType);
     const basePrice = seedTemplate?.sellPrice || plant.sellPrice || 100;
-    const sizeMultiplier = plant.sizeKg / (seedTemplate?.baseSizeKg || 1);
-    const earnings = Math.round(basePrice * multiplier * sizeMultiplier);
+    const finalPrice = basePrice * multiplier;
     
-    setMoney(m => m + earnings);
+    // Check for achievements before harvesting
+    checkAchievements({ ...plant, variant: finalVariant });
+    
+    setMoney(m => m + finalPrice);
     
     // Check for jackpot giant harvest
     const expectedSize = seedTemplate?.baseSizeKg || 1;
@@ -403,23 +471,23 @@ export default function GamifiedGarden() {
     
     let variantText = finalVariant !== 'normal' ? ` (${finalVariant}!)` : '';
     let title = 'Harvested!';
-    let description = `+${earnings} coins${variantText}`;
+    let description = `+${finalPrice} coins${variantText}`;
     
     if (sizeRatio >= 2.0) {
       // JACKPOT! Giant harvest
       title = '🎉 JACKPOT! GIANT HARVEST! 🎉';
-      description = `+${earnings} coins${variantText} - ${plant.sizeKg}kg (${Math.round(sizeRatio * 100)}% size!)`;
+      description = `+${finalPrice} coins${variantText} - ${plant.sizeKg}kg (${Math.round(sizeRatio * 100)}% size!)`;
       toast({ title, description, duration: 5000 });
     } else if (sizeRatio >= 1.5) {
       // Large harvest
       title = '🌟 Large Harvest!';
-      description = `+${earnings} coins${variantText} - ${plant.sizeKg}kg`;
+      description = `+${finalPrice} coins${variantText} - ${plant.sizeKg}kg`;
       toast({ title, description });
     } else {
       toast({ title, description });
     }
     
-    setPlots(p => p.map(pl => (pl.id === plotId ? { ...pl, plant: undefined } : pl)));
+    setPlots(p => p.map(p => p.id === plotId ? { ...p, plant: undefined } : p));
   }
 
   // Buy from shop - uses money
@@ -698,34 +766,51 @@ export default function GamifiedGarden() {
             </div>
             <ScrollArea className="h-96">
               <div className="space-y-2 pr-4">
-                {shopSeeds.map(seed => (
-                  <div key={seed.id} className="flex items-center justify-between p-2 border rounded bg-secondary/30">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl">{seed.icon}</span>
-                      <div>
-                        <div className="font-semibold text-sm text-foreground flex items-center gap-2">
-                          {seed.name}
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full uppercase font-bold ${getRarityColor(seed.rarity)}`}>
-                            {seed.rarity}
-                          </span>
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {seed.baseGrowthTime}m • {seed.baseSizeKg}kg • Sells: {seed.sellPrice}
+                {shopSeeds.map(seed => {
+                  const canAfford = money >= seed.price;
+                  const isAvailable = seed.inStock && canAfford;
+                  
+                  return (
+                    <div 
+                      key={seed.id} 
+                      className={`
+                        flex items-center justify-between p-2 border rounded bg-secondary/30 transition-all
+                        ${canAfford && seed.inStock ? 'ring-2 ring-white shadow-lg shadow-white/20' : ''}
+                        ${!seed.inStock ? 'opacity-50' : ''}
+                      `}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">{seed.icon}</span>
+                        <div>
+                          <div className="font-semibold text-sm text-foreground flex items-center gap-2">
+                            {seed.name}
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full uppercase font-bold ${getRarityColor(seed.rarity)}`}>
+                              {seed.rarity}
+                            </span>
+                            {!seed.inStock && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-400">
+                                OUT OF STOCK
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {seed.baseGrowthTime}m • {seed.baseSizeKg}kg • Sells: {seed.sellPrice}
+                          </div>
                         </div>
                       </div>
+                      <Button 
+                        onClick={() => buySeed(seed)} 
+                        disabled={!isAvailable} 
+                        size="sm"
+                        variant={isAvailable ? "default" : "secondary"}
+                        className="text-xs"
+                      >
+                        <Coins className="w-3 h-3 mr-1" />
+                        {seed.price}
+                      </Button>
                     </div>
-                    <Button 
-                      onClick={() => buySeed(seed)} 
-                      disabled={money < seed.price} 
-                      size="sm"
-                      variant="secondary"
-                      className="text-xs"
-                    >
-                      <Coins className="w-3 h-3 mr-1" />
-                      {seed.price}
-                    </Button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </ScrollArea>
           </div>
