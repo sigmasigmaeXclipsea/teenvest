@@ -47,20 +47,20 @@ interface Gear {
 const GRID_SIZE = 3;
 const WILT_THRESHOLD = 10 * 60 * 1000; // 10 minutes without water
 const WATER_REDUCTION = 0.5; // watering cuts remaining time by 50%
-const XP_TO_MONEY_RATE = 10; // 1 XP = 10 coins
+const XP_TO_MONEY_RATE = 2; // 1 XP = 2 coins
 
-// 10 different seeds with correct prices and rarities
+// 10 different seeds ordered by price (cheapest to most expensive)
 const SEED_TEMPLATES: Omit<Seed, 'id'>[] = [
-  { name: 'Lettuce', rarity: 'common', baseGrowthTime: 2, baseSizeKg: 0.3, price: 25, sellPrice: 40, icon: '🥬' },
-  { name: 'Carrot', rarity: 'common', baseGrowthTime: 3, baseSizeKg: 0.5, price: 40, sellPrice: 65, icon: '🥕' },
-  { name: 'Tomato', rarity: 'common', baseGrowthTime: 4, baseSizeKg: 0.8, price: 60, sellPrice: 100, icon: '🍅' },
-  { name: 'Potato', rarity: 'uncommon', baseGrowthTime: 5, baseSizeKg: 1.0, price: 100, sellPrice: 180, icon: '🥔' },
-  { name: 'Corn', rarity: 'uncommon', baseGrowthTime: 6, baseSizeKg: 1.5, price: 150, sellPrice: 280, icon: '🌽' },
-  { name: 'Pumpkin', rarity: 'rare', baseGrowthTime: 8, baseSizeKg: 4.0, price: 300, sellPrice: 550, icon: '🎃' },
-  { name: 'Watermelon', rarity: 'rare', baseGrowthTime: 10, baseSizeKg: 6.0, price: 450, sellPrice: 850, icon: '🍉' },
-  { name: 'Strawberry', rarity: 'epic', baseGrowthTime: 12, baseSizeKg: 0.4, price: 600, sellPrice: 1200, icon: '🍓' },
-  { name: 'Golden Apple', rarity: 'epic', baseGrowthTime: 15, baseSizeKg: 0.5, price: 1000, sellPrice: 2000, icon: '🍎' },
-  { name: 'Dragon Fruit', rarity: 'mythic', baseGrowthTime: 20, baseSizeKg: 2.0, price: 2000, sellPrice: 5000, icon: '🐉' },
+  { name: 'Radish', rarity: 'common', baseGrowthTime: 1, baseSizeKg: 0.2, price: 10, sellPrice: 18, icon: '🌱' },
+  { name: 'Lettuce', rarity: 'common', baseGrowthTime: 2, baseSizeKg: 0.3, price: 20, sellPrice: 35, icon: '🥬' },
+  { name: 'Carrot', rarity: 'common', baseGrowthTime: 3, baseSizeKg: 0.5, price: 35, sellPrice: 60, icon: '🥕' },
+  { name: 'Tomato', rarity: 'uncommon', baseGrowthTime: 4, baseSizeKg: 0.8, price: 50, sellPrice: 90, icon: '🍅' },
+  { name: 'Potato', rarity: 'uncommon', baseGrowthTime: 5, baseSizeKg: 1.0, price: 75, sellPrice: 140, icon: '🥔' },
+  { name: 'Corn', rarity: 'rare', baseGrowthTime: 6, baseSizeKg: 1.5, price: 120, sellPrice: 220, icon: '🌽' },
+  { name: 'Pumpkin', rarity: 'rare', baseGrowthTime: 8, baseSizeKg: 4.0, price: 200, sellPrice: 380, icon: '🎃' },
+  { name: 'Strawberry', rarity: 'epic', baseGrowthTime: 10, baseSizeKg: 0.4, price: 350, sellPrice: 700, icon: '🍓' },
+  { name: 'Golden Apple', rarity: 'epic', baseGrowthTime: 14, baseSizeKg: 0.5, price: 600, sellPrice: 1200, icon: '🍎' },
+  { name: 'Dragon Fruit', rarity: 'mythic', baseGrowthTime: 18, baseSizeKg: 2.0, price: 1000, sellPrice: 2500, icon: '🐉' },
 ];
 
 const GEAR_TEMPLATES: Omit<Gear, 'id'>[] = [
@@ -175,9 +175,8 @@ export default function GamifiedGarden() {
   }, [now, seedRestockTime, gearRestockTime]);
 
   function restockSeeds() {
-    // Pick 5 random seeds from the 10 templates
-    const shuffled = [...SEED_TEMPLATES].sort(() => Math.random() - 0.5);
-    const seeds = shuffled.slice(0, 5).map(template => ({ ...template, id: generateId() }));
+    // Show all 10 seeds sorted by price
+    const seeds = SEED_TEMPLATES.map(template => ({ ...template, id: generateId() }));
     setShopSeeds(seeds);
   }
   
@@ -371,7 +370,7 @@ export default function GamifiedGarden() {
         {/* Garden Grid */}
         <div className="bg-card rounded-xl shadow-sm p-4 md:p-6 border">
           <h2 className="text-lg font-bold mb-4 text-foreground">Garden ({gridSize}x{gridSize})</h2>
-          <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))` }}>
+          <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))`, maxWidth: `${gridSize * 56}px` }}>
             {plots.map(plot => {
               const plant = plot.plant;
               const isReady = plant && Date.now() - plant.plantedAt >= plant.growthTimeMs;
@@ -382,7 +381,7 @@ export default function GamifiedGarden() {
               return (
                 <div
                   key={plot.id}
-                  className={`aspect-square rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center cursor-pointer transition-colors ${plant ? (isReady ? color : 'bg-green-600') : 'bg-muted'} hover:border-green-500`}
+                  className={`w-12 h-12 rounded-md border border-dashed border-border flex flex-col items-center justify-center cursor-pointer transition-colors ${plant ? (isReady ? color : 'bg-green-600') : 'bg-muted'} hover:border-green-500`}
                   onClick={() => {
                     if (!plant && selectedSeed) plantSeed(plot.id, selectedSeed);
                     if (plant && !isReady) waterPlant(plot.id);
@@ -391,22 +390,22 @@ export default function GamifiedGarden() {
                 >
                   {plant ? (
                     <>
-                      <div className="w-full px-1">
-                        <div className="relative w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                      <div className="w-full px-0.5">
+                        <div className="relative w-full h-0.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                           <div 
                             className="absolute left-0 top-0 h-full bg-green-400 rounded-full transition-all duration-1000"
                             style={{ width: `${progress}%` }}
                           />
                         </div>
                       </div>
-                      <Trees className={`w-5 h-5 mt-1 ${isReady ? 'text-white' : 'text-green-100'}`} />
-                      <span className="text-[10px] text-white text-center leading-tight">
-                        {isReady ? 'Harvest!' : formatTime(timeLeft)}
+                      <Trees className={`w-4 h-4 ${isReady ? 'text-white' : 'text-green-100'}`} />
+                      <span className="text-[8px] text-white text-center leading-tight">
+                        {isReady ? '✓' : formatTime(timeLeft)}
                       </span>
-                      {plant.isWilted && <span className="text-[10px] text-red-200">💧</span>}
+                      {plant.isWilted && <span className="text-[8px]">💧</span>}
                     </>
                   ) : (
-                    <span className="text-xs text-muted-foreground">Empty</span>
+                    <span className="text-[8px] text-muted-foreground">+</span>
                   )}
                 </div>
               );
