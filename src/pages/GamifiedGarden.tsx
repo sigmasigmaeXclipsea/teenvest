@@ -307,18 +307,9 @@ export default function GamifiedGarden() {
     }
     if (now >= gearRestockTime) {
       restockGear();
-  }
-  if (now >= gearRestockTime) {
-    gear.push({
-      id: generateId(),
-      name: 'Plot Upgrade',
-      type: 'plotUpgrade',
-      effect: `Adds one more pot (${numPots}/${MAX_POTS})`,
-      price: getPlotUpgradePrice(numPots),
-    });
-    console.log('Setting shop gear:', gear); // Debug log
-    setShopGear(gear);
-  }
+      setGearRestockTime(Date.now() + 15 * 60 * 1000); // 15 minutes
+    }
+  }, [now, seedRestockTime, gearRestockTime]);
   
   // Update gear shop when numPots changes to reflect new price
   useEffect(() => {
@@ -362,6 +353,21 @@ export default function GamifiedGarden() {
       };
     });
     setShopSeeds(seeds);
+  }
+  
+  function restockGear() {
+    const gear = GEAR_TEMPLATES.map(template => ({ ...template, id: generateId() }));
+    console.log('Restocking gear with templates:', GEAR_TEMPLATES); // Debug log
+    // Add dynamic plot upgrade with current price
+    gear.push({
+      id: generateId(),
+      name: 'Plot Upgrade',
+      type: 'plotUpgrade',
+      effect: `Adds one more pot (${numPots}/${MAX_POTS})`,
+      price: getPlotUpgradePrice(numPots),
+    });
+    console.log('Setting shop gear:', gear); // Debug log
+    setShopGear(gear);
   }
 
   // Plant seed
