@@ -553,78 +553,9 @@ export default function GamifiedGarden() {
             formatTime={formatTime}
           />
           <p className="text-xs text-muted-foreground mt-3 text-center">
-            {isWateringMode ? '🚿 Click a plant to water it' : 'Click pots to plant, view plant info, or harvest'}
+            {isWateringMode ? '🚿 Click a plant to water it' : 'Hover over plants to see info • Click pots to plant/harvest'}
           </p>
         </div>
-
-        {/* Plant Info Display */}
-        {selectedPlant && selectedPlant.plant && (
-          <div className="bg-card rounded-xl shadow-sm p-4 border">
-            <h3 className="font-bold mb-3 flex items-center gap-2 text-foreground">
-              {selectedPlant.plant.icon} {selectedPlant.plant.seedType}
-            </h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Growth:</span>
-                <span>{formatTime(selectedPlant.plant.growthTimeMs - (Date.now() - selectedPlant.plant.plantedAt))}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Size:</span>
-                <span>{selectedPlant.plant.sizeKg.toFixed(1)}kg</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Sell Price:</span>
-                <span>{selectedPlant.plant.sellPrice} coins</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Variant:</span>
-                <span className={`capitalize ${selectedPlant.plant.variant === 'golden' ? 'text-yellow-500' : selectedPlant.plant.variant === 'rainbow' ? 'text-purple-500' : ''}`}>
-                  {selectedPlant.plant.variant}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Status:</span>
-                <span className={selectedPlant.plant.isWilted ? 'text-red-500' : 'text-green-500'}>
-                  {selectedPlant.plant.isWilted ? 'Wilting' : 'Healthy'}
-                </span>
-              </div>
-            </div>
-            <div className="mt-3 flex gap-2">
-              {isWateringMode && selectedItem?.type === 'wateringCan' && selectedItem.uses && selectedItem.uses > 0 && (
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    waterPlant(selectedPlant.id);
-                    // Use one watering can
-                    setInventory(inv => ({
-                      ...inv,
-                      gear: inv.gear.map(g => 
-                        g.id === selectedItem.id 
-                          ? { ...g, uses: (g.uses || 1) - 1 }
-                          : g
-                      ).filter(g => g.uses === undefined || g.uses > 0)
-                    }));
-                    setSelectedItem(null);
-                    setIsWateringMode(false);
-                    setSelectedPlant(null);
-                  }}
-                  className="flex-1"
-                >
-                  <Droplets className="w-4 h-4 mr-1" />
-                  Water ({selectedItem.uses} left)
-                </Button>
-              )}
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setSelectedPlant(null)}
-                className="flex-1"
-              >
-                Close
-              </Button>
-            </div>
-          </div>
-        )}
 
         {/* Seed Inventory */}
         <div className="bg-card rounded-xl shadow-sm p-4 border">

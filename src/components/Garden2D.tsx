@@ -450,7 +450,7 @@ function PlotPot({
     <div
       onClick={handleClick}
       className={`
-        relative flex flex-col items-center justify-end
+        group relative flex flex-col items-center justify-end
         w-28 h-36 sm:w-32 sm:h-40 md:w-36 md:h-44
         rounded-[2rem] rounded-b-[3rem]
         border-4 ${getPotBorderColor()}
@@ -519,6 +519,44 @@ function PlotPot({
           <span className="text-xs font-bold text-green-400 animate-pulse">
             ✓ Ready!
           </span>
+        </div>
+      )}
+
+      {/* Plant info tooltip on hover */}
+      {plant && (
+        <div className="absolute -top-20 left-1/2 -translate-x-1/2 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+          <div className="bg-card border border-border rounded-lg shadow-lg p-3 w-48 text-xs">
+            <div className="font-bold mb-2 flex items-center gap-1">
+              <span>{plant.icon}</span>
+              <span>{plant.seedType}</span>
+            </div>
+            <div className="space-y-1">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Growth:</span>
+                <span>{formatTime(timeLeft)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Size:</span>
+                <span>{plant.sizeKg.toFixed(1)}kg</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Value:</span>
+                <span>{plant.sellPrice} coins</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Type:</span>
+                <span className={`capitalize ${plant.variant === 'golden' ? 'text-yellow-500' : plant.variant === 'rainbow' ? 'text-purple-500' : ''}`}>
+                  {plant.variant}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Status:</span>
+                <span className={plant.isWilted ? 'text-red-500' : 'text-green-500'}>
+                  {plant.isWilted ? 'Wilting' : 'Healthy'}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
