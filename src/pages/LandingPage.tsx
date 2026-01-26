@@ -1058,7 +1058,6 @@ const FeatureCard: FC<FeatureCardProps> = ({ icon: Icon, title, desc, gradient, 
 const LandingPage = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const landingLogOnceRef = useRef(false);
   const [tickerStocks, setTickerStocks] = useState<any[]>([
     { symbol: 'AAPL', price: '$248.00', change: '+1.2%' },
     { symbol: 'TSLA', price: '$242.84', change: '-0.8%' },
@@ -1139,15 +1138,6 @@ const LandingPage = () => {
     await signOut();
     navigate('/');
   };
-
-  useEffect(() => {
-    if (landingLogOnceRef.current) return;
-    landingLogOnceRef.current = true;
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/744e271c-c7d9-439f-a2cd-18d8a6231997',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LandingPage.tsx:1054',message:'landing render context',data:{innerWidth:window.innerWidth,innerHeight:window.innerHeight,devicePixelRatio:window.devicePixelRatio,prefersReducedMotion},timestamp:Date.now(),sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H4'})}).catch(()=>{});
-    // #endregion
-  }, []);
 
   return (
     <div className="min-h-screen bg-background relative overflow-x-hidden">

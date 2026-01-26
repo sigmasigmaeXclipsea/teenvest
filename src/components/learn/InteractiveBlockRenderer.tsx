@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import MiniQuizBlock from '@/components/learn/MiniQuizBlock';
 import TradeSimBlock from '@/components/learn/TradeSimBlock';
@@ -32,17 +31,6 @@ type InteractiveBlockRendererProps = {
 };
 
 const InteractiveBlockRenderer = ({ blocks }: InteractiveBlockRendererProps) => {
-  const logOnceRef = useRef(false);
-  const blockTypes = blocks?.map((block) => block.type) ?? [];
-
-  useEffect(() => {
-    if (logOnceRef.current) return;
-    logOnceRef.current = true;
-    // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/744e271c-c7d9-439f-a2cd-18d8a6231997',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'InteractiveBlockRenderer.tsx:14',message:'interactive block render',data:{blocksCount:blocks?.length ?? 0,blockTypes},timestamp:Date.now(),sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H2'})}).catch(()=>{});
-    // #endregion
-  }, [blocks, blockTypes]);
-
   if (!blocks || blocks.length === 0) return null;
 
   return (
