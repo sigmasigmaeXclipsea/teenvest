@@ -119,6 +119,28 @@ const AdminPage = () => {
   const [newGardenXp, setNewGardenXp] = useState('');
   const [currentGardenMoney, setCurrentGardenMoney] = useState(0);
   const [currentGardenXp, setCurrentGardenXp] = useState(0);
+
+  // Load current admin garden state
+  const { data: adminGardenState, refetch: refetchAdminGarden } = useQuery({
+    queryKey: ['admin-garden-state', user?.id],
+    queryFn: async () => {
+      // @ts-ignore - Function exists but types haven't been generated yet
+      const { data, error } = await supabase.rpc('admin_get_garden_state', { 
+        _user_id: user?.id 
+      });
+      if (error) throw error;
+      return data?.[0] || { money: 0, xp: 0 };
+    },
+    enabled: !!user && hasAdminRole === true,
+  });
+
+  // Update current garden state when data loads
+  useEffect(() => {
+    if (adminGardenState) {
+      setCurrentGardenMoney(adminGardenState.money || 0);
+      setCurrentGardenXp(adminGardenState.xp || 0);
+    }
+  }, [adminGardenState]);
   
   const isOwner = user?.email === OWNER_EMAIL;
 
@@ -403,6 +425,7 @@ const AdminPage = () => {
       toast.success(`Updated your garden: ${variables.money} coins, ${variables.xp} XP`);
       setCurrentGardenMoney(variables.money);
       setCurrentGardenXp(variables.xp);
+      refetchAdminGarden(); // Refresh the garden state
     },
     onError: (error: unknown) => toast.error(getUserFriendlyError(error)),
   });
@@ -957,13 +980,13 @@ const AdminPage = () => {
                     <div className="p-3 rounded-lg bg-secondary/50">
                       <p className="text-sm text-muted-foreground">Current Money</p>
                       <p className="text-xl font-bold text-green-600">
-                        {currentGardenMoney.toLocaleString()} coins
+                        {adminGardenState ? adminGardenState.money.toLocaleString() : '...'} coins
                       </p>
                     </div>
                     <div className="p-3 rounded-lg bg-secondary/50">
                       <p className="text-sm text-muted-foreground">Current XP</p>
                       <p className="text-xl font-bold text-purple-600">
-                        {currentGardenXp.toLocaleString()} XP
+                        {adminGardenState ? adminGardenState.xp.toLocaleString() : '...'} XP
                       </p>
                     </div>
                   </div>
@@ -993,8 +1016,8 @@ const AdminPage = () => {
                   </div>
                   <Button
                     onClick={() => updateCurrentUserGardenMutation.mutate({ 
-                      money: parseInt(newGardenMoney) || currentGardenMoney, 
-                      xp: parseInt(newGardenXp) || currentGardenXp 
+                      money: parseInt(newGardenMoney) || (adminGardenState?.money || 0), 
+                      xp: parseInt(newGardenXp) || (adminGardenState?.xp || 0)
                     })}
                     disabled={updateCurrentUserGardenMutation.isPending}
                     className="w-full"
