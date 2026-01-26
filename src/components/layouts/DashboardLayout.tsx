@@ -126,8 +126,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       </header>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:fixed lg:top-14 lg:bottom-0 lg:left-0 lg:z-40 lg:block group">
-        <div className="h-full w-16 group-hover:w-52 bg-card border-r border-border transition-[width] duration-200 ease-out overflow-hidden flex flex-col">
+      <aside className="hidden lg:fixed lg:top-14 lg:bottom-0 lg:left-0 lg:z-40 lg:block group/sidebar">
+        <div className="h-full w-14 group-hover/sidebar:w-48 bg-card border-r border-border transition-all duration-300 ease-in-out overflow-hidden flex flex-col">
           {/* Navigation */}
           <nav className="flex-1 flex flex-col">
             {/* Core */}
@@ -140,24 +140,22 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               {navItems.slice(0, 4).map((item) => {
                 const isActive = location.pathname === item.path;
                 return (
-                  <div className="flex justify-center group-hover:justify-start">
-                    <button
-                      key={item.path}
-                      onClick={() => navigate(item.path)}
-                      className={cn(
-                        "flex items-center justify-center group-hover:justify-start gap-3 h-12 w-full px-3 rounded-lg transition-all duration-200",
-                        isActive
-                          ? 'bg-primary text-primary-foreground'
-                          : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-                      )}
-                      title={item.label}
-                    >
-                      <item.icon className="w-5 h-5 flex-shrink-0" />
-                      <span className="opacity-0 max-w-0 group-hover:max-w-48 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap text-sm font-medium overflow-hidden">
-                        {item.label}
-                      </span>
-                    </button>
-                  </div>
+                  <button
+                    key={item.path}
+                    onClick={() => navigate(item.path)}
+                    className={cn(
+                      "flex items-center gap-3 h-10 w-full px-3 rounded-md transition-all duration-300",
+                      isActive
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                    )}
+                    title={item.label}
+                  >
+                    <item.icon className="w-5 h-5 flex-shrink-0" />
+                    <span className="opacity-0 w-0 group-hover/sidebar:w-auto group-hover/sidebar:opacity-100 transition-all duration-300 whitespace-nowrap text-sm font-medium overflow-hidden">
+                      {item.label}
+                    </span>
+                  </button>
                 );
               })}
             </div>
@@ -172,24 +170,22 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               {navItems.slice(4, 9).map((item) => {
                 const isActive = location.pathname === item.path;
                 return (
-                  <div className="flex justify-center group-hover:justify-start">
-                    <button
-                      key={item.path}
-                      onClick={() => navigate(item.path)}
-                      className={cn(
-                        "flex items-center justify-center group-hover:justify-start gap-3 h-12 w-full px-3 rounded-lg transition-all duration-200",
-                        isActive
-                          ? 'bg-primary text-primary-foreground'
-                          : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-                      )}
-                      title={item.label}
-                    >
-                      <item.icon className="w-5 h-5 flex-shrink-0" />
-                      <span className="opacity-0 max-w-0 group-hover:max-w-48 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap text-sm font-medium overflow-hidden">
-                        {item.label}
-                      </span>
-                    </button>
-                  </div>
+                  <button
+                    key={item.path}
+                    onClick={() => navigate(item.path)}
+                    className={cn(
+                      "flex items-center gap-3 h-10 w-full px-3 rounded-md transition-all duration-300",
+                      isActive
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                    )}
+                    title={item.label}
+                  >
+                    <item.icon className="w-5 h-5 flex-shrink-0" />
+                    <span className="opacity-0 w-0 group-hover/sidebar:w-auto group-hover/sidebar:opacity-100 transition-all duration-300 whitespace-nowrap text-sm font-medium overflow-hidden">
+                      {item.label}
+                    </span>
+                  </button>
                 );
               })}
             </div>
@@ -204,38 +200,36 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               {navItems.slice(9).map((item) => {
                 const isActive = location.pathname === item.path;
                 return (
-                  <div className="flex justify-center group-hover:justify-start">
-                    <button
-                      key={item.path}
-                      onClick={() => navigate(item.path)}
-                      className={cn(
-                        "flex items-center justify-center group-hover:justify-start gap-3 h-12 w-full px-3 rounded-lg transition-all duration-200",
-                        isActive
-                          ? 'bg-primary text-primary-foreground'
-                          : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-                      )}
-                      title={item.label}
-                    >
-                      <item.icon className="w-5 h-5 flex-shrink-0" />
-                      <span className="opacity-0 max-w-0 group-hover:max-w-48 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap text-sm font-medium overflow-hidden">
-                        {item.label}
-                      </span>
-                    </button>
-                  </div>
+                  <button
+                    key={item.path}
+                    onClick={() => navigate(item.path)}
+                    className={cn(
+                      "flex items-center gap-3 h-10 w-full px-3 rounded-md transition-all duration-300",
+                      isActive
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                    )}
+                    title={item.label}
+                  >
+                    <item.icon className="w-5 h-5 flex-shrink-0" />
+                    <span className="opacity-0 w-0 group-hover/sidebar:w-auto group-hover/sidebar:opacity-100 transition-all duration-300 whitespace-nowrap text-sm font-medium overflow-hidden">
+                      {item.label}
+                    </span>
+                  </button>
                 );
               })}
             </div>
           </nav>
 
           {/* Logout */}
-          <div className="mt-auto p-2 border-t border-border flex justify-center group-hover:justify-start">
+          <div className="mt-auto p-2 border-t border-border">
             <Button
               variant="ghost"
-              className="flex items-center justify-center group-hover:justify-start gap-3 h-12 w-full px-3 text-muted-foreground transition-all duration-200"
+              className="flex items-center gap-3 h-10 w-full px-3 text-muted-foreground transition-all duration-300"
               onClick={handleLogout}
             >
               <LogOut className="w-5 h-5 flex-shrink-0" />
-              <span className="opacity-0 max-w-0 group-hover:max-w-48 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap overflow-hidden text-left">
+              <span className="opacity-0 w-0 group-hover/sidebar:w-auto group-hover/sidebar:opacity-100 transition-all duration-300 whitespace-nowrap overflow-hidden">
                 Log Out
               </span>
             </Button>
@@ -278,7 +272,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       )}
 
       {/* Main Content */}
-      <main className="lg:pl-16 pt-14 min-h-screen">
+      <main className="lg:pl-14 pt-14 min-h-screen">
         <div className="p-6">{children}</div>
       </main>
     </div>
