@@ -51,6 +51,18 @@ interface Gear {
   uses?: number; // Number of uses remaining for consumables
 }
 
+interface HarvestedPlant {
+  id: string;
+  seedType: string;
+  variant: 'normal' | 'golden' | 'rainbow' | 'frost' | 'candy' | 'thunder';
+  sizeKg: number;
+  sellPrice: number;
+  icon: string;
+  harvestedAt: number;
+}
+
+type Weather = 'normal' | 'cold' | 'candy' | 'thunder';
+
 const MIN_POTS = 3;
 const MAX_POTS = 20; // Increased from 9 to 20 for more progression
 const WILT_THRESHOLD = 90 * 60 * 1000; // 90 minutes without water (increased from 60 min)
@@ -218,6 +230,44 @@ function getRarityColor(rarity: string) {
   }
 }
 
+function getWeatherMultiplier(weather: Weather): number {
+  switch (weather) {
+    case 'cold': return 2; // 2x price multiplier
+    case 'candy': return 3; // 3x price multiplier  
+    case 'thunder': return 5; // 5x price multiplier
+    default: return 1;
+  }
+}
+
+function getWeatherIcon(weather: Weather): string {
+  switch (weather) {
+    case 'cold': return '❄️';
+    case 'candy': return '🍬';
+    case 'thunder': return '⚡';
+    default: return '☀️';
+  }
+}
+
+function getWeatherName(weather: Weather): string {
+  switch (weather) {
+    case 'cold': return 'Frost';
+    case 'candy': return 'Candy';
+    case 'thunder': return 'Thunder';
+    default: return 'Normal';
+  }
+}
+
+function getVariantColor(variant: string) {
+  switch (variant) {
+    case 'frost': return 'text-cyan-600 bg-cyan-100 dark:bg-cyan-900 border-2 border-cyan-400';
+    case 'candy': return 'text-pink-600 bg-pink-100 dark:bg-pink-900 border-2 border-pink-400';
+    case 'thunder': return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900 border-2 border-yellow-400 shadow-lg shadow-yellow-500/50';
+    case 'golden': return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900 border-2 border-yellow-400 shadow-lg shadow-yellow-500/50';
+    case 'rainbow': return 'text-cyan-600 bg-gradient-to-r from-cyan-100 to-blue-100 dark:from-cyan-900 dark:to-blue-900 border-2 border-cyan-400 shadow-lg shadow-cyan-500/50 animate-pulse';
+    default: return '';
+  }
+}
+
 export default function GamifiedGarden() {
   const { settings } = useSettings();
   const { toast } = useToast();
@@ -226,6 +276,7 @@ export default function GamifiedGarden() {
   const [numPots, setNumPots] = useState(MIN_POTS);
   const [plots, setPlots] = useState<Plot[]>(() => Array.from({ length: MIN_POTS }, (_, i) => ({ id: `plot-${i}` })));
   const [inventory, setInventory] = useState({ seeds: [] as Seed[], gear: [] as Gear[] });
+  const [harvestedPlants, setHarvestedPlants] = useState<HarvestedPlant[]>([]); // New harvested plants inventory
   const [shopSeeds, setShopSeeds] = useState<Seed[]>([]);
   const [shopGear, setShopGear] = useState<Gear[]>([]);
   const [hasSprinkler, setHasSprinkler] = useState<string | null>(null); // null = none, or name of sprinkler
@@ -234,6 +285,7 @@ export default function GamifiedGarden() {
   const [selectedPlant, setSelectedPlant] = useState<Plot | null>(null); // For plant info display
   const [isWateringMode, setIsWateringMode] = useState(false); // When watering can is selected
   const [achievements, setAchievements] = useState<string[]>([]); // Achievement tracking
+  const [currentWeather, setCurrentWeather] = useState<Weather>('normal');
   
   // Restock timers
   const [seedRestockTime, setSeedRestockTime] = useState(Date.now() + 60 * 60 * 1000);
@@ -255,7 +307,9 @@ export default function GamifiedGarden() {
         setNumPots(savedNumPots);
         setPlots(parsed.plots ?? Array.from({ length: savedNumPots }, (_, i) => ({ id: `plot-${i}` })));
         setInventory(parsed.inventory ?? { seeds: [], gear: [] });
+        setHarvestedPlants(parsed.harvestedPlants ?? []);
         setHasSprinkler(parsed.hasSprinkler ?? null);
+        setCurrentWeather(parsed.currentWeather ?? 'normal');
         setSeedRestockTime(parsed.seedRestockTime ?? Date.now() + 60 * 60 * 1000);
         setGearRestockTime(parsed.gearRestockTime ?? Date.now() + 15 * 60 * 1000);
         setSelectedSeed(parsed.selectedSeed ?? null);
@@ -281,9 +335,9 @@ export default function GamifiedGarden() {
 
   // Save to localStorage
   useEffect(() => {
-    const state = { xp, money, numPots, plots, inventory, hasSprinkler, seedRestockTime, gearRestockTime, selectedSeed, selectedItem };
+    const state = { xp, money, numPots, plots, inventory, harvestedPlants, hasSprinkler, currentWeather, seedRestockTime, gearRestockTime, selectedSeed, selectedItem };
     localStorage.setItem('garden-state-v4', JSON.stringify(state));
-  }, [xp, money, numPots, plots, inventory, hasSprinkler, seedRestockTime, gearRestockTime, selectedSeed, selectedItem]);
+  }, [xp, money, numPots, plots, inventory, harvestedPlants, hasSprinkler, currentWeather, seedRestockTime, gearRestockTime, selectedSeed, selectedItem]);
 
   // Timer tick for countdowns
   useEffect(() => {
@@ -291,6 +345,37 @@ export default function GamifiedGarden() {
       setNow(Date.now());
     }, 1000);
     return () => clearInterval(interval);
+  }, []);
+
+  // Weather changing system - changes every 5-10 minutes
+  useEffect(() => {
+    const changeWeather = () => {
+      const weathers: Weather[] = ['normal', 'cold', 'candy', 'thunder'];
+      const randomWeather = weathers[Math.floor(Math.random() * weathers.length)];
+      setCurrentWeather(randomWeather);
+      
+      if (randomWeather !== 'normal') {
+        toast({
+          title: `🌦️ Weather Changed!`,
+          description: `${getWeatherName(randomWeather)} weather is now active! Plants harvested will have special mutations.`,
+        });
+      }
+    };
+
+    // Change weather every 5-10 minutes
+    const weatherInterval = setInterval(() => {
+      changeWeather();
+    }, 5 * 60 * 1000 + Math.random() * 5 * 60 * 1000);
+
+    // Initial weather change after 1 minute
+    const initialChange = setTimeout(() => {
+      changeWeather();
+    }, 60 * 1000);
+
+    return () => {
+      clearInterval(weatherInterval);
+      clearTimeout(initialChange);
+    };
   }, []);
 
   // Initialize and manage shop restocks
@@ -486,40 +571,92 @@ export default function GamifiedGarden() {
     const plant = plot.plant;
     if (Date.now() - plant.plantedAt < plant.growthTimeMs) return;
     
-    const finalVariant = plant.variant === 'normal' ? calculateVariant(hasSprinkler) : plant.variant;
-    const multiplier = finalVariant === 'rainbow' ? 5 : finalVariant === 'golden' ? 2 : 1;
+    // Apply weather mutations
+    let finalVariant = plant.variant === 'normal' ? calculateVariant(hasSprinkler) : plant.variant;
+    let weatherMultiplier = 1;
+    
+    if (currentWeather !== 'normal' && Math.random() < 0.5) { // 50% chance of weather mutation
+      switch (currentWeather) {
+        case 'cold':
+          finalVariant = 'frost';
+          weatherMultiplier = getWeatherMultiplier('cold');
+          break;
+        case 'candy':
+          finalVariant = 'candy';
+          weatherMultiplier = getWeatherMultiplier('candy');
+          break;
+        case 'thunder':
+          finalVariant = 'thunder';
+          weatherMultiplier = getWeatherMultiplier('thunder');
+          break;
+      }
+    }
+    
     const seedTemplate = SEED_TEMPLATES.find(s => s.name === plant.seedType);
     const basePrice = seedTemplate?.sellPrice || plant.sellPrice || 100;
-    const finalPrice = basePrice * multiplier;
+    const finalPrice = Math.round(basePrice * weatherMultiplier);
     
     // Check for achievements before harvesting
     checkAchievements({ ...plant, variant: finalVariant });
     
-    setMoney(m => m + finalPrice);
+    // Add to harvested plants inventory instead of auto-selling
+    const harvestedPlant: HarvestedPlant = {
+      id: generateId(),
+      seedType: plant.seedType,
+      variant: finalVariant,
+      sizeKg: plant.sizeKg,
+      sellPrice: finalPrice,
+      icon: plant.icon || '🌱',
+      harvestedAt: Date.now(),
+    };
     
-    // Check for jackpot giant harvest
-    const expectedSize = seedTemplate?.baseSizeKg || 1;
-    const sizeRatio = plant.sizeKg / expectedSize;
+    setHarvestedPlants(prev => [...prev, harvestedPlant]);
     
+    // Show harvest notification
     let variantText = finalVariant !== 'normal' ? ` (${finalVariant}!)` : '';
     let title = 'Harvested!';
-    let description = `+${finalPrice} coins${variantText}`;
+    let description = `Added to inventory: ${plant.sizeKg}kg${variantText}`;
     
-    if (sizeRatio >= 2.0) {
-      // JACKPOT! Giant harvest
-      title = '🎉 JACKPOT! GIANT HARVEST! 🎉';
-      description = `+${finalPrice} coins${variantText} - ${plant.sizeKg}kg (${Math.round(sizeRatio * 100)}% size!)`;
-      toast({ title, description, duration: 5000 });
-    } else if (sizeRatio >= 1.5) {
-      // Large harvest
-      title = '🌟 Large Harvest!';
-      description = `+${finalPrice} coins${variantText} - ${plant.sizeKg}kg`;
-      toast({ title, description });
-    } else {
-      toast({ title, description });
+    if (weatherMultiplier > 1) {
+      title = `🌦️ Weather Mutation! ${finalVariant}!`;
+      description = `${plant.sizeKg}kg harvested with ${weatherMultiplier}x value multiplier!`;
     }
     
+    toast({ title, description });
+    
     setPlots(p => p.map(p => p.id === plotId ? { ...p, plant: undefined } : p));
+  }
+
+  // Sell harvested plant
+  function sellHarvestedPlant(plantId: string) {
+    const plant = harvestedPlants.find(p => p.id === plantId);
+    if (!plant) return;
+    
+    setMoney(m => m + plant.sellPrice);
+    setHarvestedPlants(prev => prev.filter(p => p.id !== plantId));
+    
+    let variantText = plant.variant !== 'normal' ? ` (${plant.variant})` : '';
+    toast({ 
+      title: 'Sold!', 
+      description: `+${plant.sellPrice} coins for ${plant.sizeKg}kg ${plant.seedType}${variantText}` 
+    });
+  }
+
+  // Sell all harvested plants
+  function sellAllHarvestedPlants() {
+    if (harvestedPlants.length === 0) {
+      toast({ title: 'No plants to sell', variant: 'destructive' });
+      return;
+    }
+    
+    const totalValue = harvestedPlants.reduce((sum, plant) => sum + plant.sellPrice, 0);
+    setMoney(m => m + totalValue);
+    setHarvestedPlants([]);
+    
+    toast({ 
+      title: 'Sold All Plants!', 
+      description: `+${totalValue} coins for ${harvestedPlants.length} plants` 
+    });
   }
 
   // Buy from shop - uses money and checks stock
@@ -658,6 +795,26 @@ export default function GamifiedGarden() {
               <Grid3X3 className="w-4 h-4 text-green-600" />
               <span className="font-semibold text-sm text-foreground">{numPots}/{MAX_POTS}</span>
             </div>
+          </div>
+        </div>
+
+        {/* Weather Display */}
+        <div className="bg-card rounded-xl shadow-sm p-4 border">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">{getWeatherIcon(currentWeather)}</span>
+              <div>
+                <h3 className="font-bold text-foreground">Current Weather: {getWeatherName(currentWeather)}</h3>
+                <p className="text-xs text-muted-foreground">
+                  {currentWeather === 'normal' ? 'Normal growing conditions' : `${getWeatherMultiplier(currentWeather)}x plant value multiplier active!`}
+                </p>
+              </div>
+            </div>
+            {currentWeather !== 'normal' && (
+              <div className="text-xs px-2 py-1 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900 dark:to-pink-900 rounded-full font-semibold">
+                {getWeatherMultiplier(currentWeather)}x Value
+              </div>
+            )}
           </div>
         </div>
 
@@ -819,6 +976,88 @@ export default function GamifiedGarden() {
           )}
         </div>
 
+        {/* Harvested Plants Inventory & Sell Area */}
+        <div className="grid md:grid-cols-2 gap-4">
+          {/* Harvested Plants Inventory */}
+          <div className="bg-card rounded-xl shadow-sm p-4 border">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-bold flex items-center gap-2 text-foreground">
+                <Package className="w-5 h-5" /> Harvested Plants ({harvestedPlants.length})
+              </h3>
+            </div>
+            {harvestedPlants.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No harvested plants. Grow and harvest some plants!</p>
+            ) : (
+              <ScrollArea className="h-64">
+                <div className="space-y-2 pr-4">
+                  {harvestedPlants.map(plant => (
+                    <div 
+                      key={plant.id} 
+                      className={`
+                        flex items-center justify-between p-2 border rounded bg-secondary/30 transition-all
+                        ${plant.variant !== 'normal' ? getVariantColor(plant.variant) : ''}
+                      `}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">{plant.icon}</span>
+                        <div>
+                          <div className="font-semibold text-sm text-foreground flex items-center gap-2">
+                            {plant.seedType}
+                            {plant.variant !== 'normal' && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full uppercase font-bold">
+                                {plant.variant}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {plant.sizeKg}kg • {plant.sellPrice} coins
+                          </div>
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => sellHarvestedPlant(plant.id)}
+                        className="bg-green-500 hover:bg-green-600 text-white"
+                      >
+                        Sell
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+          </div>
+
+          {/* Sell All Area */}
+          <div className="bg-card rounded-xl shadow-sm p-4 border">
+            <h3 className="font-bold mb-3 flex items-center gap-2 text-foreground">
+              <Coins className="w-5 h-5" /> Quick Sell
+            </h3>
+            <div className="space-y-4">
+              <div className="p-4 bg-muted/50 rounded-lg">
+                <div className="text-sm font-semibold text-foreground mb-2">Inventory Value</div>
+                <div className="text-2xl font-bold text-green-600">
+                  {harvestedPlants.reduce((sum, plant) => sum + plant.sellPrice, 0)} coins
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {harvestedPlants.length} plants • {harvestedPlants.reduce((sum, plant) => sum + plant.sizeKg, 0).toFixed(1)}kg total
+                </div>
+              </div>
+              <Button
+                onClick={sellAllHarvestedPlants}
+                disabled={harvestedPlants.length === 0}
+                className="w-full bg-green-500 hover:bg-green-600 text-white disabled:opacity-50"
+              >
+                <Coins className="w-4 h-4 mr-2" />
+                Sell All Plants
+              </Button>
+              <div className="text-xs text-muted-foreground text-center">
+                Plants don't spoil - sell them when you need coins!
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Shops */}
         <div className="grid md:grid-cols-2 gap-4">
           {/* Seed Shop */}
@@ -843,7 +1082,7 @@ export default function GamifiedGarden() {
                       key={seed.id} 
                       className={`
                         flex items-center justify-between p-2 border rounded bg-secondary/30 transition-all
-                        ${seed.inStock && seed.stockQuantity > 0 && canAfford ? 'ring-2 ring-white shadow-lg shadow-white/20' : ''}
+                        ${seed.inStock && seed.stockQuantity > 0 && canAfford ? 'ring-1 ring-gray-400/50 shadow-md shadow-gray-400/10' : ''}
                         ${!seed.inStock || seed.stockQuantity <= 0 ? 'opacity-50' : ''}
                       `}
                     >
