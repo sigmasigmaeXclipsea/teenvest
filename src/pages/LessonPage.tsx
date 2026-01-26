@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+<<<<<<< HEAD
 import { ArrowLeft, Clock, CheckCircle, BookOpen, HelpCircle, Award, ChevronLeft, ChevronRight, XCircle, CheckCircle2, MessageCircle, Sparkles } from 'lucide-react';
+=======
+import { ArrowLeft, Clock, CheckCircle, BookOpen, HelpCircle, Award, ChevronLeft, ChevronRight, XCircle, CheckCircle2, MessageCircle, Trophy } from 'lucide-react';
+>>>>>>> 15b2eff (Add podcast and beanstalk game to learning section: AI-narrated lesson podcasts using Gemini Flash 3; interactive beanstalk climbing game with lesson-based questions; cartoony art style matching garden theme)
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +18,8 @@ import { useQuizQuestions, useQuizResults, useSaveQuizResult } from '@/hooks/use
 import { useToast } from '@/hooks/use-toast';
 import AIAssistantCard from '@/components/AIAssistantCard';
 import InteractiveBlockRenderer, { type InteractiveBlock } from '@/components/learn/InteractiveBlockRenderer';
+import LessonPodcast from '@/components/LessonPodcast';
+import BeanstalkGame from '@/components/BeanstalkGame';
 
 const LessonPage = () => {
   const { moduleId } = useParams<{ moduleId: string }>();
@@ -27,7 +33,7 @@ const LessonPage = () => {
   const completeModule = useCompleteModule();
   const saveQuizResult = useSaveQuizResult();
 
-  const [activeView, setActiveView] = useState<'content' | 'quiz'>('content');
+  const [activeView, setActiveView] = useState<'content' | 'quiz' | 'game'>('content');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
   const [showResults, setShowResults] = useState(false);
@@ -276,6 +282,14 @@ const LessonPage = () => {
                 <HelpCircle className="w-4 h-4" />
                 Take Quiz
               </Button>
+              <Button
+                variant={activeView === 'game' ? 'default' : 'outline'}
+                onClick={() => setActiveView('game')}
+                className="gap-2"
+              >
+                <Trophy className="w-4 h-4" />
+                Play Game
+              </Button>
             </div>
 
             {activeView === 'content' ? (
@@ -325,6 +339,12 @@ const LessonPage = () => {
                   </div>
                 </CardContent>
               </Card>
+            ) : activeView === 'game' ? (
+              <BeanstalkGame
+                moduleId={moduleId || ''}
+                title={currentModule?.title || ''}
+                content={currentModule?.content || ''}
+              />
             ) : showResults ? (
               <Card>
                 <CardContent className="p-8">
@@ -465,6 +485,20 @@ const LessonPage = () => {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* Lesson Podcast */}
+            <LessonPodcast
+              moduleId={moduleId || ''}
+              title={currentModule?.title || ''}
+              content={currentModule?.content || ''}
+            />
+
+            {/* Beanstalk Game */}
+            <BeanstalkGame
+              moduleId={moduleId || ''}
+              title={currentModule?.title || ''}
+              content={currentModule?.content || ''}
+            />
+
             {/* AI Assistant */}
             <AIAssistantCard 
               context={`lesson about "${currentModule.title}"`}
