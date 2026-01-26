@@ -5,7 +5,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import Garden2D from '@/components/Garden2D';
+import FreeFormGarden from '@/components/FreeFormGarden';
 
 // Types
 interface Plant {
@@ -20,11 +20,14 @@ interface Plant {
   sellPrice: number;
   basePrice: number; // Store base price for tooltip display
   icon?: string;
+  x: number; // Position in garden
+  y: number; // Position in garden
 }
 
-interface Plot {
-  id: string;
-  plant?: Plant;
+interface Garden {
+  plants: Plant[];
+  width: number;
+  height: number;
 }
 
 interface Seed {
@@ -44,7 +47,7 @@ interface Seed {
 interface Gear {
   id: string;
   name: string;
-  type: 'wateringCan' | 'sprinkler' | 'plotUpgrade';
+  type: 'wateringCan' | 'sprinkler';
   effect: string;
   price: number;
   quantity?: number; // For consumable items like watering cans
@@ -64,19 +67,9 @@ interface HarvestedPlant {
 type Weather = 'normal' | 'rainy' | 'frozen' | 'candy' | 'thunder' | 'lunar';
 
 const MIN_POTS = 3;
-const MAX_POTS = 20; // Increased from 9 to 20 for more progression
 const WILT_THRESHOLD = 90 * 60 * 1000; // 90 minutes without water (increased from 60 min)
 const WATER_REDUCTION_TIME = 20 * 60 * 1000; // Fixed 20 minutes reduction per watering
 const XP_TO_MONEY_RATE = 0.125; // 8 XP = 1 coin (much harder progression)
-
-// Exponential plot upgrade pricing: more expensive for longer progression
-// Prices: 50, 75, 115, 175, 260, 400, 620, 960, 1480, 2280, 3520, 5440, 8400, 13000, 20000, 31000
-function getPlotUpgradePrice(currentPots: number): number {
-  const basePrice = 50;
-  const exponent = 1.6; // Increased exponent for faster growth
-  const upgradeIndex = currentPots - MIN_POTS; // 0, 1, 2, 3, 4, 5, etc.
-  return Math.round(basePrice * Math.pow(exponent, upgradeIndex));
-}
 
 // 40 different seeds ordered by price (cheapest to most expensive) with scaled stock rates
 const SEED_TEMPLATES: Omit<Seed, 'id' | 'inStock' | 'stockQuantity'>[] = [
@@ -291,8 +284,7 @@ export default function GamifiedGarden() {
   const { toast } = useToast();
   const [xp, setXp] = useState(0);
   const [money, setMoney] = useState(0); // Start with 0 coins to make progression harder
-  const [numPots, setNumPots] = useState(MIN_POTS);
-  const [plots, setPlots] = useState<Plot[]>(() => Array.from({ length: MIN_POTS }, (_, i) => ({ id: `plot-${i}` })));
+  const [garden, setGarden] = useState<Garden>({ plants: [], width: 800, height: 600 });
   const [inventory, setInventory] = useState({ seeds: [] as Seed[], gear: [] as Gear[] });
   const [harvestedPlants, setHarvestedPlants] = useState<HarvestedPlant[]>([]); // New harvested plants inventory
   const [shopSeeds, setShopSeeds] = useState<Seed[]>([]);
@@ -300,10 +292,10 @@ export default function GamifiedGarden() {
   const [hasSprinkler, setHasSprinkler] = useState<string | null>(null); // null = none, or name of sprinkler
   const [selectedSeed, setSelectedSeed] = useState<Seed | null>(null);
   const [selectedItem, setSelectedItem] = useState<Gear | null>(null); // For consumable items
-  const [selectedPlant, setSelectedPlant] = useState<Plot | null>(null); // For plant info display
+  const [selectedPlant, setSelectedPlant] = useState<Plant | null>(null); // For plant info display
   const [isWateringMode, setIsWateringMode] = useState(false); // When watering can is selected
   const [isSprinklerMode, setIsSprinklerMode] = useState(false); // When placing sprinkler
-  const [sprinklerPositions, setSprinklerPositions] = useState<{plotId: string, gear: Gear}[]>([]); // Track placed sprinklers
+  const [sprinklerPositions, setSprinklerPositions] = useState<{x: number, y: number, gear: Gear}[]>([]); // Track placed sprinklers
   const [achievements, setAchievements] = useState<string[]>([]); // Achievement tracking
   const [currentWeather, setCurrentWeather] = useState<Weather>('normal');
   
@@ -317,15 +309,13 @@ export default function GamifiedGarden() {
 
   // Load from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem('garden-state-v4');
+    const saved = localStorage.getItem('garden-state-v5');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         setXp(parsed.xp ?? 0);
         setMoney(parsed.money ?? 0); // Default to 0 coins
-        const savedNumPots = parsed.numPots ?? MIN_POTS;
-        setNumPots(savedNumPots);
-        setPlots(parsed.plots ?? Array.from({ length: savedNumPots }, (_, i) => ({ id: `plot-${i}` })));
+        setGarden(parsed.garden ?? { plants: [], width: 800, height: 600 });
         setInventory(parsed.inventory ?? { seeds: [], gear: [] });
         setHarvestedPlants(parsed.harvestedPlants ?? []);
         setSprinklerPositions(parsed.sprinklerPositions ?? []);
@@ -356,9 +346,9 @@ export default function GamifiedGarden() {
 
   // Save to localStorage
   useEffect(() => {
-    const state = { xp, money, numPots, plots, inventory, harvestedPlants, sprinklerPositions, hasSprinkler, currentWeather, seedRestockTime, gearRestockTime, selectedSeed, selectedItem };
-    localStorage.setItem('garden-state-v4', JSON.stringify(state));
-  }, [xp, money, numPots, plots, inventory, harvestedPlants, sprinklerPositions, hasSprinkler, currentWeather, seedRestockTime, gearRestockTime, selectedSeed, selectedItem]);
+    const state = { xp, money, garden, inventory, harvestedPlants, sprinklerPositions, hasSprinkler, currentWeather, seedRestockTime, gearRestockTime, selectedSeed, selectedItem };
+    localStorage.setItem('garden-state-v5', JSON.stringify(state));
+  }, [xp, money, garden, inventory, harvestedPlants, sprinklerPositions, hasSprinkler, currentWeather, seedRestockTime, gearRestockTime, selectedSeed, selectedItem]);
 
   // Timer tick for countdowns
   useEffect(() => {
@@ -467,64 +457,54 @@ export default function GamifiedGarden() {
   
   function restockGear() {
     const gear = GEAR_TEMPLATES.map(template => ({ ...template, id: generateId() }));
-    console.log('Restocking gear with templates:', GEAR_TEMPLATES); // Debug log
-    // Add dynamic plot upgrade with current price
-    gear.push({
-      id: generateId(),
-      name: 'Plot Upgrade',
-      type: 'plotUpgrade',
-      effect: `Adds one more pot (${numPots}/${MAX_POTS})`,
-      price: getPlotUpgradePrice(numPots),
-    });
     console.log('Setting shop gear:', gear); // Debug log
     setShopGear(gear);
   }
 
   // Plant seed
-  function plantSeed(plotId: string, seed: Seed) {
-    setPlots(p => p.map(plot => {
-      if (plot.id === plotId && !plot.plant) {
-        const actualSize = calculateSize(seed.baseSizeKg);
-        const plant: Plant = {
-          id: generateId(),
-          seedType: seed.name,
-          plantedAt: Date.now(),
-          growthTimeMs: seed.baseGrowthTime * 60 * 1000,
-          lastWateredAt: Date.now(),
-          isWilted: false,
-          variant: 'normal',
-          sizeKg: actualSize,
-          sellPrice: calculateSellPrice(seed.sellPrice, actualSize, seed.baseSizeKg),
-          basePrice: seed.sellPrice, // Store base price for tooltip
-          icon: seed.icon,
-        };
-        setInventory(inv => ({ ...inv, seeds: inv.seeds.filter(s => s.id !== seed.id) }));
-        return { ...plot, plant };
-      }
-      return plot;
-    }));
+  function plantSeed(x: number, y: number, seed: Seed) {
+    const actualSize = calculateSize(seed.baseSizeKg);
+    const plant: Plant = {
+      id: generateId(),
+      seedType: seed.name,
+      plantedAt: Date.now(),
+      growthTimeMs: seed.baseGrowthTime * 60 * 1000,
+      lastWateredAt: Date.now(),
+      isWilted: false,
+      variant: 'normal',
+      sizeKg: actualSize,
+      sellPrice: calculateSellPrice(seed.sellPrice, actualSize, seed.baseSizeKg),
+      basePrice: seed.sellPrice, // Store base price for tooltip
+      icon: seed.icon,
+      x: x,
+      y: y,
+    };
+    
+    setGarden(g => ({ ...g, plants: [...g.plants, plant] }));
+    setInventory(inv => ({ ...inv, seeds: inv.seeds.filter(s => s.id !== seed.id) }));
     setSelectedSeed(null);
   }
 
   // Water plant
-  function waterPlant(plotId: string) {
-    setPlots(p => p.map(plot => {
-      if (plot.id === plotId && plot.plant) {
-        const plant = plot.plant;
-        const elapsed = Date.now() - plant.plantedAt;
-        const remaining = Math.max(0, plant.growthTimeMs - elapsed);
-        const newRemaining = Math.max(0, remaining - WATER_REDUCTION_TIME); // Fixed 20 minutes reduction
-        return {
-          ...plot,
-          plant: {
-            ...plant,
-            plantedAt: Date.now() - (plant.growthTimeMs - newRemaining),
-            lastWateredAt: Date.now(),
-            isWilted: false,
-          },
-        };
-      }
-      return plot;
+  function waterPlant(plantId: string) {
+    setGarden(g => ({
+      ...g,
+      plants: g.plants.map(plant => {
+        if (plant.id === plantId) {
+          const elapsed = Date.now() - plant.plantedAt;
+          const remaining = Math.max(0, plant.growthTimeMs - elapsed);
+          const newRemaining = Math.max(0, remaining - WATER_REDUCTION_TIME);
+          const newGrowthTimeMs = elapsed + newRemaining;
+          
+          return { 
+            ...plant, 
+            lastWateredAt: Date.now(), 
+            growthTimeMs: newGrowthTimeMs,
+            isWilted: false 
+          };
+        }
+        return plant;
+      })
     }));
   }
 
@@ -588,10 +568,9 @@ export default function GamifiedGarden() {
   }
 
   // Harvest plant - now gives money instead of XP
-  function harvestPlant(plotId: string) {
-    const plot = plots.find(p => p.id === plotId);
-    if (!plot?.plant) return;
-    const plant = plot.plant;
+  function harvestPlant(plantId: string) {
+    const plant = garden.plants.find(p => p.id === plantId);
+    if (!plant) return;
     if (Date.now() - plant.plantedAt < plant.growthTimeMs) return;
     
     // Apply weather mutations with specific percentages
@@ -658,7 +637,7 @@ export default function GamifiedGarden() {
     
     toast({ title, description });
     
-    setPlots(p => p.map(p => p.id === plotId ? { ...p, plant: undefined } : p));
+    setGarden(g => ({ ...g, plants: g.plants.filter(p => p.id !== plantId) }));
   }
 
   // Sell harvested plant
@@ -735,18 +714,7 @@ export default function GamifiedGarden() {
     if (money >= gear.price) {
       setMoney(m => m - gear.price);
       
-      if (gear.type === 'plotUpgrade') {
-        if (numPots < MAX_POTS) {
-          const newNumPots = numPots + 1;
-          setNumPots(newNumPots);
-          setPlots(p => [...p, { id: `plot-${newNumPots - 1}` }]);
-          toast({ title: 'Plot Upgraded!', description: `You now have ${newNumPots} pots` });
-        } else {
-          toast({ title: 'Max pots reached', description: `You already have ${MAX_POTS} pots`, variant: 'destructive' });
-          setMoney(m => m + gear.price); // Refund
-          return;
-        }
-      } else if (gear.type === 'wateringCan') {
+      if (gear.type === 'wateringCan') {
         // Stack watering cans - add uses to existing or create new
         const existingCan = inventory.gear.find(g => g.type === 'wateringCan');
         if (existingCan) {
@@ -785,38 +753,26 @@ export default function GamifiedGarden() {
     }
   }
 
-  // Place sprinkler in plot
-  function placeSprinkler(plotId: string, sprinkler: Gear) {
-    // Check if plot is empty and is an inner corner
-    const plotIndex = parseInt(plotId.split('-')[1]);
-    const gridSize = Math.ceil(Math.sqrt(numPots));
-    const row = Math.floor(plotIndex / gridSize);
-    const col = plotIndex % gridSize;
+  // Place sprinkler in garden
+  function placeSprinkler(x: number, y: number, sprinkler: Gear) {
+    // Check if sprinkler already exists nearby
+    const minDistance = 100;
+    const tooClose = sprinklerPositions.some(s => {
+      const distance = Math.sqrt(Math.pow(s.x - x, 2) + Math.pow(s.y - y, 2));
+      return distance < minDistance;
+    });
     
-    // Check if it's an inner corner (not on outer edges)
-    const isInnerCorner = (row > 0 && row < gridSize - 1) && (col > 0 && col < gridSize - 1);
-    
-    if (!isInnerCorner) {
+    if (tooClose) {
       toast({ 
-        title: 'Invalid Placement', 
-        description: 'Sprinklers can only be placed in inner corner plots', 
-        variant: 'destructive' 
-      });
-      return;
-    }
-    
-    // Check if sprinkler already exists here
-    if (sprinklerPositions.some(s => s.plotId === plotId)) {
-      toast({ 
-        title: 'Sprinkler Already Placed', 
-        description: 'This plot already has a sprinkler', 
+        title: 'Too Close', 
+        description: 'Sprinklers need more space between them', 
         variant: 'destructive' 
       });
       return;
     }
     
     // Place the sprinkler
-    setSprinklerPositions(prev => [...prev, { plotId, gear: sprinkler }]);
+    setSprinklerPositions(prev => [...prev, { x, y, gear: sprinkler }]);
     setInventory(inv => ({
       ...inv,
       gear: inv.gear.filter(g => g.id !== sprinkler.id)
@@ -935,58 +891,44 @@ export default function GamifiedGarden() {
           </div>
         </div>
 
-        {/* 2D Garden */}
-        <div className="bg-card rounded-xl shadow-sm p-4 md:p-6 border">
-          <h2 className="text-lg font-bold mb-4 text-foreground flex items-center gap-2">
-            <Sprout className="w-5 h-5 text-green-500" />
-            Garden ({numPots} Pots)
-          </h2>
-          <Garden2D 
-            plots={plots}
-            selectedSeed={selectedSeed}
-            onPlotClick={(plotId, action) => {
-              const plot = plots.find(p => p.id === plotId);
-              
-              if (action === 'plant' && selectedSeed) {
-                plantSeed(plotId, selectedSeed);
-              } else if (action === 'water') {
-                if (isWateringMode && selectedItem?.type === 'wateringCan' && selectedItem.uses && selectedItem.uses > 0) {
-                  // Actually water the plant when in watering mode
-                  waterPlant(plotId);
-                  // Use one watering can
-                  setInventory(inv => ({
-                    ...inv,
-                    gear: inv.gear.map(g => 
-                      g.id === selectedItem.id 
-                        ? { ...g, uses: (g.uses || 1) - 1 }
-                        : g
-                    ).filter(g => g.uses === undefined || g.uses > 0)
-                  }));
-                  setSelectedItem(null);
-                  setIsWateringMode(false);
-                } else if (isSprinklerMode && selectedItem?.type === 'sprinkler') {
-                  // Place sprinkler
-                  placeSprinkler(plotId, selectedItem);
-                } else {
-                  // Show plant info if not in watering mode
-                  if (plot?.plant) {
-                    setSelectedPlant(plot);
-                  }
-                }
-              } else if (action === 'harvest') {
-                harvestPlant(plotId);
-              } else if (!plot?.plant) {
-                // Click on empty plot - show plant info if available
-                setSelectedPlant(null);
-              }
-            }}
-            formatTime={formatTime}
-            sprinklerPositions={sprinklerPositions}
-          />
-          <p className="text-xs text-muted-foreground mt-3 text-center">
-            {isWateringMode ? '🚿 Click a plant to water it' : 'Hover over plants to see info • Click pots to plant/harvest'}
-          </p>
-        </div>
+        {/* Free-Form Garden */}
+        <FreeFormGarden 
+          garden={garden}
+          selectedSeed={selectedSeed}
+          selectedItem={selectedItem}
+          isWateringMode={isWateringMode}
+          isSprinklerMode={isSprinklerMode}
+          onPlantSeed={(x, y, seed) => {
+            plantSeed(x, y, seed);
+          }}
+          onWaterPlant={(plantId) => {
+            if (isWateringMode && selectedItem?.type === 'wateringCan' && selectedItem.uses && selectedItem.uses > 0) {
+              waterPlant(plantId);
+              // Use one watering can
+              setInventory(inv => ({
+                ...inv,
+                gear: inv.gear.map(g => 
+                  g.id === selectedItem.id 
+                    ? { ...g, uses: (g.uses || 1) - 1 }
+                    : g
+                ).filter(g => g.uses === undefined || g.uses > 0)
+              }));
+              setSelectedItem(null);
+              setIsWateringMode(false);
+            }
+          }}
+          onHarvestPlant={(plantId) => {
+            harvestPlant(plantId);
+          }}
+          onSelectPlant={(plant) => {
+            setSelectedPlant(plant);
+          }}
+          onPlaceSprinkler={(x, y, sprinkler) => {
+            placeSprinkler(x, y, sprinkler);
+          }}
+          formatTime={formatTime}
+          sprinklerPositions={sprinklerPositions}
+        />
 
         {/* Seed Inventory */}
         <div className="bg-card rounded-xl shadow-sm p-4 border">
@@ -1260,19 +1202,13 @@ export default function GamifiedGarden() {
             <div className="space-y-2">
               {shopGear.map(gear => {
                 const isOwned = gear.type === 'sprinkler' && hasSprinkler === gear.name;
-                const isMaxPlots = gear.type === 'plotUpgrade' && numPots >= MAX_POTS;
-                const disabled = money < gear.price || isOwned || isMaxPlots;
+                const disabled = money < gear.price || isOwned;
                 
                 return (
                   <div key={gear.id} className="flex items-center justify-between p-2 border rounded bg-secondary/30">
                     <div>
                       <div className="font-semibold text-sm text-foreground flex items-center gap-2">
                         {gear.name}
-                        {gear.type === 'plotUpgrade' && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 dark:bg-green-900 text-green-600">
-                            {numPots}/{MAX_POTS}
-                          </span>
-                        )}
                       </div>
                       <div className="text-xs text-muted-foreground">{gear.effect}</div>
                     </div>
@@ -1283,7 +1219,7 @@ export default function GamifiedGarden() {
                       variant="secondary"
                       className="text-xs"
                     >
-                      {isOwned ? 'Owned' : isMaxPlots ? 'Maxed' : (
+                      {isOwned ? 'Owned' : (
                         <>
                           <Coins className="w-3 h-3 mr-1" />
                           {gear.price}
