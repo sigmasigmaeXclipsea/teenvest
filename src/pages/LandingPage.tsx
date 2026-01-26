@@ -1,9 +1,255 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { TrendingUp, BookOpen, Trophy, Shield, ArrowRight, BarChart3, Briefcase, Target, Bot, Sparkles, Zap, Flame, Rocket, User, LogOut, Play, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { motion, useSpring } from 'framer-motion';
+import { motion, useSpring, useMotionValue, useTransform, animate, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useState, useEffect, useMemo, memo, useRef, useCallback, type ReactNode, type ElementType, type FC, type MouseEvent } from 'react';
+
+// Infinite recycling carousel component - like an airport carousel
+const InfiniteCarousel = ({ children, direction = 'left', speed = 1 }: { children: React.ReactNode[], direction?: 'left' | 'right', speed?: number }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [isPaused, setIsPaused] = useState(false);
+  const positionRef = useRef(0);
+  const animationRef = useRef<number>();
+
+  useEffect(() => {
+    const track = trackRef.current;
+    const container = containerRef.current;
+    if (!track || !container) return;
+
+    const cards = Array.from(track.children) as HTMLElement[];
+    if (cards.length === 0) return;
+
+    const cardWidth = cards[0].offsetWidth + 24; // width + gap
+    const totalWidth = cardWidth * cards.length;
+
+    // Set initial position for reverse direction
+    if (direction === 'right') {
+      positionRef.current = -cardWidth * (cards.length / 2);
+    }
+
+    const animate = () => {
+      if (!isPaused) {
+        if (direction === 'left') {
+          positionRef.current -= speed;
+          // When first card is fully off screen, move it to the end
+          if (positionRef.current <= -cardWidth) {
+            positionRef.current += cardWidth;
+            const firstCard = track.firstElementChild;
+            if (firstCard) {
+              track.appendChild(firstCard);
+            }
+          }
+        } else {
+          positionRef.current += speed;
+          // When last card comes into view, move last card to beginning
+          if (positionRef.current >= 0) {
+            positionRef.current -= cardWidth;
+            const lastCard = track.lastElementChild;
+            if (lastCard) {
+              track.insertBefore(lastCard, track.firstElementChild);
+            }
+          }
+        }
+        track.style.transform = `translateX(${positionRef.current}px)`;
+      }
+      animationRef.current = requestAnimationFrame(animate);
+    };
+
+    animationRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [direction, speed, isPaused]);
+
+  return (
+    <div 
+      ref={containerRef}
+      className="relative w-screen overflow-hidden -ml-48 -mr-4"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+    >
+      <div ref={trackRef} className="flex gap-6">
+        {children}
+      </div>
+    </div>
+  );
+};
+
+// Global cursor effect - continuously morphing blob that never holds one form
+const GlobalCursorEffect = memo(() => {
+  const blobRef = useRef<HTMLDivElement>(null);
+  const blob2Ref = useRef<HTMLDivElement>(null);
+  const blob3Ref = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    let mouseX = window.innerWidth / 2;
+    let mouseY = window.innerHeight / 2;
+    let blobX = mouseX;
+    let blobY = mouseY;
+    let blob2X = mouseX;
+    let blob2Y = mouseY;
+    let blob3X = mouseX;
+    let blob3Y = mouseY;
+    let velocityX = 0;
+    let velocityY = 0;
+    let rotation = 0;
+    let scaleX = 1;
+    let scaleY = 1;
+    let morphTime = 0;
+    let morphTime2 = 0;
+    let morphTime3 = 0;
+
+    const handleMouseMove = (e: globalThis.MouseEvent) => {
+      const prevX = mouseX;
+      const prevY = mouseY;
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+      velocityX = mouseX - prevX;
+      velocityY = mouseY - prevY;
+    };
+
+    let animationId: number;
+    const animate = () => {
+      // Main blob - follows cursor with smoother easing
+      const dx = mouseX - blobX;
+      const dy = mouseY - blobY;
+      blobX += dx * 0.06;
+      blobY += dy * 0.06;
+      
+      // Second blob - slower, more flowy follow
+      const dx2 = mouseX - blob2X;
+      const dy2 = mouseY - blob2Y;
+      blob2X += dx2 * 0.03;
+      blob2Y += dy2 * 0.03;
+      
+      // Third blob - slowest, most flowy follow
+      const dx3 = mouseX - blob3X;
+      const dy3 = mouseY - blob3Y;
+      blob3X += dx3 * 0.015;
+      blob3Y += dy3 * 0.015;
+      
+      // Calculate morph based on velocity
+      const speed = Math.sqrt(velocityX * velocityX + velocityY * velocityY);
+      const targetScaleX = 1 + Math.min(speed * 0.02, 0.5);
+      const targetScaleY = 1 - Math.min(speed * 0.01, 0.3);
+      scaleX += (targetScaleX - scaleX) * 0.1;
+      scaleY += (targetScaleY - scaleY) * 0.1;
+      
+      // Rotation based on movement direction
+      if (speed > 1) {
+        const targetRotation = Math.atan2(velocityY, velocityX) * (180 / Math.PI);
+        const diff = targetRotation - rotation;
+        rotation += diff * 0.15;
+      }
+      
+      // Continuous morphing animation - very smooth and flowy
+      morphTime += 0.002;
+      morphTime2 += 0.0025;
+      morphTime3 += 0.0015;
+      
+      // Generate gentle border-radius values with minimal changes
+      const r1 = 45 + Math.sin(morphTime) * 8;
+      const r2 = 55 + Math.cos(morphTime * 1.1) * 8;
+      const r3 = 55 + Math.sin(morphTime * 0.9) * 8;
+      const r4 = 45 + Math.cos(morphTime * 1.0) * 8;
+      const r5 = 45 + Math.cos(morphTime * 0.95) * 5;
+      const r6 = 45 + Math.sin(morphTime * 1.05) * 5;
+      const r7 = 55 + Math.cos(morphTime * 0.9) * 5;
+      const r8 = 50 + Math.sin(morphTime * 1.1) * 5;
+      
+      const r1_2 = 48 + Math.sin(morphTime2) * 6;
+      const r2_2 = 52 + Math.cos(morphTime2 * 1.0) * 6;
+      const r3_2 = 48 + Math.sin(morphTime2 * 0.9) * 6;
+      const r4_2 = 52 + Math.cos(morphTime2 * 1.1) * 6;
+      const r5_2 = 48 + Math.cos(morphTime2 * 0.95) * 4;
+      const r6_2 = 48 + Math.sin(morphTime2 * 1.05) * 4;
+      const r7_2 = 52 + Math.cos(morphTime2 * 0.9) * 4;
+      const r8_2 = 50 + Math.sin(morphTime2 * 1.1) * 4;
+      
+      const r1_3 = 47 + Math.sin(morphTime3) * 4;
+      const r2_3 = 53 + Math.cos(morphTime3 * 1.0) * 4;
+      const r3_3 = 53 + Math.sin(morphTime3 * 0.9) * 4;
+      const r4_3 = 47 + Math.cos(morphTime3 * 1.1) * 4;
+      const r5_3 = 47 + Math.cos(morphTime3 * 0.95) * 3;
+      const r6_3 = 47 + Math.sin(morphTime3 * 1.05) * 3;
+      const r7_3 = 53 + Math.cos(morphTime3 * 0.9) * 3;
+      const r8_3 = 50 + Math.sin(morphTime3 * 1.1) * 3;
+      
+      // Decay velocity
+      velocityX *= 0.95;
+      velocityY *= 0.95;
+      
+      if (blobRef.current) {
+        blobRef.current.style.transform = `translate(${blobX}px, ${blobY}px) translate(-50%, -50%) rotate(${rotation}deg) scale(${scaleX}, ${scaleY})`;
+        blobRef.current.style.borderRadius = `${r1}% ${r2}% ${r3}% ${r4}% / ${r5}% ${r6}% ${r7}% ${r8}%`;
+      }
+      if (blob2Ref.current) {
+        blob2Ref.current.style.transform = `translate(${blob2X}px, ${blob2Y}px) translate(-50%, -50%) rotate(${rotation * 0.7}deg) scale(${1 + (scaleX - 1) * 0.6}, ${1 + (scaleY - 1) * 0.6})`;
+        blob2Ref.current.style.borderRadius = `${r1_2}% ${r2_2}% ${r3_2}% ${r4_2}% / ${r5_2}% ${r6_2}% ${r7_2}% ${r8_2}%`;
+      }
+      if (blob3Ref.current) {
+        blob3Ref.current.style.transform = `translate(${blob3X}px, ${blob3Y}px) translate(-50%, -50%) rotate(${rotation * 0.4}deg) scale(${1 + (scaleX - 1) * 0.3}, ${1 + (scaleY - 1) * 0.3})`;
+        blob3Ref.current.style.borderRadius = `${r1_3}% ${r2_3}% ${r3_3}% ${r4_3}% / ${r5_3}% ${r6_3}% ${r7_3}% ${r8_3}%`;
+      }
+      
+      animationId = requestAnimationFrame(animate);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    animationId = requestAnimationFrame(animate);
+    
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      cancelAnimationFrame(animationId);
+    };
+  }, []);
+
+  return (
+    <div className="pointer-events-none fixed inset-0 z-30 overflow-hidden">
+      {/* Outer blob - green/cyan, largest, slowest */}
+      <div
+        ref={blob3Ref}
+        className="absolute"
+        style={{
+          width: '500px',
+          height: '500px',
+          background: 'radial-gradient(ellipse at center, rgba(34, 197, 94, 0.06) 0%, rgba(6, 182, 212, 0.04) 40%, transparent 70%)',
+          filter: 'blur(60px',
+          borderRadius: '40% 60% 70% 30% / 40% 50% 60% 50%',
+        }}
+      />
+      {/* Middle blob - purple */}
+      <div
+        ref={blob2Ref}
+        className="absolute"
+        style={{
+          width: '350px',
+          height: '350px',
+          background: 'radial-gradient(ellipse at center, rgba(168, 85, 247, 0.07) 0%, rgba(139, 92, 246, 0.05) 40%, transparent 70%)',
+          filter: 'blur(40px',
+          borderRadius: '60% 40% 30% 70% / 60% 30% 70% 40%',
+        }}
+      />
+      {/* Inner blob - bright center */}
+      <div
+        ref={blobRef}
+        className="absolute"
+        style={{
+          width: '200px',
+          height: '200px',
+          background: 'radial-gradient(ellipse at center, rgba(34, 197, 94, 0.08) 0%, rgba(168, 85, 247, 0.06) 50%, transparent 70%)',
+          filter: 'blur(25px',
+          borderRadius: '30% 70% 70% 30% / 30% 30% 70% 70%',
+        }}
+      />
+    </div>
+  );
+});
 
 // Simple marquee for stock ticker
 const Marquee = ({ children, direction = 'left', speed = 25 }: { children: ReactNode; direction?: 'left' | 'right'; speed?: number }) => (
@@ -97,12 +343,13 @@ const DashboardPreview = memo(() => {
   const [pulsePhase, setPulsePhase] = useState(0);
   
   // Spring-based mouse tracking for smooth movement
-  const springConfig = { stiffness: 120, damping: 25, mass: 0.8 };
-  const rotateX = useSpring(0, springConfig);
-  const rotateY = useSpring(0, springConfig);
+  const springConfig = { stiffness: 80, damping: 20, mass: 1.2 };
+  const slowReturnConfig = { stiffness: 30, damping: 15, mass: 2 }; // Slower return when leaving
+  const rotateX = useSpring(0, slowReturnConfig);
+  const rotateY = useSpring(0, slowReturnConfig);
   const glowX = useSpring(50, springConfig);
   const glowY = useSpring(50, springConfig);
-  const glowOpacity = useSpring(0, { stiffness: 200, damping: 30 });
+  const glowOpacity = useSpring(0, { stiffness: 50, damping: 20, mass: 1.5 });
   const cursorGlowX = useSpring(0, { stiffness: 300, damping: 30 });
   const cursorGlowY = useSpring(0, { stiffness: 300, damping: 30 });
 
@@ -172,9 +419,114 @@ const DashboardPreview = memo(() => {
   const pulseIntensity = Math.sin(pulsePhase * Math.PI / 180) * 0.3 + 0.7;
   
   return (
-    <div className="relative w-full max-w-xl mx-auto" style={{ perspective: '1000px' }}>
+    <div className="relative w-full max-w-2xl mx-auto" style={{ perspective: '1200px' }}>
       {/* Floating particles behind */}
       <FloatingParticles />
+      
+      {/* Outer ambient glow rings - smoother flowing */}
+      <div className="absolute -inset-20 pointer-events-none">
+        <motion.div 
+          className="absolute inset-0 rounded-full blur-3xl"
+          animate={{
+            background: [
+              'radial-gradient(ellipse at 30% 30%, hsl(var(--primary) / 0.25), transparent 60%)',
+              'radial-gradient(ellipse at 70% 30%, hsl(var(--accent) / 0.2), transparent 60%)',
+              'radial-gradient(ellipse at 70% 70%, hsl(var(--primary) / 0.25), transparent 60%)',
+              'radial-gradient(ellipse at 30% 70%, hsl(var(--accent) / 0.2), transparent 60%)',
+              'radial-gradient(ellipse at 30% 30%, hsl(var(--primary) / 0.25), transparent 60%)',
+            ],
+            scale: [1, 1.05, 1, 0.95, 1],
+          }}
+          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+        />
+        <motion.div 
+          className="absolute inset-8 rounded-full blur-2xl"
+          animate={{
+            background: [
+              'radial-gradient(ellipse at 60% 40%, hsl(var(--accent) / 0.2), transparent 50%)',
+              'radial-gradient(ellipse at 40% 60%, hsl(var(--primary) / 0.15), transparent 50%)',
+              'radial-gradient(ellipse at 60% 60%, hsl(var(--accent) / 0.2), transparent 50%)',
+              'radial-gradient(ellipse at 40% 40%, hsl(var(--primary) / 0.15), transparent 50%)',
+              'radial-gradient(ellipse at 60% 40%, hsl(var(--accent) / 0.2), transparent 50%)',
+            ],
+            scale: [1, 0.95, 1, 1.05, 1],
+          }}
+          transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+        />
+      </div>
+      
+      {/* Circle light effect under dashboard */}
+      <motion.div
+        className="absolute -bottom-16 left-1/2 -translate-x-1/2 w-[120%] h-32 pointer-events-none"
+        animate={{
+          opacity: [0.4, 0.7, 0.4],
+          scale: [1, 1.1, 1],
+        }}
+        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-t from-primary/30 via-primary/10 to-transparent rounded-full blur-2xl" />
+        <div className="absolute inset-4 bg-gradient-to-t from-accent/20 via-transparent to-transparent rounded-full blur-xl" />
+      </motion.div>
+      
+      {/* Orbiting particles - smoother with fade */}
+      <div className="absolute inset-0 pointer-events-none">
+        <motion.div
+          className="absolute w-3 h-3 rounded-full bg-primary/60 blur-sm"
+          animate={{
+            x: [0, 100, 200, 100, 0],
+            y: [-20, 50, 0, -50, -20],
+            opacity: [0, 1, 1, 1, 0],
+          }}
+          transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+          style={{ top: '10%', left: '0%' }}
+        />
+        <motion.div
+          className="absolute w-2 h-2 rounded-full bg-accent/60 blur-sm"
+          animate={{
+            x: [0, -80, -160, -80, 0],
+            y: [20, -40, 20, 80, 20],
+            opacity: [0, 1, 1, 1, 0],
+          }}
+          transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
+          style={{ top: '80%', right: '0%' }}
+        />
+        <motion.div
+          className="absolute w-4 h-4 rounded-full bg-primary/40 blur-md"
+          animate={{
+            x: [0, 50, 0, -50, 0],
+            y: [0, -30, -60, -30, 0],
+            opacity: [0, 1, 1, 1, 0],
+          }}
+          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+          style={{ top: '50%', left: '-5%' }}
+        />
+        <motion.div
+          className="absolute w-2 h-2 rounded-full bg-green-400/60 blur-sm"
+          animate={{
+            x: [0, -60, 0, 60, 0],
+            y: [0, 40, 80, 40, 0],
+            opacity: [0, 1, 1, 1, 0],
+          }}
+          transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut', delay: 3 }}
+          style={{ bottom: '10%', left: '20%' }}
+        />
+      </div>
+      
+      {/* Glowing border effect */}
+      <motion.div
+        className="absolute -inset-1 rounded-3xl pointer-events-none"
+        animate={{
+          background: [
+            'linear-gradient(0deg, hsl(var(--primary) / 0.3), transparent, hsl(var(--accent) / 0.3))',
+            'linear-gradient(90deg, hsl(var(--accent) / 0.3), transparent, hsl(var(--primary) / 0.3))',
+            'linear-gradient(180deg, hsl(var(--primary) / 0.3), transparent, hsl(var(--accent) / 0.3))',
+            'linear-gradient(270deg, hsl(var(--accent) / 0.3), transparent, hsl(var(--primary) / 0.3))',
+            'linear-gradient(360deg, hsl(var(--primary) / 0.3), transparent, hsl(var(--accent) / 0.3))',
+          ],
+        }}
+        transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+        style={{ filter: 'blur(8px)' }}
+      />
       
       {/* Cursor glow follower - fixed position */}
       {isHovering && (
@@ -224,15 +576,25 @@ const DashboardPreview = memo(() => {
       <motion.div
         ref={containerRef}
         initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3, duration: 0.5 }}
+        animate={{ 
+          opacity: 1, 
+          y: 0,
+          rotateX: isHovering ? undefined : [0, 1, 0, -1, 0],
+          rotateY: isHovering ? undefined : [0, 1.5, 0, -1.5, 0],
+        }}
+        transition={{ 
+          opacity: { delay: 0.3, duration: 0.5 },
+          y: { delay: 0.3, duration: 0.5 },
+          rotateX: { duration: 6, repeat: Infinity, ease: 'easeInOut' },
+          rotateY: { duration: 8, repeat: Infinity, ease: 'easeInOut' },
+        }}
         onMouseMove={handleMouseMove}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         className="relative will-change-transform group"
         style={{
-          rotateX,
-          rotateY,
+          rotateX: isHovering ? rotateX : undefined,
+          rotateY: isHovering ? rotateY : undefined,
           transformStyle: 'preserve-3d',
         }}
       >
@@ -296,7 +658,7 @@ const DashboardPreview = memo(() => {
           </div>
           
           {/* Dashboard content */}
-          <div className="p-4 space-y-4 relative z-10">
+          <div className="p-6 space-y-5 relative z-10">
             {/* Stats */}
             <div className="grid grid-cols-3 gap-3">
               <div className="p-3 rounded-xl bg-muted/30 border border-border/30">
@@ -369,31 +731,63 @@ const DashboardPreview = memo(() => {
   );
 });
 
-// Feature card - simplified
+// Simple feature card with screenshot on hover
 type FeatureCardProps = {
   icon: ElementType;
   title: string;
   desc: string;
   gradient: string;
   delay?: number;
+  screenshot?: string;
 };
 
-const FeatureCard: FC<FeatureCardProps> = ({ icon: Icon, title, desc, gradient, delay = 0 }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true, margin: "-50px" }}
-    transition={{ duration: 0.4, delay }}
-    className="group relative overflow-hidden rounded-2xl bg-card border border-border/50 p-6 transition-all duration-300 hover:border-primary/30 hover:shadow-lg"
-  >
-    <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100 bg-[radial-gradient(circle_at_20%_10%,hsl(var(--primary))_0%,transparent_55%)]" />
-    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center mb-4 shadow-md group-hover:scale-105 transition-transform duration-300`}>
-      <Icon className="w-6 h-6 text-white" />
+const FeatureCard: FC<FeatureCardProps> = ({ icon: Icon, title, desc, gradient, screenshot }) => {
+  const [isHovering, setIsHovering] = useState(false);
+  
+  return (
+    <div
+      onMouseEnter={() => setIsHovering(true)}
+      onMouseLeave={() => setIsHovering(false)}
+      className="group relative overflow-hidden rounded-2xl bg-card border border-border/50 p-8 transition-all duration-300 hover:border-primary/30 hover:shadow-2xl cursor-pointer h-full"
+      style={{ minHeight: '420px' }}
+    >
+      {/* Icon - no glow effect */}
+      <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg relative z-10 mb-5`}>
+        <Icon className="w-8 h-8 text-white" />
+      </div>
+      
+      {/* Content */}
+      <div className="relative z-10">
+        <h3 className="font-bold text-xl mb-3">{title}</h3>
+        <p className="text-base text-muted-foreground leading-relaxed">{desc}</p>
+      </div>
+      
+      {/* Screenshot overlay on hover - black backdrop, bigger screenshots */}
+      {screenshot && (
+        <div 
+          className={`absolute inset-0 bg-black rounded-2xl p-5 flex flex-col z-20 transition-all duration-500 ${isHovering ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        >
+          <div className="flex items-center gap-4 mb-3">
+            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg`}>
+              <Icon className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h3 className="font-bold text-lg text-white">{title}</h3>
+              <p className="text-sm text-white/80">{desc}</p>
+            </div>
+          </div>
+          <div className="flex-1 rounded-xl overflow-hidden bg-gray-900 shadow-2xl border border-white/10 min-h-[300px]">
+            <img
+              src={screenshot}
+              alt={`${title} screenshot`}
+              className="w-full h-full object-contain"
+            />
+          </div>
+        </div>
+      )}
     </div>
-    <h3 className="text-lg font-bold mb-2">{title}</h3>
-    <p className="text-sm text-muted-foreground">{desc}</p>
-  </motion.div>
-);
+  );
+};
 
 const LandingPage = () => {
   const { user, signOut } = useAuth();
@@ -406,6 +800,8 @@ const LandingPage = () => {
 
   return (
     <div className="min-h-screen bg-background relative overflow-x-hidden">
+      {/* Global cursor effect */}
+      <GlobalCursorEffect />
       {/* Background gradient - static for performance */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
@@ -491,7 +887,43 @@ const LandingPage = () => {
               <Star className="w-3 h-3 text-warning" />
             </div>
             
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight mb-6 leading-tight">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight mb-6 leading-tight relative">
+              {/* Star particles - appear and disappear */}
+              <motion.span
+                className="absolute -left-4 -top-4 text-warning"
+                animate={{ rotate: [0, 360], scale: [0, 1.2, 1, 1.2, 0], opacity: [0, 1, 1, 1, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                <Star className="w-5 h-5 fill-warning" />
+              </motion.span>
+              <motion.span
+                className="absolute -right-4 top-2 text-primary"
+                animate={{ rotate: [360, 0], scale: [0, 1.3, 1, 1.3, 0], opacity: [0, 1, 1, 1, 0] }}
+                transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+              >
+                <Star className="w-4 h-4 fill-primary" />
+              </motion.span>
+              <motion.span
+                className="absolute -left-2 bottom-0 text-accent"
+                animate={{ rotate: [0, -360], scale: [0, 1.4, 1, 1.4, 0], opacity: [0, 1, 1, 1, 0] }}
+                transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
+              >
+                <Star className="w-3 h-3 fill-current" />
+              </motion.span>
+              <motion.span
+                className="absolute right-2 -bottom-2 text-warning"
+                animate={{ rotate: [0, 360], scale: [0, 1.2, 1, 1.2, 0], opacity: [0, 1, 1, 1, 0] }}
+                transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
+              >
+                <Star className="w-4 h-4 fill-warning" />
+              </motion.span>
+              <motion.span
+                className="absolute -right-6 bottom-4 text-green-400"
+                animate={{ rotate: [180, -180], scale: [0, 1.3, 1, 1.3, 0], opacity: [0, 1, 1, 1, 0] }}
+                transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut', delay: 3 }}
+              >
+                <Sparkles className="w-5 h-5" />
+              </motion.span>
               <span className="block">Build Your</span>
               <span className="gradient-text">Financial Empire</span>
             </h1>
@@ -772,25 +1204,53 @@ const LandingPage = () => {
             </h2>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
-            {[
-              { icon: BarChart3, title: 'Stock Screener', desc: 'Filter 5,000+ stocks by price, sector, and risk.', gradient: 'from-primary to-primary-glow' },
-              { icon: Briefcase, title: 'Paper Trading', desc: 'Trade with $10K virtual cash. Real data, zero losses.', gradient: 'from-accent to-chart-5' },
-              { icon: Trophy, title: 'Leaderboards', desc: 'Compete globally and track your ranking.', gradient: 'from-warning to-chart-5' },
-              { icon: BookOpen, title: 'Bite-Sized Lessons', desc: 'Learn investing in 5-minute lessons.', gradient: 'from-chart-3 to-primary' },
-              { icon: Rocket, title: 'Level Up System', desc: 'Earn XP, unlock achievements, track progress.', gradient: 'from-chart-5 to-destructive' },
-              { icon: Sparkles, title: 'AI Explanations', desc: 'Every market move explained simply.', gradient: 'from-primary to-accent' },
-            ].map((feature, i) => (
-              <FeatureCard
-                key={i}
-                icon={feature.icon}
-                title={feature.title}
-                desc={feature.desc}
-                gradient={feature.gradient}
-                delay={i * 0.05}
-              />
-            ))}
+          {/* First Carousel - First 3 Features */}
+          <div className="mb-8">
+            <InfiniteCarousel direction="left" speed={1.5}>
+              {[
+                { icon: BarChart3, title: 'Stock Screener', desc: 'Filter 5,000+ stocks by price, sector, and risk.', gradient: 'from-primary to-primary-glow', screenshot: '/screenshots/stock-screener.png' },
+                { icon: Briefcase, title: 'Paper Trading', desc: 'Trade with $10K virtual cash. Real data, zero losses.', gradient: 'from-accent to-chart-5', screenshot: '/screenshots/paper-trading.png' },
+                { icon: Trophy, title: 'Leaderboards', desc: 'Compete globally and track your ranking.', gradient: 'from-warning to-chart-5', screenshot: '/screenshots/leaderboards.png' },
+                { icon: BarChart3, title: 'Stock Screener', desc: 'Filter 5,000+ stocks by price, sector, and risk.', gradient: 'from-primary to-primary-glow', screenshot: '/screenshots/stock-screener.png' },
+                { icon: Briefcase, title: 'Paper Trading', desc: 'Trade with $10K virtual cash. Real data, zero losses.', gradient: 'from-accent to-chart-5', screenshot: '/screenshots/paper-trading.png' },
+                { icon: Trophy, title: 'Leaderboards', desc: 'Compete globally and track your ranking.', gradient: 'from-warning to-chart-5', screenshot: '/screenshots/leaderboards.png' },
+              ].map((feature, i) => (
+                <div key={i} className="flex-shrink-0 w-[600px]">
+                  <FeatureCard
+                    icon={feature.icon}
+                    title={feature.title}
+                    desc={feature.desc}
+                    gradient={feature.gradient}
+                    screenshot={feature.screenshot}
+                    delay={0}
+                  />
+                </div>
+              ))}
+            </InfiniteCarousel>
           </div>
+
+          {/* Second Carousel - Last 3 Features */}
+          <InfiniteCarousel direction="right" speed={1.5}>
+            {[
+              { icon: BookOpen, title: 'Bite-Sized Lessons', desc: 'Learn investing in 5-minute lessons.', gradient: 'from-chart-3 to-primary', screenshot: '/screenshots/lessons.png' },
+              { icon: Rocket, title: 'Level Up System', desc: 'Earn XP, unlock achievements, track progress.', gradient: 'from-chart-5 to-destructive', screenshot: '/screenshots/level-up.png' },
+              { icon: Sparkles, title: 'AI Explanations', desc: 'Every market move explained simply.', gradient: 'from-primary to-accent', screenshot: '/screenshots/ai-explanations.png' },
+              { icon: BookOpen, title: 'Bite-Sized Lessons', desc: 'Learn investing in 5-minute lessons.', gradient: 'from-chart-3 to-primary', screenshot: '/screenshots/lessons.png' },
+              { icon: Rocket, title: 'Level Up System', desc: 'Earn XP, unlock achievements, track progress.', gradient: 'from-chart-5 to-destructive', screenshot: '/screenshots/level-up.png' },
+              { icon: Sparkles, title: 'AI Explanations', desc: 'Every market move explained simply.', gradient: 'from-primary to-accent', screenshot: '/screenshots/ai-explanations.png' },
+            ].map((feature, i) => (
+              <div key={i} className="flex-shrink-0 w-[600px]">
+                <FeatureCard
+                  icon={feature.icon}
+                  title={feature.title}
+                  desc={feature.desc}
+                  gradient={feature.gradient}
+                  screenshot={feature.screenshot}
+                  delay={0}
+                />
+              </div>
+            ))}
+          </InfiniteCarousel>
         </div>
       </section>
 
