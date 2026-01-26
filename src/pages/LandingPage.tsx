@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { TrendingUp, TrendingDown, BookOpen, Trophy, Shield, ArrowRight, BarChart3, Briefcase, Target, Bot, Sparkles, Zap, Flame, Rocket, User, LogOut, Play, Star } from 'lucide-react';
+import { TrendingUp, TrendingDown, BookOpen, Trophy, Shield, ArrowRight, BarChart3, Briefcase, Target, Bot, Sparkles, Zap, Flame, Rocket, User, LogOut, Play, Star, Sprout, Headphones } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion, useSpring, useTransform, animate, AnimatePresence, useScroll } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
@@ -1660,15 +1660,15 @@ const LandingPage = () => {
             </InfiniteCarousel>
           </div>
 
-          {/* Second Carousel - Last 3 Features */}
+          {/* Second Carousel - New Garden & Learning Features */}
           <InfiniteCarousel direction="right" speed={1.5}>
             {[
-              { icon: BookOpen, title: 'Bite-Sized Lessons', desc: 'Learn investing in 5-minute lessons.', gradient: 'from-chart-3 to-primary', screenshot: '/screenshots/lessons.png' },
-              { icon: Rocket, title: 'Level Up System', desc: 'Earn XP, unlock achievements, track progress.', gradient: 'from-chart-5 to-destructive', screenshot: '/screenshots/level-up.png' },
-              { icon: Sparkles, title: 'AI Explanations', desc: 'Every market move explained simply.', gradient: 'from-primary to-accent', screenshot: '/screenshots/ai-explanations.png' },
-              { icon: BookOpen, title: 'Bite-Sized Lessons', desc: 'Learn investing in 5-minute lessons.', gradient: 'from-chart-3 to-primary', screenshot: '/screenshots/lessons.png' },
-              { icon: Rocket, title: 'Level Up System', desc: 'Earn XP, unlock achievements, track progress.', gradient: 'from-chart-5 to-destructive', screenshot: '/screenshots/level-up.png' },
-              { icon: Sparkles, title: 'AI Explanations', desc: 'Every market move explained simply.', gradient: 'from-primary to-accent', screenshot: '/screenshots/ai-explanations.png' },
+              { icon: Sprout, title: 'Garden Game', desc: 'Grow plants, earn rewards, and learn investing through gamification!', gradient: 'from-green-500 to-emerald-600', screenshot: '/screenshots/garden-game.png' },
+              { icon: Play, title: 'Beanstalk Adventure', desc: 'Climb the beanstalk by answering questions in this interactive learning game!', gradient: 'from-green-600 to-teal-600', screenshot: '/screenshots/beanstalk-game.png' },
+              { icon: Headphones, title: 'AI Podcasts', desc: 'Listen to AI-generated podcasts about investing and financial topics!', gradient: 'from-purple-500 to-pink-600', screenshot: '/screenshots/ai-podcasts.png' },
+              { icon: Sprout, title: 'Garden Game', desc: 'Grow plants, earn rewards, and learn investing through gamification!', gradient: 'from-green-500 to-emerald-600', screenshot: '/screenshots/garden-game.png' },
+              { icon: Play, title: 'Beanstalk Adventure', desc: 'Climb the beanstalk by answering questions in this interactive learning game!', gradient: 'from-green-600 to-teal-600', screenshot: '/screenshots/beanstalk-game.png' },
+              { icon: Headphones, title: 'AI Podcasts', desc: 'Listen to AI-generated podcasts about investing and financial topics!', gradient: 'from-purple-500 to-pink-600', screenshot: '/screenshots/ai-podcasts.png' },
             ].map((feature, i) => (
               <div key={i} className="flex-shrink-0 w-[600px]">
                 <FeatureCard
