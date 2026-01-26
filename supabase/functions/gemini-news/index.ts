@@ -1,6 +1,9 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+// @ts-ignore - Deno types not available in IDE but work in runtime
+declare const Deno: any
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -11,7 +14,17 @@ interface NewsRequest {
   market?: boolean;
 }
 
-serve(async (req) => {
+interface GeminiResponse {
+  candidates: Array<{
+    content: {
+      parts: Array<{
+        text: string;
+      }>;
+    };
+  }>;
+}
+
+serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -35,7 +48,7 @@ serve(async (req) => {
       throw new Error('Gemini API key not configured')
     }
 
-    const apiKey = config.gemini_api_key
+    const apiKey = config.gemini_api_key as string
     const geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-exp:generateContent'
 
     let prompt = ''
@@ -96,7 +109,7 @@ serve(async (req) => {
       throw new Error(`Gemini API error: ${response.statusText}`)
     }
 
-    const data = await response.json()
+    const data = await response.json() as GeminiResponse
     
     if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
       // Parse the JSON response from Gemini
@@ -114,10 +127,10 @@ serve(async (req) => {
       throw new Error('Invalid response from Gemini API')
     }
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error:', error)
     return new Response(JSON.stringify({ 
-      error: error.message,
+      error: error.message || 'Unknown error occurred',
       success: false 
     }), {
       status: 500,
