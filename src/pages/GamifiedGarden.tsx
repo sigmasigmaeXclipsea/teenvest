@@ -268,7 +268,7 @@ export default function GamifiedGarden() {
       const { money, xp } = event.detail;
       setMoney(money);
       setXp(xp);
-      toast.success('Admin updated your garden state!');
+      toast({ title: 'Admin updated your garden state!' });
     };
 
     window.addEventListener('adminGardenUpdate', handleAdminUpdate as EventListener);
