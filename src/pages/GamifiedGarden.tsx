@@ -67,7 +67,7 @@ function getPlotUpgradePrice(currentPots: number): number {
 }
 
 // 40 different seeds ordered by price (cheapest to most expensive) with slower progression and balanced sell prices
-const SEED_TEMPLATES: Omit<Seed, 'id'>[] = [
+const SEED_TEMPLATES: Omit<Seed, 'id' | 'inStock' | 'stockQuantity'>[] = [
   // Common (10 seeds) - Reduced stock rates
   { name: 'Radish', rarity: 'common', baseGrowthTime: 30, baseSizeKg: 0.2, price: 10, sellPrice: 12, icon: '🌱', stockRate: 0.8 },
   { name: 'Lettuce', rarity: 'common', baseGrowthTime: 40, baseSizeKg: 0.3, price: 20, sellPrice: 25, icon: '🥬', stockRate: 0.7 },
