@@ -126,13 +126,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       </header>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:fixed lg:top-14 lg:bottom-0 lg:left-0 lg:z-40 lg:block group/sidebar">
-        <div className="h-full w-12 group-hover/sidebar:w-48 bg-card border-r border-border transition-all duration-300 ease-in-out overflow-hidden flex flex-col">
+      <aside className="hidden lg:fixed lg:top-14 lg:bottom-0 lg:left-0 lg:z-40 lg:block">
+        <div className="h-full w-12 hover:w-48 bg-card border-r border-border transition-[width] duration-200 ease-out overflow-hidden flex flex-col group">
           {/* Navigation */}
-          <nav className="flex-1 flex flex-col p-1 gap-1">
+          <nav className="flex-1 flex flex-col p-1 gap-0.5">
             {/* Core */}
             <div className="pb-1 mb-1 border-b border-border/60">
-              <div className="h-0 opacity-0 group-hover/sidebar:h-auto group-hover/sidebar:opacity-100 transition-all duration-300 overflow-hidden">
+              <div className="h-0 opacity-0 group-hover:h-6 group-hover:opacity-100 transition-opacity duration-200 overflow-hidden">
                 <div className="px-2 py-1">
                   <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Core</div>
                 </div>
@@ -144,15 +144,17 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                     key={item.path}
                     onClick={() => navigate(item.path)}
                     className={cn(
-                      "flex items-center gap-3 w-10 h-10 group-hover/sidebar:w-full justify-center group-hover/sidebar:justify-start group-hover/sidebar:px-3 rounded-lg transition-all duration-300",
+                      "flex items-center w-10 h-10 group-hover:w-full rounded-lg overflow-hidden",
                       isActive
                         ? 'bg-primary text-primary-foreground'
                         : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
                     )}
                     title={item.label}
                   >
-                    <item.icon className="w-5 h-5 flex-shrink-0" />
-                    <span className="hidden group-hover/sidebar:inline whitespace-nowrap text-sm font-medium">
+                    <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
+                      <item.icon className="w-5 h-5" />
+                    </div>
+                    <span className="whitespace-nowrap text-sm font-medium pr-3">
                       {item.label}
                     </span>
                   </button>
@@ -162,7 +164,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
             {/* Learning & Social */}
             <div className="pb-1 mb-1 border-b border-border/60">
-              <div className="h-0 opacity-0 group-hover/sidebar:h-auto group-hover/sidebar:opacity-100 transition-all duration-300 overflow-hidden">
+              <div className="h-0 opacity-0 group-hover:h-6 group-hover:opacity-100 transition-opacity duration-200 overflow-hidden">
                 <div className="px-2 py-1">
                   <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Learning & Social</div>
                 </div>
@@ -174,15 +176,17 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                     key={item.path}
                     onClick={() => navigate(item.path)}
                     className={cn(
-                      "flex items-center gap-3 w-10 h-10 group-hover/sidebar:w-full justify-center group-hover/sidebar:justify-start group-hover/sidebar:px-3 rounded-lg transition-all duration-300",
+                      "flex items-center w-10 h-10 group-hover:w-full rounded-lg overflow-hidden",
                       isActive
                         ? 'bg-primary text-primary-foreground'
                         : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
                     )}
                     title={item.label}
                   >
-                    <item.icon className="w-5 h-5 flex-shrink-0" />
-                    <span className="hidden group-hover/sidebar:inline whitespace-nowrap text-sm font-medium">
+                    <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
+                      <item.icon className="w-5 h-5" />
+                    </div>
+                    <span className="whitespace-nowrap text-sm font-medium pr-3">
                       {item.label}
                     </span>
                   </button>
@@ -192,7 +196,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
             {/* System */}
             <div>
-              <div className="h-0 opacity-0 group-hover/sidebar:h-auto group-hover/sidebar:opacity-100 transition-all duration-300 overflow-hidden">
+              <div className="h-0 opacity-0 group-hover:h-6 group-hover:opacity-100 transition-opacity duration-200 overflow-hidden">
                 <div className="px-2 py-1">
                   <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">System</div>
                 </div>
@@ -204,15 +208,17 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                     key={item.path}
                     onClick={() => navigate(item.path)}
                     className={cn(
-                      "flex items-center gap-3 w-10 h-10 group-hover/sidebar:w-full justify-center group-hover/sidebar:justify-start group-hover/sidebar:px-3 rounded-lg transition-all duration-300",
+                      "flex items-center w-10 h-10 group-hover:w-full rounded-lg overflow-hidden",
                       isActive
                         ? 'bg-primary text-primary-foreground'
                         : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
                     )}
                     title={item.label}
                   >
-                    <item.icon className="w-5 h-5 flex-shrink-0" />
-                    <span className="hidden group-hover/sidebar:inline whitespace-nowrap text-sm font-medium">
+                    <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
+                      <item.icon className="w-5 h-5" />
+                    </div>
+                    <span className="whitespace-nowrap text-sm font-medium pr-3">
                       {item.label}
                     </span>
                   </button>
@@ -225,11 +231,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <div className="mt-auto p-1 border-t border-border">
             <Button
               variant="ghost"
-              className="flex items-center gap-3 w-10 h-10 group-hover/sidebar:w-full justify-center group-hover/sidebar:justify-start group-hover/sidebar:px-3 text-muted-foreground rounded-lg transition-all duration-300"
+              className="flex items-center w-10 h-10 group-hover:w-full rounded-lg overflow-hidden text-muted-foreground p-0"
               onClick={handleLogout}
             >
-              <LogOut className="w-5 h-5 flex-shrink-0" />
-              <span className="hidden group-hover/sidebar:inline whitespace-nowrap">
+              <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
+                <LogOut className="w-5 h-5" />
+              </div>
+              <span className="whitespace-nowrap pr-3">
                 Log Out
               </span>
             </Button>

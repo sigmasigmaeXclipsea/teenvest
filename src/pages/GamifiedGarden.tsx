@@ -64,9 +64,9 @@ const SEED_TEMPLATES: Omit<Seed, 'id'>[] = [
 ];
 
 const GEAR_TEMPLATES: Omit<Gear, 'id'>[] = [
-  { name: 'Watering Can', type: 'wateringCan', effect: 'Reduces growth time by 50%', price: 500 },
-  { name: 'Sprinkler', type: 'sprinkler', effect: 'Increases golden/rainbow chance', price: 2500 },
-  { name: 'Plot Upgrade', type: 'plotUpgrade', effect: 'Expands garden grid', price: 3000 },
+  { name: 'Watering Can', type: 'wateringCan', effect: 'Reduces growth time by 50%', price: 150 },
+  { name: 'Sprinkler', type: 'sprinkler', effect: 'Increases golden/rainbow chance', price: 400 },
+  { name: 'Plot Upgrade', type: 'plotUpgrade', effect: 'Expands garden grid', price: 500 },
 ];
 
 // Utility
