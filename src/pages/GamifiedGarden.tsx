@@ -334,9 +334,9 @@ export default function GamifiedGarden() {
   // Listen for admin garden updates
   useEffect(() => {
     const handleAdminUpdate = (event: CustomEvent) => {
-      const { money, xp } = event.detail;
-      setMoney(money);
+      const { xp, garden } = event.detail;
       setXp(xp);
+      setGarden(garden);
       toast({ title: 'Admin updated your garden state!' });
     };
 
@@ -409,10 +409,10 @@ export default function GamifiedGarden() {
     }
   }, [now, seedRestockTime, gearRestockTime]);
   
-  // Update gear shop when numPots changes to reflect new price
+  // Update gear shop periodically
   useEffect(() => {
     restockGear();
-  }, [numPots]);
+  }, []);
 
   function restockSeeds() {
     // Show seeds based on stock rates with limited quantities
@@ -804,14 +804,15 @@ export default function GamifiedGarden() {
   // Auto-wilt check
   useEffect(() => {
     const interval = setInterval(() => {
-      setPlots(p => p.map(plot => {
-        if (!plot.plant) return plot;
-        const plant = plot.plant;
-        const timeSinceWater = Date.now() - plant.lastWateredAt;
-        if (timeSinceWater > WILT_THRESHOLD && !plant.isWilted) {
-          return { ...plot, plant: { ...plant, isWilted: true } };
-        }
-        return plot;
+      setGarden(g => ({
+        ...g,
+        plants: g.plants.map(plant => {
+          const timeSinceWater = Date.now() - plant.lastWateredAt;
+          if (timeSinceWater > WILT_THRESHOLD && !plant.isWilted) {
+            return { ...plant, isWilted: true };
+          }
+          return plant;
+        })
       }));
     }, 5000);
     return () => clearInterval(interval);
@@ -839,7 +840,7 @@ export default function GamifiedGarden() {
             </div>
             <div className="flex items-center gap-1 px-3 py-1.5 bg-green-100 dark:bg-green-900/30 rounded-lg">
               <Grid3X3 className="w-4 h-4 text-green-600" />
-              <span className="font-semibold text-sm text-foreground">{numPots}/{MAX_POTS}</span>
+              <span className="font-semibold text-sm text-foreground">{garden.plants.length} Plants</span>
             </div>
           </div>
         </div>

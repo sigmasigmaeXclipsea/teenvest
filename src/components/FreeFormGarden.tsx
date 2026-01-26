@@ -26,13 +26,21 @@ interface Garden {
 interface Seed {
   id: string;
   name: string;
+  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'mythic' | 'legendary' | 'exotic';
+  baseGrowthTime: number;
+  baseSizeKg: number;
+  price: number;
+  sellPrice: number;
   icon: string;
+  stockRate: number;
+  inStock: boolean;
+  stockQuantity: number;
 }
 
 interface Gear {
   id: string;
   name: string;
-  type: 'wateringCan' | 'sprinkler' | 'plotUpgrade';
+  type: 'wateringCan' | 'sprinkler';
   effect: string;
   price: number;
   quantity?: number;
@@ -166,7 +174,7 @@ export default function FreeFormGarden({
           width: size,
           height: size,
           transform: `translate(-50%, -50%) ${plant.isWilted ? 'rotate(-15deg)' : ''}`,
-          style: getVariantStyle()
+          filter: getVariantStyle()
         }}
       >
         <div className="relative w-full h-full">
