@@ -29,7 +29,7 @@ interface Plot {
 interface Seed {
   id: string;
   name: string;
-  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'mythic';
   baseGrowthTime: number; // minutes
   baseSizeKg: number;
   price: number;
@@ -61,7 +61,7 @@ function getPlotUpgradePrice(currentPots: number): number {
   return Math.round(basePrice * Math.pow(exponent, upgradeIndex));
 }
 
-// 35 different seeds ordered by price (cheapest to most expensive) with longer growth times
+// 35 different seeds ordered by price (cheapest to most expensive) with longer growth times and RNG sizes
 const SEED_TEMPLATES: Omit<Seed, 'id'>[] = [
   // Common (10 seeds)
   { name: 'Radish', rarity: 'common', baseGrowthTime: 15, baseSizeKg: 0.2, price: 10, sellPrice: 18, icon: '🌱' },
@@ -103,10 +103,8 @@ const SEED_TEMPLATES: Omit<Seed, 'id'>[] = [
   { name: 'Papaya', rarity: 'epic', baseGrowthTime: 95, baseSizeKg: 1.5, price: 425, sellPrice: 950, icon: '🍈' },
   { name: 'Coconut', rarity: 'epic', baseGrowthTime: 130, baseSizeKg: 2.5, price: 550, sellPrice: 1200, icon: '🥥' },
   
-  // Legendary (3 seeds) - New rarity
-  { name: 'Golden Apple', rarity: 'legendary', baseGrowthTime: 150, baseSizeKg: 0.5, price: 800, sellPrice: 1800, icon: '🍎' },
-  { name: 'Magic Bean', rarity: 'legendary', baseGrowthTime: 180, baseSizeKg: 1.0, price: 1200, sellPrice: 2800, icon: '🫘' },
-  { name: 'Rainbow Corn', rarity: 'legendary', baseGrowthTime: 200, baseSizeKg: 2.0, price: 1500, sellPrice: 3500, icon: '🌈' },
+  // Mythic (1 seed) - The ultimate fruit!
+  { name: 'Dragon Fruit', rarity: 'mythic', baseGrowthTime: 180, baseSizeKg: 3.0, price: 2000, sellPrice: 5000, icon: '🐉' },
 ];
 
 // Base gear templates - plot upgrade price is dynamic
@@ -156,8 +154,29 @@ function calculateVariant(sprinklerType: string | null): 'normal' | 'golden' | '
   return 'normal';
 }
 function calculateSize(base: number): number {
-  const variance = 0.3;
-  const factor = 1 + (Math.random() - 0.5) * variance * 2;
+  // Much more dramatic RNG based on luck
+  // 50% chance of small (0.3x - 0.8x)
+  // 35% chance of normal (0.8x - 1.2x) 
+  // 13% chance of large (1.2x - 2.0x)
+  // 2% chance of giant (2.0x - 3.5x) - JACKPOT!
+  
+  const rand = Math.random();
+  let factor: number;
+  
+  if (rand < 0.02) {
+    // 2% jackpot - GIANT!
+    factor = 2.0 + Math.random() * 1.5; // 2.0x to 3.5x
+  } else if (rand < 0.15) {
+    // 13% large harvest
+    factor = 1.2 + Math.random() * 0.8; // 1.2x to 2.0x
+  } else if (rand < 0.5) {
+    // 35% normal harvest
+    factor = 0.8 + Math.random() * 0.4; // 0.8x to 1.2x
+  } else {
+    // 50% small harvest
+    factor = 0.3 + Math.random() * 0.5; // 0.3x to 0.8x
+  }
+  
   return Math.round(base * factor * 10) / 10;
 }
 
@@ -167,7 +186,7 @@ function getRarityColor(rarity: string) {
     case 'uncommon': return 'text-green-600 bg-green-100 dark:bg-green-900';
     case 'rare': return 'text-blue-600 bg-blue-100 dark:bg-blue-900';
     case 'epic': return 'text-purple-600 bg-purple-100 dark:bg-purple-900';
-    case 'legendary': return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900 border-2 border-yellow-400';
+    case 'mythic': return 'text-red-600 bg-red-100 dark:bg-red-900 border-2 border-red-400 shadow-lg shadow-red-500/50';
     default: return 'text-gray-500 bg-gray-100';
   }
 }
@@ -327,8 +346,28 @@ export default function GamifiedGarden() {
     
     setMoney(m => m + earnings);
     
-    const variantText = finalVariant !== 'normal' ? ` (${finalVariant}!)` : '';
-    toast({ title: 'Harvested!', description: `+${earnings} coins${variantText}` });
+    // Check for jackpot giant harvest
+    const expectedSize = seedTemplate?.baseSizeKg || 1;
+    const sizeRatio = plant.sizeKg / expectedSize;
+    
+    let variantText = finalVariant !== 'normal' ? ` (${finalVariant}!)` : '';
+    let title = 'Harvested!';
+    let description = `+${earnings} coins${variantText}`;
+    
+    if (sizeRatio >= 2.0) {
+      // JACKPOT! Giant harvest
+      title = '🎉 JACKPOT! GIANT HARVEST! 🎉';
+      description = `+${earnings} coins${variantText} - ${plant.sizeKg}kg (${Math.round(sizeRatio * 100)}% size!)`;
+      toast({ title, description, duration: 5000 });
+    } else if (sizeRatio >= 1.5) {
+      // Large harvest
+      title = '🌟 Large Harvest!';
+      description = `+${earnings} coins${variantText} - ${plant.sizeKg}kg`;
+      toast({ title, description });
+    } else {
+      toast({ title, description });
+    }
+    
     setPlots(p => p.map(pl => (pl.id === plotId ? { ...pl, plant: undefined } : pl)));
   }
 
