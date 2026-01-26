@@ -131,10 +131,10 @@ const SEED_TEMPLATES: Omit<Seed, 'id' | 'inStock' | 'stockQuantity'>[] = [
 // Base gear templates - plot upgrade price is dynamic
 const GEAR_TEMPLATES: Omit<Gear, 'id'>[] = [
   { name: 'Watering Can', type: 'wateringCan', effect: '10 uses - Reduces growth time by 20 minutes', price: 150 },
-  { name: 'Basic Sprinkler', type: 'sprinkler', effect: 'Increases golden chance by 10%', price: 400 },
-  { name: 'Advanced Sprinkler', type: 'sprinkler', effect: 'Increases golden chance by 20%', price: 800 },
-  { name: 'Deluxe Sprinkler', type: 'sprinkler', effect: 'Increases golden chance by 30%', price: 1500 },
-  { name: 'Magic Sprinkler', type: 'sprinkler', effect: 'Increases golden chance by 50%', price: 3000 },
+  { name: 'Basic Sprinkler', type: 'sprinkler', effect: 'Waters plants in 100px radius - 10% golden chance boost', price: 400 },
+  { name: 'Advanced Sprinkler', type: 'sprinkler', effect: 'Waters plants in 100px radius - 20% golden chance boost', price: 800 },
+  { name: 'Deluxe Sprinkler', type: 'sprinkler', effect: 'Waters plants in 100px radius - 30% golden chance boost', price: 1500 },
+  { name: 'Magic Sprinkler', type: 'sprinkler', effect: 'Waters plants in 100px radius - 50% golden chance boost', price: 3000 },
 ];
 
 // Utility
@@ -751,19 +751,17 @@ export default function GamifiedGarden() {
       setMoney(m => m - gear.price);
       
       if (gear.type === 'wateringCan') {
-        // Stack watering cans - add uses to existing or create new
-        const existingCan = inventory.gear.find(g => g.type === 'wateringCan');
-        if (existingCan) {
+        // Stack watering cans - find existing watering can (any watering can)
+        const existingCanIndex = inventory.gear.findIndex(g => g.type === 'wateringCan');
+        if (existingCanIndex !== -1) {
           // Add 10 uses to existing watering can
-          setInventory(inv => ({
-            ...inv,
-            gear: inv.gear.map(g => 
-              g.type === 'wateringCan' 
-                ? { ...g, uses: (g.uses || 10) + 10 }
-                : g
-            )
-          }));
-          toast({ title: 'Watering Can Refilled!', description: `+10 uses (Total: ${(existingCan.uses || 10) + 10} uses)` });
+          const currentUses = inventory.gear[existingCanIndex].uses || 10;
+          setInventory(inv => {
+            const newGear = [...inv.gear];
+            newGear[existingCanIndex] = { ...newGear[existingCanIndex], uses: currentUses + 10 };
+            return { ...inv, gear: newGear };
+          });
+          toast({ title: 'Watering Can Refilled!', description: `+10 uses (Total: ${currentUses + 10} uses)` });
         } else {
           // Create new watering can with 10 uses
           const wateringCanWithUses = { 
@@ -1070,7 +1068,7 @@ export default function GamifiedGarden() {
           )}
           {isSprinklerMode && selectedItem && selectedItem.type === 'sprinkler' && (
             <p className="mt-2 text-xs text-purple-600">
-              ⚡ Sprinkler selected - Click an inner corner plot to place it
+              ⚡ Sprinkler selected - Click empty space to place it (100px radius)
             </p>
           )}
         </div>

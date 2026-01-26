@@ -457,134 +457,121 @@ export default function FreeFormGarden({
       >
         {/* Weather effects overlay */}
         {currentWeather !== 'normal' && (
-          <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
             {currentWeather === 'rainy' && (
-              <div className="absolute inset-0">
-                {/* Rain drops */}
-                {[...Array(15)].map((_, i) => (
-                  <div
-                    key={`rain-${i}`}
-                    className="absolute w-0.5 h-3 bg-blue-400 opacity-30 animate-pulse"
-                    style={{
-                      left: `${Math.random() * 100}%`,
-                      top: `${Math.random() * 100}%`,
-                      animationDelay: `${Math.random() * 3}s`,
-                      animationDuration: '2s',
-                      transform: 'rotate(15deg)'
-                    }}
-                  />
-                ))}
-                {/* Moist soil effect */}
-                <div 
-                  className="absolute inset-0 opacity-20"
-                  style={{
-                    background: 'radial-gradient(ellipse at center, rgba(59, 130, 246, 0.1), transparent 70%)',
-                    filter: 'blur(20px)'
-                  }}
-                />
-              </div>
-            )}
-            {currentWeather === 'frozen' && (
-              <div className="absolute inset-0">
-                {/* Frost crystals */}
+              <>
                 {[...Array(20)].map((_, i) => (
                   <div
-                    key={`frost-${i}`}
-                    className="absolute w-2 h-2 bg-white opacity-40 rounded-full"
+                    key={`rain-${i}`}
+                    className="absolute w-2 h-2 bg-blue-400 rounded-full opacity-40 animate-bounce"
                     style={{
                       left: `${Math.random() * 100}%`,
-                      top: `${Math.random() * 100}%`,
-                      filter: 'blur(1px)',
-                      transform: 'scale(0.5)'
+                      top: `-10px`,
+                      animation: `fall ${3 + Math.random() * 2}s linear infinite`,
+                      animationDelay: `${Math.random() * 5}s`
                     }}
                   />
                 ))}
-                {/* Cold overlay */}
-                <div 
-                  className="absolute inset-0 opacity-15"
-                  style={{
-                    background: 'linear-gradient(135deg, rgba(135, 206, 235, 0.2), rgba(176, 224, 230, 0.1))',
-                    filter: 'blur(15px)'
-                  }}
-                />
-              </div>
+                <style jsx>{`
+                  @keyframes fall {
+                    to {
+                      transform: translateY(${garden.height + 20}px);
+                    }
+                  }
+                `}</style>
+              </>
+            )}
+            {currentWeather === 'frozen' && (
+              <>
+                {[...Array(15)].map((_, i) => (
+                  <div
+                    key={`frost-${i}`}
+                    className="absolute w-3 h-3 bg-cyan-300 rounded-full opacity-50 animate-bounce"
+                    style={{
+                      left: `${Math.random() * 100}%`,
+                      top: `-10px`,
+                      animation: `fall ${4 + Math.random() * 2}s linear infinite`,
+                      animationDelay: `${Math.random() * 6}s`
+                    }}
+                  />
+                ))}
+                <style jsx>{`
+                  @keyframes fall {
+                    to {
+                      transform: translateY(${garden.height + 20}px);
+                    }
+                  }
+                `}</style>
+              </>
             )}
             {currentWeather === 'candy' && (
-              <div className="absolute inset-0">
-                {/* Candy sparkles */}
-                {[...Array(12)].map((_, i) => (
+              <>
+                {[...Array(18)].map((_, i) => (
                   <div
                     key={`candy-${i}`}
-                    className="absolute w-1 h-1 bg-pink-400 opacity-50 rounded-full animate-pulse"
+                    className="absolute w-2 h-2 bg-pink-400 rounded-full opacity-60 animate-bounce"
                     style={{
                       left: `${Math.random() * 100}%`,
-                      top: `${Math.random() * 100}%`,
-                      animationDelay: `${Math.random() * 2}s`,
-                      filter: 'blur(0.5px)'
+                      top: `-10px`,
+                      animation: `fall ${3.5 + Math.random() * 2}s linear infinite`,
+                      animationDelay: `${Math.random() * 4}s`
                     }}
                   />
                 ))}
-                {/* Sweet overlay */}
-                <div 
-                  className="absolute inset-0 opacity-10"
-                  style={{
-                    background: 'radial-gradient(ellipse at center, rgba(255, 105, 180, 0.15), transparent 70%)',
-                    filter: 'blur(25px)'
-                  }}
-                />
-              </div>
+                <style jsx>{`
+                  @keyframes fall {
+                    to {
+                      transform: translateY(${garden.height + 20}px);
+                    }
+                  }
+                `}</style>
+              </>
             )}
             {currentWeather === 'thunder' && (
-              <div className="absolute inset-0">
-                {/* Lightning flashes */}
-                {[...Array(3)].map((_, i) => (
+              <>
+                {[...Array(12)].map((_, i) => (
                   <div
                     key={`thunder-${i}`}
-                    className="absolute w-8 h-1 bg-yellow-400 opacity-20 animate-pulse"
+                    className="absolute w-2 h-2 bg-yellow-400 rounded-full opacity-70 animate-bounce"
                     style={{
                       left: `${Math.random() * 100}%`,
-                      top: `${Math.random() * 100}%`,
-                      animationDelay: `${Math.random() * 4}s`,
-                      animationDuration: '1s',
-                      filter: 'blur(2px)'
+                      top: `-10px`,
+                      animation: `fall ${2 + Math.random() * 1.5}s linear infinite`,
+                      animationDelay: `${Math.random() * 3}s`
                     }}
                   />
                 ))}
-                {/* Electric overlay */}
-                <div 
-                  className="absolute inset-0 opacity-10"
-                  style={{
-                    background: 'linear-gradient(45deg, rgba(255, 255, 0, 0.1), transparent 50%)',
-                    filter: 'blur(20px)'
-                  }}
-                />
-              </div>
+                <style jsx>{`
+                  @keyframes fall {
+                    to {
+                      transform: translateY(${garden.height + 20}px);
+                    }
+                  }
+                `}</style>
+              </>
             )}
             {currentWeather === 'lunar' && (
-              <div className="absolute inset-0">
-                {/* Moonbeams */}
-                {[...Array(8)].map((_, i) => (
+              <>
+                {[...Array(10)].map((_, i) => (
                   <div
                     key={`lunar-${i}`}
-                    className="absolute w-1 h-8 bg-purple-300 opacity-20 animate-pulse"
+                    className="absolute w-2 h-2 bg-purple-400 rounded-full opacity-50 animate-bounce"
                     style={{
                       left: `${Math.random() * 100}%`,
-                      top: `${Math.random() * 100}%`,
-                      animationDelay: `${Math.random() * 3}s`,
-                      animationDuration: '3s',
-                      filter: 'blur(1px)'
+                      top: `-10px`,
+                      animation: `fall ${5 + Math.random() * 2}s linear infinite`,
+                      animationDelay: `${Math.random() * 7}s`
                     }}
                   />
                 ))}
-                {/* Mystical overlay */}
-                <div 
-                  className="absolute inset-0 opacity-15"
-                  style={{
-                    background: 'radial-gradient(ellipse at center, rgba(147, 51, 234, 0.2), transparent 70%)',
-                    filter: 'blur(30px)'
-                  }}
-                />
-              </div>
+                <style jsx>{`
+                  @keyframes fall {
+                    to {
+                      transform: translateY(${garden.height + 20}px);
+                    }
+                  }
+                `}</style>
+              </>
             )}
           </div>
         )}
@@ -647,20 +634,33 @@ export default function FreeFormGarden({
           );
         })}
 
-        {/* Sprinklers */}
+        {/* Sprinklers with radius visualization */}
         {sprinklerPositions.map((sprinkler, index) => (
-          <div
-            key={`sprinkler-${index}`}
-            className="absolute transform -translate-x-1/2 -translate-y-1/2 text-2xl animate-pulse drop-shadow-lg"
-            style={{
-              left: sprinkler.x,
-              top: sprinkler.y,
-              filter: 'drop-shadow(0 0 8px rgba(147, 51, 234, 0.6))'
-            }}
-          >
-            ⚡
-            <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-purple-600 text-white text-[8px] px-1 rounded whitespace-nowrap shadow-md">
-              {sprinkler.gear.name}
+          <div key={`sprinkler-${index}`}>
+            {/* Blue radius circle */}
+            <div
+              className="absolute rounded-full border-2 border-blue-400 bg-blue-100/20 pointer-events-none"
+              style={{
+                left: sprinkler.x - 100,
+                top: sprinkler.y - 100,
+                width: 200,
+                height: 200,
+                boxShadow: '0 0 20px rgba(59, 130, 246, 0.3)'
+              }}
+            />
+            {/* Sprinkler icon */}
+            <div
+              className="absolute transform -translate-x-1/2 -translate-y-1/2 text-2xl animate-pulse drop-shadow-lg z-10"
+              style={{
+                left: sprinkler.x,
+                top: sprinkler.y,
+                filter: 'drop-shadow(0 0 8px rgba(147, 51, 234, 0.6))'
+              }}
+            >
+              ⚡
+              <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-purple-600 text-white text-[8px] px-1 rounded whitespace-nowrap shadow-md">
+                {sprinkler.gear.name}
+              </div>
             </div>
           </div>
         ))}
