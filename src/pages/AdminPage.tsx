@@ -112,10 +112,8 @@ const AdminPage = () => {
   const [cashBalanceEmail, setCashBalanceEmail] = useState('');
   const [newCashBalanceForUser, setNewCashBalanceForUser] = useState('');
   
-  // Garden money management state
-  const [gardenMoneyEmail, setGardenMoneyEmail] = useState('');
+  // Garden money management state (for current user's localStorage-based garden)
   const [newGardenMoney, setNewGardenMoney] = useState('');
-  const [gardenXpEmail, setGardenXpEmail] = useState('');
   const [newGardenXp, setNewGardenXp] = useState('');
   const [currentGardenMoney, setCurrentGardenMoney] = useState(0);
   const [currentGardenXp, setCurrentGardenXp] = useState(0);
@@ -341,96 +339,67 @@ const AdminPage = () => {
 
   const updateCashBalanceMutation = useMutation<CashBalanceResult, Error, { email: string; balance: number }>({
     mutationFn: async ({ email, balance }: { email: string; balance: number }) => {
-      // Get user ID from email first
-      const { data: userId, error: lookupError } = await supabase.rpc('get_user_id_by_email', { 
-        _email: email 
-      });
-      if (lookupError || !userId) throw new Error('User not found');
-      
-      // Update cash balance
       // @ts-ignore - Function exists but types haven't been generated yet
       const { data, error } = await supabase.rpc('admin_update_cash_balance', { 
-        _user_id: userId, 
+        _email: email, 
         _new_balance: balance 
       });
       if (error) throw error;
       return data as CashBalanceResult;
     },
     onSuccess: (data, variables) => {
-      toast.success(`Updated cash balance for ${variables.email} to $${variables.balance.toLocaleString()}`);
-      setNewCashBalanceForUser('');
-      queryClient.invalidateQueries({ queryKey: ['user-lookup', lookupEmail] });
-    },
-    onError: (error: unknown) => toast.error(getUserFriendlyError(error)),
-  });
-
-  const updateGardenMoneyMutation = useMutation<any, Error, { email: string; money: number }>({
-    mutationFn: async ({ email, money }: { email: string; money: number }) => {
-      // Get user ID from email first
-      const { data: userId, error: lookupError } = await supabase.rpc('get_user_id_by_email', { 
-        _email: email 
-      });
-      if (lookupError || !userId) throw new Error('User not found');
-      
-      // Update garden money
-      // @ts-ignore - Function exists but types haven't been generated yet
-      const { data, error } = await supabase.rpc('admin_update_garden_money', { 
-        _user_id: userId, 
-        _new_money: money 
-      });
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (data, variables) => {
-      toast.success(`Updated garden money for ${variables.email} to ${variables.money} coins`);
-      setNewGardenMoney('');
-      queryClient.invalidateQueries({ queryKey: ['user-lookup', gardenMoneyEmail] });
-    },
-    onError: (error: unknown) => toast.error(getUserFriendlyError(error)),
-  });
-
-  const updateGardenXpMutation = useMutation<any, Error, { email: string; xp: number }>({
-    mutationFn: async ({ email, xp }: { email: string; xp: number }) => {
-      // Get user ID from email first
-      const { data: userId, error: lookupError } = await supabase.rpc('get_user_id_by_email', { 
-        _email: email 
-      });
-      if (lookupError || !userId) throw new Error('User not found');
-      
-      // Update garden XP
-      // @ts-ignore - Function exists but types haven't been generated yet
-      const { data, error } = await supabase.rpc('admin_update_garden_xp', { 
-        _user_id: userId, 
-        _new_xp: xp 
-      });
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (data, variables) => {
-      toast.success(`Updated garden XP for ${variables.email} to ${variables.xp} XP`);
-      setNewGardenXp('');
-      queryClient.invalidateQueries({ queryKey: ['user-lookup', gardenXpEmail] });
-    },
-    onError: (error: unknown) => toast.error(getUserFriendlyError(error)),
-  });
-
-  const updateCurrentUserGardenMutation = useMutation<any, Error, { money: number; xp: number }>({
-    mutationFn: async ({ money, xp }: { money: number; xp: number }) => {
-      // Temporary fix: Update local state directly since database functions aren't set up
-      // This will work immediately for testing
-      return { success: true, message: 'Updated local garden state' };
-    },
-    onSuccess: (data, variables) => {
-      // Update local state directly
-      if (window.location.pathname === '/garden') {
-        // If we're on the garden page, update the garden state
-        window.dispatchEvent(new CustomEvent('adminGardenUpdate', { 
-          detail: { money: variables.money, xp: variables.xp } 
-        }));
+      if (data?.success) {
+        toast.success(`Updated cash balance for ${variables.email} to $${variables.balance.toLocaleString()}`);
+        setNewCashBalanceForUser('');
+        queryClient.invalidateQueries({ queryKey: ['user-lookup', lookupEmail] });
+        queryClient.invalidateQueries({ queryKey: ['portfolio'] });
+      } else {
+        toast.error(data?.error || 'Failed to update cash balance');
       }
+    },
+    onError: (error: unknown) => toast.error(getUserFriendlyError(error)),
+  });
+
+  const updateCurrentUserGardenMutation = useMutation<{ success: boolean }, Error, { money: number; xp: number }>({
+    mutationFn: async ({ money, xp }: { money: number; xp: number }) => {
+      // Garden uses localStorage, so we update it directly
+      const saved = localStorage.getItem('garden-state-v4');
+      let gardenState = { money: 50, xp: 0, level: 1, plots: [], inventory: [], lastUpdate: Date.now() };
+      
+      if (saved) {
+        try {
+          gardenState = JSON.parse(saved);
+        } catch (e) {
+          console.error('Failed to parse garden state:', e);
+        }
+      }
+      
+      // Update with new values
+      gardenState.money = money;
+      gardenState.xp = xp;
+      gardenState.lastUpdate = Date.now();
+      
+      // Save back to localStorage
+      localStorage.setItem('garden-state-v4', JSON.stringify(gardenState));
+      
+      return { success: true };
+    },
+    onSuccess: (data, variables) => {
+      // Dispatch event for garden page if it's open
+      window.dispatchEvent(new CustomEvent('adminGardenUpdate', { 
+        detail: { money: variables.money, xp: variables.xp } 
+      }));
+      
       toast.success(`Updated your garden: ${variables.money} coins, ${variables.xp} XP`);
       setCurrentGardenMoney(variables.money);
       setCurrentGardenXp(variables.xp);
+      
+      // Clear input fields
+      setNewGardenMoney('');
+      setNewGardenXp('');
+      
+      // Refetch to update the display
+      refetchAdminGarden();
     },
     onError: (error: unknown) => toast.error(getUserFriendlyError(error)),
   });
@@ -1032,85 +1001,7 @@ const AdminPage = () => {
                 </CardContent>
               </Card>
 
-              {/* Set User Garden Money */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Coins className="w-5 h-5 text-green-600" />
-                    Set User Garden Money
-                  </CardTitle>
-                  <CardDescription>Update any user's garden money balance</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <Input
-                    type="email"
-                    value={gardenMoneyEmail}
-                    onChange={(e) => setGardenMoneyEmail(e.target.value)}
-                    placeholder="user@example.com"
-                  />
-                  <div className="relative">
-                    <Coins className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      type="number"
-                      min="0"
-                      value={newGardenMoney}
-                      onChange={(e) => setNewGardenMoney(e.target.value)}
-                      placeholder="1000"
-                      className="pl-9"
-                    />
-                  </div>
-                  <Button
-                    onClick={() => updateGardenMoneyMutation.mutate({ 
-                      email: gardenMoneyEmail, 
-                      money: parseInt(newGardenMoney) 
-                    })}
-                    disabled={updateGardenMoneyMutation.isPending || !gardenMoneyEmail || !newGardenMoney}
-                    className="w-full"
-                  >
-                    {updateGardenMoneyMutation.isPending ? 'Updating...' : 'Update Garden Money'}
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* Set User Garden XP */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Zap className="w-5 h-5 text-purple-600" />
-                    Set User Garden XP
-                  </CardTitle>
-                  <CardDescription>Update any user's garden XP level</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <Input
-                    type="email"
-                    value={gardenXpEmail}
-                    onChange={(e) => setGardenXpEmail(e.target.value)}
-                    placeholder="user@example.com"
-                  />
-                  <div className="relative">
-                    <Zap className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      type="number"
-                      min="0"
-                      value={newGardenXp}
-                      onChange={(e) => setNewGardenXp(e.target.value)}
-                      placeholder="500"
-                      className="pl-9"
-                    />
-                  </div>
-                  <Button
-                    onClick={() => updateGardenXpMutation.mutate({ 
-                      email: gardenXpEmail, 
-                      xp: parseInt(newGardenXp) 
-                    })}
-                    disabled={updateGardenXpMutation.isPending || !gardenXpEmail || !newGardenXp}
-                    className="w-full"
-                  >
-                    {updateGardenXpMutation.isPending ? 'Updating...' : 'Update Garden XP'}
-                  </Button>
-                </CardContent>
-              </Card>
+              {/* Note: Other users' garden state cannot be updated from here since garden data is stored in each user's browser localStorage */}
 
             </div>
           </TabsContent>

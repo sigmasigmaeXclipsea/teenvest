@@ -539,6 +539,10 @@ export type Database = {
         Args: { _email: string; _new_balance: number }
         Returns: Json
       }
+      admin_update_cash_balance: {
+        Args: { _email: string; _new_balance: number }
+        Returns: Json
+      }
       execute_trade: {
         Args: {
           p_company_name: string
