@@ -5,6 +5,7 @@ import { motion, useSpring, useTransform, animate, AnimatePresence, useScroll } 
 import { useAuth } from '@/contexts/AuthContext';
 import { useState, useEffect, useMemo, memo, useRef, useCallback, type ReactNode, type ElementType, type FC, type MouseEvent } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { GardenGameScreenshot, BeanstalkGameScreenshot, AIPodcastScreenshot } from '@/components/FeatureScreenshots';
 
 type DashboardStock = {
   symbol: string;
@@ -1024,7 +1025,7 @@ type FeatureCardProps = {
   desc: string;
   gradient: string;
   delay?: number;
-  screenshot?: string;
+  screenshot?: ReactNode;
 };
 
 const FeatureCard: FC<FeatureCardProps> = ({ icon: Icon, title, desc, gradient, screenshot }) => {
@@ -1063,11 +1064,7 @@ const FeatureCard: FC<FeatureCardProps> = ({ icon: Icon, title, desc, gradient, 
             </div>
           </div>
           <div className="flex-1 rounded-xl overflow-hidden bg-gray-900 shadow-2xl border border-white/10 min-h-[300px]">
-            <img
-              src={screenshot}
-              alt={`${title} screenshot`}
-              className="w-full h-full object-contain"
-            />
+            {screenshot}
           </div>
         </div>
       )}
@@ -1663,12 +1660,12 @@ const LandingPage = () => {
           {/* Second Carousel - New Garden & Learning Features */}
           <InfiniteCarousel direction="right" speed={1.5}>
             {[
-              { icon: Sprout, title: 'Garden Game', desc: 'Grow plants, earn rewards, and learn investing through gamification!', gradient: 'from-green-500 to-emerald-600', screenshot: '/screenshots/garden-game.png' },
-              { icon: Play, title: 'Beanstalk Adventure', desc: 'Climb the beanstalk by answering questions in this interactive learning game!', gradient: 'from-green-600 to-teal-600', screenshot: '/screenshots/beanstalk-game.png' },
-              { icon: Headphones, title: 'AI Podcasts', desc: 'Listen to AI-generated podcasts about investing and financial topics!', gradient: 'from-purple-500 to-pink-600', screenshot: '/screenshots/ai-podcasts.png' },
-              { icon: Sprout, title: 'Garden Game', desc: 'Grow plants, earn rewards, and learn investing through gamification!', gradient: 'from-green-500 to-emerald-600', screenshot: '/screenshots/garden-game.png' },
-              { icon: Play, title: 'Beanstalk Adventure', desc: 'Climb the beanstalk by answering questions in this interactive learning game!', gradient: 'from-green-600 to-teal-600', screenshot: '/screenshots/beanstalk-game.png' },
-              { icon: Headphones, title: 'AI Podcasts', desc: 'Listen to AI-generated podcasts about investing and financial topics!', gradient: 'from-purple-500 to-pink-600', screenshot: '/screenshots/ai-podcasts.png' },
+              { icon: Sprout, title: 'Garden Game', desc: 'Grow plants, earn rewards, and learn investing through gamification!', gradient: 'from-green-500 to-emerald-600', screenshot: <GardenGameScreenshot /> },
+              { icon: Play, title: 'Beanstalk Adventure', desc: 'Climb the beanstalk by answering questions in this interactive learning game!', gradient: 'from-green-600 to-teal-600', screenshot: <BeanstalkGameScreenshot /> },
+              { icon: Headphones, title: 'AI Podcasts', desc: 'Listen to AI-generated podcasts about investing and financial topics!', gradient: 'from-purple-500 to-pink-600', screenshot: <AIPodcastScreenshot /> },
+              { icon: Sprout, title: 'Garden Game', desc: 'Grow plants, earn rewards, and learn investing through gamification!', gradient: 'from-green-500 to-emerald-600', screenshot: <GardenGameScreenshot /> },
+              { icon: Play, title: 'Beanstalk Adventure', desc: 'Climb the beanstalk by answering questions in this interactive learning game!', gradient: 'from-green-600 to-teal-600', screenshot: <BeanstalkGameScreenshot /> },
+              { icon: Headphones, title: 'AI Podcasts', desc: 'Listen to AI-generated podcasts about investing and financial topics!', gradient: 'from-purple-500 to-pink-600', screenshot: <AIPodcastScreenshot /> },
             ].map((feature, i) => (
               <div key={i} className="flex-shrink-0 w-[600px]">
                 <FeatureCard
