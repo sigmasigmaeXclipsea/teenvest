@@ -38,6 +38,7 @@ interface Seed {
   icon: string;
   stockRate: number; // 0-1 probability of being in stock
   inStock: boolean; // Whether currently in stock
+  stockQuantity: number; // How many available this restock
 }
 
 interface Gear {
@@ -306,24 +307,8 @@ export default function GamifiedGarden() {
     }
     if (now >= gearRestockTime) {
       restockGear();
-      setGearRestockTime(Date.now() + 15 * 60 * 1000); // 15 minutes
-    }
-  }, [now, seedRestockTime, gearRestockTime]);
-
-  function restockSeeds() {
-    // Show seeds based on stock rates - some may be out of stock
-    const seeds = SEED_TEMPLATES.map(template => ({ 
-      ...template, 
-      id: generateId(),
-      inStock: Math.random() < template.stockRate // Determine if in stock based on stock rate
-    }));
-    setShopSeeds(seeds);
   }
-  
-  function restockGear() {
-    const gear = GEAR_TEMPLATES.map(template => ({ ...template, id: generateId() }));
-    console.log('Restocking gear with templates:', GEAR_TEMPLATES); // Debug log
-    // Add dynamic plot upgrade with current price
+  if (now >= gearRestockTime) {
     gear.push({
       id: generateId(),
       name: 'Plot Upgrade',
@@ -339,6 +324,45 @@ export default function GamifiedGarden() {
   useEffect(() => {
     restockGear();
   }, [numPots]);
+
+  function restockSeeds() {
+    // Show seeds based on stock rates with limited quantities
+    const seeds = SEED_TEMPLATES.map(template => { 
+      const isInStock = Math.random() < template.stockRate;
+      let quantity = 0;
+      
+      if (isInStock) {
+        // Set stock quantity based on rarity
+        switch (template.rarity) {
+          case 'common':
+          case 'uncommon':
+            quantity = Math.floor(Math.random() * 5) + 3; // 3-7 seeds
+            break;
+          case 'rare':
+            quantity = Math.floor(Math.random() * 3) + 1; // 1-3 seeds
+            break;
+          case 'epic':
+            quantity = Math.floor(Math.random() * 2) + 1; // 1-2 seeds
+            break;
+          case 'mythic':
+          case 'legendary':
+            quantity = 1; // Only 1 seed available
+            break;
+          case 'exotic':
+            quantity = 1; // Only 1 seed available
+            break;
+        }
+      }
+      
+      return { 
+        ...template, 
+        id: generateId(),
+        inStock: isInStock,
+        stockQuantity: quantity
+      };
+    });
+    setShopSeeds(seeds);
+  }
 
   // Plant seed
   function plantSeed(plotId: string, seed: Seed) {
@@ -490,15 +514,37 @@ export default function GamifiedGarden() {
     setPlots(p => p.map(p => p.id === plotId ? { ...p, plant: undefined } : p));
   }
 
-  // Buy from shop - uses money
+  // Buy from shop - uses money and checks stock
   function buySeed(seed: Seed) {
-    if (money >= seed.price) {
-      setMoney(m => m - seed.price);
-      setInventory(inv => ({ ...inv, seeds: [...inv.seeds, seed] }));
-      toast({ title: 'Purchased', description: `${seed.name} seed` });
-    } else {
-      toast({ title: 'Not enough coins', description: `Need ${seed.price} coins`, variant: 'destructive' });
+    if (!seed.inStock) {
+      toast({ title: 'Out of Stock', description: `${seed.name} is not available`, variant: 'destructive' });
+      return;
     }
+    
+    if (seed.stockQuantity <= 0) {
+      toast({ title: 'Out of Stock', description: `${seed.name} is sold out`, variant: 'destructive' });
+      return;
+    }
+    
+    if (money < seed.price) {
+      toast({ title: 'Not enough coins', description: `Need ${seed.price} coins`, variant: 'destructive' });
+      return;
+    }
+    
+    // Purchase the seed
+    setMoney(m => m - seed.price);
+    setInventory(inv => ({ ...inv, seeds: [...inv.seeds, seed] }));
+    
+    // Decrease stock quantity
+    setShopSeeds(seeds => 
+      seeds.map(s => 
+        s.id === seed.id 
+          ? { ...s, stockQuantity: s.stockQuantity - 1, inStock: s.stockQuantity - 1 > 0 }
+          : s
+      )
+    );
+    
+    toast({ title: 'Purchased', description: `${seed.name} seed` });
   }
   
   function buyGear(gear: Gear) {
@@ -768,15 +814,15 @@ export default function GamifiedGarden() {
               <div className="space-y-2 pr-4">
                 {shopSeeds.map(seed => {
                   const canAfford = money >= seed.price;
-                  const isAvailable = seed.inStock && canAfford;
+                  const isAvailable = seed.inStock && seed.stockQuantity > 0 && canAfford;
                   
                   return (
                     <div 
                       key={seed.id} 
                       className={`
                         flex items-center justify-between p-2 border rounded bg-secondary/30 transition-all
-                        ${canAfford && seed.inStock ? 'ring-2 ring-white shadow-lg shadow-white/20' : ''}
-                        ${!seed.inStock ? 'opacity-50' : ''}
+                        ${seed.inStock && seed.stockQuantity > 0 && canAfford ? 'ring-2 ring-white shadow-lg shadow-white/20' : ''}
+                        ${!seed.inStock || seed.stockQuantity <= 0 ? 'opacity-50' : ''}
                       `}
                     >
                       <div className="flex items-center gap-2">
@@ -787,9 +833,14 @@ export default function GamifiedGarden() {
                             <span className={`text-[10px] px-1.5 py-0.5 rounded-full uppercase font-bold ${getRarityColor(seed.rarity)}`}>
                               {seed.rarity}
                             </span>
-                            {!seed.inStock && (
+                            {(!seed.inStock || seed.stockQuantity <= 0) && (
                               <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-400">
                                 OUT OF STOCK
+                              </span>
+                            )}
+                            {seed.inStock && seed.stockQuantity > 0 && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-400">
+                                {seed.stockQuantity} left
                               </span>
                             )}
                           </div>
