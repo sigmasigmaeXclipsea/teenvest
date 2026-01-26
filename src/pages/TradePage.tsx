@@ -17,12 +17,13 @@ import { getUserFriendlyError } from '@/lib/errorMessages';
 import { useSettings } from '@/contexts/SettingsContext';
 import StockLineChart from '@/components/StockLineChart';
 import ProfessionalCandlestickChart from '@/components/ProfessionalCandlestickChart';
+import StockNews from '@/components/StockNews';
 
 const TradePage = () => {
   const [searchParams] = useSearchParams();
   const initialSymbol = searchParams.get('symbol') || '';
   const navigate = useNavigate();
-  const { settings } = useSettings();
+  const { settings, loading: settingsLoading } = useSettings();
   
   const [selectedSymbol, setSelectedSymbol] = useState(initialSymbol);
   const [tickerSearch, setTickerSearch] = useState('');
@@ -325,7 +326,7 @@ const TradePage = () => {
         </div>
 
         {selectedStock && currentQuote && (
-          <div className={`${settings.advancedMode ? 'grid gap-6 lg:grid-cols-2' : 'space-y-6'}`}>
+          <div className={`${!settingsLoading && settings?.advancedMode ? 'grid gap-6 lg:grid-cols-2' : 'space-y-6'}`}>
             <StockLineChart
               symbol={selectedStock.symbol}
               currentPrice={Number(currentQuote.price) || 0}
@@ -335,7 +336,7 @@ const TradePage = () => {
               open={Number(currentQuote.open) || 0}
             />
 
-            {settings.advancedMode && (
+            {!settingsLoading && settings?.advancedMode && (
               <ProfessionalCandlestickChart
                 symbol={selectedStock.symbol}
                 currentPrice={Number(currentQuote.price) || 0}
@@ -346,6 +347,11 @@ const TradePage = () => {
               />
             )}
           </div>
+        )}
+
+        {/* Stock News */}
+        {selectedStock && (
+          <StockNews symbol={selectedStock.symbol} />
         )}
 
       </div>

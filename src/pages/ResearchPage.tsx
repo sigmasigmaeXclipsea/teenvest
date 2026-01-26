@@ -10,6 +10,7 @@ import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useCachedStocks, useRefreshStockCache, isCacheStale } from '@/hooks/useStockCache';
 import { useStockQuote } from '@/hooks/useStockAPI';
+import { useSettings } from '@/contexts/SettingsContext';
 import StockLineChart from '@/components/StockLineChart';
 import ProfessionalCandlestickChart from '@/components/ProfessionalCandlestickChart';
 import StockNews from '@/components/StockNews';
@@ -27,6 +28,7 @@ const ResearchVolumeWidget = lazy(() => import('@/components/research/ResearchVo
 
 const ResearchPage = () => {
   const navigate = useNavigate();
+  const { settings, loading: settingsLoading } = useSettings();
   const [searchParams, setSearchParams] = useSearchParams();
   const symbolFromUrl = searchParams.get('symbol') || '';
   
@@ -484,15 +486,17 @@ const ResearchPage = () => {
                       </Suspense>
                     </div>
 
-                    {/* Professional Full-Width Candlestick Chart with Volume (real data) */}
-                    <ProfessionalCandlestickChart
-                      symbol={stockData.symbol}
-                      currentPrice={stockData.price}
-                      previousClose={stockData.previousClose}
-                      high={stockData.high}
-                      low={stockData.low}
-                      open={stockData.open}
-                    />
+                    {/* Professional Full-Width Candlestick Chart with Volume (real data) - Only in Advanced Mode */}
+                    {!settingsLoading && settings?.advancedMode && (
+                      <ProfessionalCandlestickChart
+                        symbol={stockData.symbol}
+                        currentPrice={stockData.price}
+                        previousClose={stockData.previousClose}
+                        high={stockData.high}
+                        low={stockData.low}
+                        open={stockData.open}
+                      />
+                    )}
                   </div>
                 ) : (
                   <Card>
