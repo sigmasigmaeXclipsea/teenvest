@@ -967,6 +967,119 @@ export default function GamifiedGarden() {
           sprinklerPositions={sprinklerPositions}
         />
 
+        {/* Plant Details Popup */}
+        {selectedPlant && (
+          <div className="bg-card rounded-xl shadow-lg p-4 border-2 border-primary/30">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-bold text-foreground flex items-center gap-2">
+                <span className="text-2xl">{selectedPlant.icon || '🌱'}</span>
+                {selectedPlant.seedType}
+                {selectedPlant.variant !== 'normal' && (
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                    selectedPlant.variant === 'golden' ? 'bg-yellow-500/20 text-yellow-600' :
+                    selectedPlant.variant === 'rainbow' ? 'bg-purple-500/20 text-purple-600' :
+                    selectedPlant.variant === 'frost' ? 'bg-cyan-500/20 text-cyan-600' :
+                    selectedPlant.variant === 'candy' ? 'bg-pink-500/20 text-pink-600' :
+                    selectedPlant.variant === 'thunder' ? 'bg-yellow-500/20 text-yellow-600' :
+                    selectedPlant.variant === 'lunar' ? 'bg-purple-500/20 text-purple-600' :
+                    'bg-muted'
+                  }`}>
+                    {selectedPlant.variant.charAt(0).toUpperCase() + selectedPlant.variant.slice(1)}
+                  </span>
+                )}
+              </h3>
+              <button 
+                onClick={() => setSelectedPlant(null)}
+                className="text-muted-foreground hover:text-foreground text-xl"
+              >
+                ×
+              </button>
+            </div>
+            
+            {(() => {
+              const now = Date.now();
+              const progress = Math.min(1, (now - selectedPlant.plantedAt) / selectedPlant.growthTimeMs);
+              const stage = progress < 0.25 ? 'Seed' : progress < 0.5 ? 'Sprout' : progress < 0.75 ? 'Growing' : progress < 1 ? 'Mature' : 'Ready';
+              const timeRemaining = Math.max(0, selectedPlant.growthTimeMs - (now - selectedPlant.plantedAt));
+              const totalGrowthMins = selectedPlant.growthTimeMs / 60000;
+              
+              return (
+                <div className="space-y-2 text-sm">
+                  <div>
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-muted-foreground">Growth Progress</span>
+                      <span className="font-medium">{Math.round(progress * 100)}%</span>
+                    </div>
+                    <div className="w-full bg-muted rounded-full h-2">
+                      <div 
+                        className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${progress * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2 pt-2">
+                    <div className="bg-muted/50 rounded-lg p-2">
+                      <div className="text-xs text-muted-foreground">Stage</div>
+                      <div className="font-medium flex items-center gap-1">
+                        {stage === 'Seed' && '🌰'}
+                        {stage === 'Sprout' && '🌱'}
+                        {stage === 'Growing' && '🌿'}
+                        {stage === 'Mature' && '🌾'}
+                        {stage === 'Ready' && '✨'}
+                        {stage}
+                      </div>
+                    </div>
+                    <div className="bg-muted/50 rounded-lg p-2">
+                      <div className="text-xs text-muted-foreground">Time Left</div>
+                      <div className="font-medium">
+                        {timeRemaining > 0 ? formatTime(timeRemaining) : '✅ Ready!'}
+                      </div>
+                    </div>
+                    <div className="bg-muted/50 rounded-lg p-2">
+                      <div className="text-xs text-muted-foreground">Total Growth</div>
+                      <div className="font-medium">{totalGrowthMins.toFixed(0)} min</div>
+                    </div>
+                    <div className="bg-muted/50 rounded-lg p-2">
+                      <div className="text-xs text-muted-foreground">Size</div>
+                      <div className="font-medium">{selectedPlant.sizeKg.toFixed(1)} kg</div>
+                    </div>
+                    <div className="bg-muted/50 rounded-lg p-2">
+                      <div className="text-xs text-muted-foreground">Buy Price</div>
+                      <div className="font-medium text-red-500">🪙 {selectedPlant.basePrice}</div>
+                    </div>
+                    <div className="bg-muted/50 rounded-lg p-2">
+                      <div className="text-xs text-muted-foreground">Sell Price</div>
+                      <div className="font-medium text-green-500">🪙 {selectedPlant.sellPrice}</div>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-2 flex items-center gap-2 text-xs">
+                    {selectedPlant.isWilted ? (
+                      <span className="text-red-500 flex items-center gap-1">💀 Wilted - needs water!</span>
+                    ) : (
+                      <span className="text-green-500 flex items-center gap-1">💧 Healthy</span>
+                    )}
+                  </div>
+                  
+                  {selectedPlant.variant !== 'normal' && (
+                    <div className="pt-1 text-xs text-muted-foreground border-t border-border mt-2 pt-2">
+                      ✨ {selectedPlant.variant.charAt(0).toUpperCase() + selectedPlant.variant.slice(1)} variant: +{
+                        selectedPlant.variant === 'golden' ? '50%' :
+                        selectedPlant.variant === 'rainbow' ? '100%' :
+                        selectedPlant.variant === 'frost' ? '25%' :
+                        selectedPlant.variant === 'candy' ? '35%' :
+                        selectedPlant.variant === 'thunder' ? '40%' :
+                        selectedPlant.variant === 'lunar' ? '60%' : '0%'
+                      } sell price bonus
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
         {/* Seed Inventory */}
         <div className="bg-card rounded-xl shadow-sm p-4 border">
           <h3 className="font-bold mb-2 flex items-center gap-2 text-foreground">
