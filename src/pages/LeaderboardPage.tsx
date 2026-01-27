@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Trophy, Medal, TrendingUp, TrendingDown, User, Eye, Star } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -6,10 +7,21 @@ import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { useLeaderboard, type LeaderboardEntry } from '@/hooks/useLeaderboard';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
+
+const ENTRIES_PER_PAGE = 10;
 
 const LeaderboardPage = () => {
   const { data: leaderboard, isLoading } = useLeaderboard();
   const { user } = useAuth();
+  const [currentPage, setCurrentPage] = useState(1);
 
   const getRankIcon = (rank: number) => {
     if (rank === 1) return <Trophy className="w-6 h-6 text-primary" />;
@@ -41,10 +53,23 @@ const LeaderboardPage = () => {
     is_current_user: entry.is_current_user || entry.user_id === user?.id,
   }));
 
-  // Separate top 10 and current user if outside top 10
-  const top10 = enrichedLeaderboard.filter((entry) => entry.rank <= 10);
+  // Separate top 3 for featured cards
+  const top3 = enrichedLeaderboard.filter((entry) => entry.rank <= 3);
+  
+  // Get current user entry for special handling
   const currentUserEntry = enrichedLeaderboard.find((entry) => entry.is_current_user);
-  const isUserOutsideTop10 = !!currentUserEntry && currentUserEntry.rank > 10;
+  
+  // Get all ranked entries (excluding current user if they're outside top 100)
+  const allRankedEntries = enrichedLeaderboard.filter((entry) => entry.rank <= 100);
+  
+  // Pagination logic
+  const totalPages = Math.ceil(allRankedEntries.length / ENTRIES_PER_PAGE);
+  const startIndex = (currentPage - 1) * ENTRIES_PER_PAGE;
+  const endIndex = startIndex + ENTRIES_PER_PAGE;
+  const currentPageEntries = allRankedEntries.slice(startIndex, endIndex);
+  
+  // Check if current user is outside top 100
+  const isUserOutsideTop100 = !!currentUserEntry && currentUserEntry.rank > 100;
 
   const renderEntry = (entry: LeaderboardEntry, showSeparator = false) => (
     <div key={entry.rank}>
@@ -95,6 +120,29 @@ const LeaderboardPage = () => {
     </div>
   );
 
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
+  // Generate page numbers to display
+  const getPageNumbers = () => {
+    const pages: (number | 'ellipsis')[] = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (currentPage > 3) pages.push('ellipsis');
+      for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+        pages.push(i);
+      }
+      if (currentPage < totalPages - 2) pages.push('ellipsis');
+      pages.push(totalPages);
+    }
+    return pages;
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -109,7 +157,7 @@ const LeaderboardPage = () => {
 
         {/* Top 3 Cards */}
         <div className="grid gap-4 md:grid-cols-3">
-          {top10.slice(0, 3).map((entry) => (
+          {top3.map((entry) => (
             <Card key={entry.rank} className={`${getRankBg(entry.rank, entry.is_current_user)} border`}>
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
@@ -152,16 +200,16 @@ const LeaderboardPage = () => {
           <CardHeader>
             <CardTitle>All Rankings</CardTitle>
             <CardDescription>
-              {isUserOutsideTop10 && currentUserEntry
-                ? `Top 10 performers + your rank (#${currentUserEntry.rank})`
-                : 'Top 10 performers by portfolio value'}
+              {isUserOutsideTop100 && currentUserEntry
+                ? `Top 100 performers + your rank (#${currentUserEntry.rank})`
+                : `Top 100 performers by portfolio value (Page ${currentPage} of ${totalPages || 1})`}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {top10.map((entry) => renderEntry(entry))}
+              {currentPageEntries.map((entry) => renderEntry(entry))}
               
-              {isUserOutsideTop10 && currentUserEntry && renderEntry(currentUserEntry, true)}
+              {isUserOutsideTop100 && currentUserEntry && currentPage === totalPages && renderEntry(currentUserEntry, true)}
 
               {(!enrichedLeaderboard || enrichedLeaderboard.length === 0) && (
                 <div className="text-center py-8 text-muted-foreground">
@@ -170,6 +218,45 @@ const LeaderboardPage = () => {
                 </div>
               )}
             </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="mt-6">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                    
+                    {getPageNumbers().map((page, index) => (
+                      <PaginationItem key={index}>
+                        {page === 'ellipsis' ? (
+                          <span className="px-3 text-muted-foreground">...</span>
+                        ) : (
+                          <PaginationLink
+                            onClick={() => handlePageChange(page)}
+                            isActive={currentPage === page}
+                            className="cursor-pointer"
+                          >
+                            {page}
+                          </PaginationLink>
+                        )}
+                      </PaginationItem>
+                    ))}
+                    
+                    <PaginationItem>
+                      <PaginationNext 
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
