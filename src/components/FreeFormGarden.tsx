@@ -79,6 +79,7 @@ export default function FreeFormGarden({
   sprinklerPositions
 }: FreeFormGardenProps) {
   const [hoveredPosition, setHoveredPosition] = useState<{x: number, y: number} | null>(null);
+  const [hoveredPlant, setHoveredPlant] = useState<Plant | null>(null);
 
   const now = Date.now();
 
@@ -239,6 +240,10 @@ export default function FreeFormGarden({
       }
     };
 
+    const displayStage = progress < 0.25 ? 'Seed' : progress < 0.5 ? 'Sprout' : progress < 0.75 ? 'Growing' : progress < 1 ? 'Mature' : 'Ready';
+    const timeRemaining = Math.max(0, plant.growthTimeMs - (now - plant.plantedAt));
+    const isHovered = hoveredPlant?.id === plant.id;
+
     return (
       <div
         className={`absolute transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center cursor-pointer transition-transform hover:scale-110 ${plant.isWilted ? 'opacity-40 grayscale' : ''}`}
@@ -248,6 +253,8 @@ export default function FreeFormGarden({
           width: baseSize,
           height: baseSize,
         }}
+        onMouseEnter={() => setHoveredPlant(plant)}
+        onMouseLeave={() => setHoveredPlant(null)}
       >
         {/* Glow background for variants */}
         {plant.variant !== 'normal' && (
@@ -290,6 +297,43 @@ export default function FreeFormGarden({
         {/* Wilt indicator */}
         {plant.isWilted && (
           <div className="absolute -top-1 -left-1 text-xs">💀</div>
+        )}
+
+        {/* Hover tooltip */}
+        {isHovered && (
+          <div 
+            className="absolute z-50 bg-card border rounded-lg shadow-xl p-2 text-xs pointer-events-none"
+            style={{
+              bottom: baseSize + 8,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              minWidth: 140,
+              whiteSpace: 'nowrap'
+            }}
+          >
+            <div className="font-bold text-foreground flex items-center gap-1 mb-1">
+              {plant.icon || '🌱'} {plant.seedType}
+              {plant.variant !== 'normal' && (
+                <span className={`text-[10px] px-1 rounded ${
+                  plant.variant === 'golden' ? 'bg-yellow-500/20 text-yellow-500' :
+                  plant.variant === 'frost' ? 'bg-cyan-500/20 text-cyan-500' :
+                  plant.variant === 'candy' ? 'bg-pink-500/20 text-pink-500' :
+                  plant.variant === 'thunder' ? 'bg-yellow-500/20 text-yellow-500' :
+                  'bg-purple-500/20 text-purple-500'
+                }`}>{plant.variant}</span>
+              )}
+            </div>
+            <div className="flex gap-2 text-muted-foreground">
+              <span>{displayStage}</span>
+              <span>•</span>
+              <span>{timeRemaining > 0 ? formatTime(timeRemaining) : '✅ Ready!'}</span>
+            </div>
+            <div className="flex justify-between mt-1 pt-1 border-t border-border">
+              <span className="text-muted-foreground">{plant.sizeKg.toFixed(1)}kg</span>
+              <span className="text-green-500 font-medium">🪙{plant.sellPrice}</span>
+            </div>
+            {plant.isWilted && <div className="text-red-500 mt-1">💀 Needs water!</div>}
+          </div>
         )}
       </div>
     );
