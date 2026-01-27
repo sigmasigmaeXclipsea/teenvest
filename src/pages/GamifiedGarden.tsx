@@ -308,7 +308,7 @@ export default function GamifiedGarden() {
   // XP exchange
   const [exchangeAmount, setExchangeAmount] = useState('');
 
-  // Load from localStorage
+  // Load from localStorage and migrate old XP to database
   useEffect(() => {
     // Try v5 first (new garden system)
     let saved = localStorage.getItem('garden-state-v5');
@@ -320,10 +320,41 @@ export default function GamifiedGarden() {
       version = 'v4';
     }
     
+    // Check for XP in older localStorage versions and migrate to database
+    const migrateOldXP = async () => {
+      // Check v4, v3, v2, v1 for old XP data
+      const oldVersions = ['garden-state-v4', 'garden-state-v3', 'garden-state-v2', 'garden-state'];
+      for (const key of oldVersions) {
+        const oldData = localStorage.getItem(key);
+        if (oldData) {
+          try {
+            const parsed = JSON.parse(oldData);
+            if (parsed.xp && parsed.xp > 0 && !xpLoading && xp === 0) {
+              console.log(`Migrating XP from ${key}: ${parsed.xp}`);
+              await setXP(parsed.xp);
+              // Remove old XP from localStorage to prevent duplicate migrations
+              const updated = { ...parsed };
+              delete updated.xp;
+              localStorage.setItem(key, JSON.stringify(updated));
+              break;
+            }
+          } catch (e) {
+            console.error(`Failed to parse ${key}:`, e);
+          }
+        }
+      }
+    };
+    
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         console.log('Loading garden state from version:', version);
+        
+        // Migrate XP from localStorage to database if exists
+        if (parsed.xp && parsed.xp > 0 && !xpLoading && xp === 0) {
+          console.log('Migrating XP from current version:', parsed.xp);
+          setXP(parsed.xp);
+        }
         
         // XP is now managed by XPContext, not localStorage
         setMoney(parsed.money ?? 0); // Default to 0 coins
@@ -356,8 +387,10 @@ export default function GamifiedGarden() {
       // No saved state, use defaults
       console.log('No saved state found, using defaults');
       setGarden({ plants: [], width: 800, height: 600 });
+      // Check older versions for XP migration
+      migrateOldXP();
     }
-  }, []);
+  }, [xpLoading]);
 
   // Listen for admin garden updates
   useEffect(() => {
