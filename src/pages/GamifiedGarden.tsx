@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Droplets, Sprout, Coins, Clock, Package, Wrench, Zap, Lightbulb, ArrowRightLeft, Grid3X3 } from 'lucide-react';
+import { Droplets, Sprout, Coins, Clock, Package, Wrench, Zap, Lightbulb, ArrowRightLeft, Grid3X3, Star } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useXP } from '@/contexts/XPContext';
@@ -70,7 +70,7 @@ type Weather = 'normal' | 'rainy' | 'frozen' | 'candy' | 'thunder' | 'lunar';
 const MIN_POTS = 3;
 const WILT_THRESHOLD = 90 * 60 * 1000; // 90 minutes without water (increased from 60 min)
 const WATER_REDUCTION_TIME = 20 * 60 * 1000; // Fixed 20 minutes reduction per watering
-const XP_TO_MONEY_RATE = 0.125; // 8 XP = 1 coin (much harder progression)
+const QUIZ_POINTS_TO_MONEY_RATE = 2; // 1 Quiz Point = 2 coins
 
 // 40 different seeds ordered by price (cheapest to most expensive) with scaled stock rates
 const SEED_TEMPLATES: Omit<Seed, 'id' | 'inStock' | 'stockQuantity'>[] = [
@@ -237,11 +237,11 @@ function getWeatherMultiplier(weather: Weather): number {
 
 function getWeatherMutationChance(weather: Weather): number {
   switch (weather) {
-    case 'rainy': return 0.02; // 2% chance for common frost mutation
-    case 'frozen': return 0.04; // 4% chance for frost mutation
-    case 'candy': return 0.03; // 3% chance for candy mutation  
-    case 'thunder': return 0.02; // 2% chance for thunder mutation
-    case 'lunar': return 0.01; // 1% chance for rare lunar mutation
+    case 'rainy': return 0.5; // 50% chance for frost mutation when rainy
+    case 'frozen': return 0.5; // 50% chance for frost mutation when frozen
+    case 'candy': return 0.25; // 25% chance for candy mutation when candy weather
+    case 'thunder': return 0.15; // 15% chance for thunder mutation when thunder weather
+    case 'lunar': return 0.1; // 10% chance for lunar mutation when lunar weather
     default: return 0;
   }
 }
@@ -283,7 +283,7 @@ function getVariantColor(variant: string) {
 export default function GamifiedGarden() {
   const { settings } = useSettings();
   const { toast } = useToast();
-  const { xp, addXP, setXP, loading: xpLoading } = useXP();
+  const { xp, quizPoints, addXP, setXP, spendQuizPoints, loading: xpLoading } = useXP();
   const [money, setMoney] = useState(0); // Start with 0 coins to make progression harder
   const [garden, setGarden] = useState<Garden>({ plants: [], width: 800, height: 600 });
   const [inventory, setInventory] = useState({ seeds: [] as Seed[], gear: [] as Gear[] });
@@ -305,10 +305,10 @@ export default function GamifiedGarden() {
   const [gearRestockTime, setGearRestockTime] = useState(Date.now() + 15 * 60 * 1000);
   const [now, setNow] = useState(Date.now());
   
-  // XP exchange
+  // Quiz Points exchange
   const [exchangeAmount, setExchangeAmount] = useState('');
 
-  // Load from localStorage
+  // Load from localStorage and migrate old XP to database
   useEffect(() => {
     // Try v5 first (new garden system)
     let saved = localStorage.getItem('garden-state-v5');
@@ -320,10 +320,41 @@ export default function GamifiedGarden() {
       version = 'v4';
     }
     
+    // Check for XP in older localStorage versions and migrate to database
+    const migrateOldXP = async () => {
+      // Check v4, v3, v2, v1 for old XP data
+      const oldVersions = ['garden-state-v4', 'garden-state-v3', 'garden-state-v2', 'garden-state'];
+      for (const key of oldVersions) {
+        const oldData = localStorage.getItem(key);
+        if (oldData) {
+          try {
+            const parsed = JSON.parse(oldData);
+            if (parsed.xp && parsed.xp > 0 && !xpLoading && xp === 0) {
+              console.log(`Migrating XP from ${key}: ${parsed.xp}`);
+              await setXP(parsed.xp);
+              // Remove old XP from localStorage to prevent duplicate migrations
+              const updated = { ...parsed };
+              delete updated.xp;
+              localStorage.setItem(key, JSON.stringify(updated));
+              break;
+            }
+          } catch (e) {
+            console.error(`Failed to parse ${key}:`, e);
+          }
+        }
+      }
+    };
+    
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         console.log('Loading garden state from version:', version);
+        
+        // Migrate XP from localStorage to database if exists
+        if (parsed.xp && parsed.xp > 0 && !xpLoading && xp === 0) {
+          console.log('Migrating XP from current version:', parsed.xp);
+          setXP(parsed.xp);
+        }
         
         // XP is now managed by XPContext, not localStorage
         setMoney(parsed.money ?? 0); // Default to 0 coins
@@ -356,8 +387,10 @@ export default function GamifiedGarden() {
       // No saved state, use defaults
       console.log('No saved state found, using defaults');
       setGarden({ plants: [], width: 800, height: 600 });
+      // Check older versions for XP migration
+      migrateOldXP();
     }
-  }, []);
+  }, [xpLoading]);
 
   // Listen for admin garden updates
   useEffect(() => {
@@ -875,19 +908,21 @@ export default function GamifiedGarden() {
     });
   }
 
-  // XP to Money exchange
-  async function exchangeXpForMoney() {
+  // Quiz Points to Money exchange
+  async function exchangeQuizPointsForMoney() {
     const amount = parseInt(exchangeAmount) || 0;
     if (amount <= 0) return;
-    if (amount > xp) {
-      toast({ title: 'Not enough XP', variant: 'destructive' });
+    if (amount > quizPoints) {
+      toast({ title: 'Not enough Quiz Points', variant: 'destructive' });
       return;
     }
-    const coinsReceived = amount * XP_TO_MONEY_RATE;
-    await addXP(-amount); // Subtract XP
-    setMoney(m => m + coinsReceived);
-    setExchangeAmount('');
-    toast({ title: 'Exchanged!', description: `${amount} XP → ${coinsReceived} coins` });
+    const success = await spendQuizPoints(amount);
+    if (success) {
+      const coinsReceived = amount * QUIZ_POINTS_TO_MONEY_RATE;
+      setMoney(m => m + coinsReceived);
+      setExchangeAmount('');
+      toast({ title: 'Exchanged!', description: `${amount} Quiz Points → ${coinsReceived} coins` });
+    }
   }
 
   // Auto-wilt check
@@ -918,10 +953,14 @@ export default function GamifiedGarden() {
           <h1 className="text-xl md:text-2xl font-bold text-foreground flex items-center gap-2">
             <Sprout className="w-6 h-6 text-green-600" /> Learning Garden
           </h1>
-          <div className="flex gap-4 items-center">
+          <div className="flex gap-3 items-center flex-wrap">
             <div className="flex items-center gap-1 px-3 py-1.5 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
               <Zap className="w-4 h-4 text-yellow-500" />
               <span className="font-semibold text-sm text-foreground">{xp} XP</span>
+            </div>
+            <div className="flex items-center gap-1 px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+              <Star className="w-4 h-4 text-purple-500" />
+              <span className="font-semibold text-sm text-foreground">{quizPoints} pts</span>
             </div>
             <div className="flex items-center gap-1 px-3 py-1.5 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
               <Coins className="w-4 h-4 text-amber-600" />
@@ -954,32 +993,35 @@ export default function GamifiedGarden() {
           </div>
         </div>
 
-        {/* XP Exchange - Simple clean design */}
+        {/* Quiz Points Exchange - Simple clean design */}
         <div className="bg-card rounded-xl shadow-sm p-4 border">
           <h3 className="font-bold mb-3 flex items-center gap-2 text-foreground">
-            <ArrowRightLeft className="w-5 h-5 text-green-600" /> XP Exchange
-            <span className="text-xs font-normal text-muted-foreground ml-2">(8 XP = 1 coin)</span>
+            <ArrowRightLeft className="w-5 h-5 text-purple-600" /> Quiz Points Exchange
+            <span className="text-xs font-normal text-muted-foreground ml-2">(1 pt = 2 coins)</span>
           </h3>
           <div className="flex gap-2 items-center flex-wrap">
             <Input
               type="number"
-              placeholder="Amount of XP"
+              placeholder="Amount of pts"
               value={exchangeAmount}
               onChange={(e) => setExchangeAmount(e.target.value)}
               className="w-32"
               min="1"
-              max={xp}
+              max={quizPoints}
             />
             <Button 
-              onClick={exchangeXpForMoney} 
-              disabled={!exchangeAmount || parseInt(exchangeAmount) <= 0 || parseInt(exchangeAmount) > xp}
+              onClick={exchangeQuizPointsForMoney} 
+              disabled={!exchangeAmount || parseInt(exchangeAmount) <= 0 || parseInt(exchangeAmount) > quizPoints}
               size="sm"
-              className="bg-green-600 hover:bg-green-700 text-white"
+              className="bg-purple-600 hover:bg-purple-700 text-white"
             >
-              Exchange for {(parseInt(exchangeAmount) || 0) * XP_TO_MONEY_RATE} coins
+              Exchange for {(parseInt(exchangeAmount) || 0) * QUIZ_POINTS_TO_MONEY_RATE} coins
             </Button>
-            <span className="text-xs text-muted-foreground">Available: {xp} XP</span>
+            <span className="text-xs text-muted-foreground">Available: {quizPoints} pts</span>
           </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            💡 Earn Quiz Points by taking quizzes in the Learning section!
+          </p>
         </div>
 
         {/* Free-Form Garden */}
