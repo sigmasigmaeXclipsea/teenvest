@@ -132,7 +132,7 @@ const LeaderboardPage = () => {
                     <p className="text-2xl font-bold text-primary">
                       ${entry.total_value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">Cash Balance</p>
+                    <p className="text-xs text-muted-foreground mt-1">Total Portfolio Value</p>
                   </div>
                   {entry.profile_public && !entry.is_current_user && (
                     <Link to={`/profile/${entry.user_id}`}>
@@ -154,7 +154,7 @@ const LeaderboardPage = () => {
             <CardDescription>
               {isUserOutsideTop10 && currentUserEntry
                 ? `Top 10 performers + your rank (#${currentUserEntry.rank})`
-                : 'Top 10 performers by cash growth'}
+                : 'Top 10 performers by portfolio value'}
             </CardDescription>
           </CardHeader>
           <CardContent>
