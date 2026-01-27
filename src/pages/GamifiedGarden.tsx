@@ -899,69 +899,31 @@ export default function GamifiedGarden() {
           </div>
         </div>
 
-        {/* XP Exchange - Bug-spotted gradient design */}
-        <div className="relative rounded-xl shadow-sm p-4 border overflow-hidden">
-          {/* Gradient background with bug spots */}
-          <div 
-            className="absolute inset-0 opacity-90"
-            style={{
-              background: 'linear-gradient(135deg, hsl(var(--primary) / 0.15) 0%, hsl(142 76% 36% / 0.25) 50%, hsl(var(--accent) / 0.15) 100%)',
-            }}
-          />
-          {/* Bug spots decoration */}
-          <div className="absolute inset-0 pointer-events-none">
-            {[...Array(12)].map((_, i) => (
-              <div
-                key={i}
-                className="absolute rounded-full animate-pulse"
-                style={{
-                  width: `${4 + Math.random() * 8}px`,
-                  height: `${4 + Math.random() * 8}px`,
-                  left: `${5 + (i % 4) * 25 + Math.random() * 10}%`,
-                  top: `${10 + Math.floor(i / 4) * 30 + Math.random() * 15}%`,
-                  background: i % 3 === 0 
-                    ? 'hsl(142 76% 36% / 0.6)' 
-                    : i % 3 === 1 
-                      ? 'hsl(45 93% 47% / 0.5)' 
-                      : 'hsl(280 65% 60% / 0.4)',
-                  animationDelay: `${i * 0.2}s`,
-                  animationDuration: `${2 + Math.random()}s`,
-                }}
-              />
-            ))}
-            {/* Tiny bug emoji spots */}
-            <span className="absolute text-[8px] opacity-40" style={{ left: '8%', top: '20%' }}>🐛</span>
-            <span className="absolute text-[8px] opacity-40" style={{ left: '85%', top: '60%' }}>🐞</span>
-            <span className="absolute text-[8px] opacity-40" style={{ left: '45%', top: '75%' }}>🦗</span>
-            <span className="absolute text-[6px] opacity-30" style={{ left: '70%', top: '15%' }}>🐜</span>
-            <span className="absolute text-[7px] opacity-35" style={{ left: '25%', top: '55%' }}>🪲</span>
-          </div>
-          
-          <div className="relative z-10">
-            <h3 className="font-bold mb-3 flex items-center gap-2 text-foreground">
-              <ArrowRightLeft className="w-5 h-5 text-green-600" /> XP Exchange
-              <span className="text-xs font-normal text-muted-foreground ml-2 bg-background/60 px-2 py-0.5 rounded-full">(8 XP = 1 coin)</span>
-            </h3>
-            <div className="flex gap-2 items-center flex-wrap">
-              <Input
-                type="number"
-                placeholder="Amount of XP"
-                value={exchangeAmount}
-                onChange={(e) => setExchangeAmount(e.target.value)}
-                className="w-32 bg-background/80"
-                min="1"
-                max={xp}
-              />
-              <Button 
-                onClick={exchangeXpForMoney} 
-                disabled={!exchangeAmount || parseInt(exchangeAmount) <= 0 || parseInt(exchangeAmount) > xp}
-                size="sm"
-                className="bg-green-600 hover:bg-green-700 text-white"
-              >
-                Exchange for {(parseInt(exchangeAmount) || 0) * XP_TO_MONEY_RATE} coins
-              </Button>
-              <span className="text-xs text-foreground/80 bg-background/60 px-2 py-1 rounded">Available: {xp} XP</span>
-            </div>
+        {/* XP Exchange - Simple clean design */}
+        <div className="bg-card rounded-xl shadow-sm p-4 border">
+          <h3 className="font-bold mb-3 flex items-center gap-2 text-foreground">
+            <ArrowRightLeft className="w-5 h-5 text-green-600" /> XP Exchange
+            <span className="text-xs font-normal text-muted-foreground ml-2">(8 XP = 1 coin)</span>
+          </h3>
+          <div className="flex gap-2 items-center flex-wrap">
+            <Input
+              type="number"
+              placeholder="Amount of XP"
+              value={exchangeAmount}
+              onChange={(e) => setExchangeAmount(e.target.value)}
+              className="w-32"
+              min="1"
+              max={xp}
+            />
+            <Button 
+              onClick={exchangeXpForMoney} 
+              disabled={!exchangeAmount || parseInt(exchangeAmount) <= 0 || parseInt(exchangeAmount) > xp}
+              size="sm"
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              Exchange for {(parseInt(exchangeAmount) || 0) * XP_TO_MONEY_RATE} coins
+            </Button>
+            <span className="text-xs text-muted-foreground">Available: {xp} XP</span>
           </div>
         </div>
 
