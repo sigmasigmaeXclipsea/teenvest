@@ -437,7 +437,7 @@ export default function FreeFormGarden({
         </div>
       </div>
 
-      {/* Garden area */}
+      {/* Garden area - flat brown with subtle dots */}
       <div 
         className="relative rounded-lg overflow-hidden cursor-crosshair shadow-inner"
         style={{ 
@@ -445,10 +445,13 @@ export default function FreeFormGarden({
           height: garden.height, 
           maxWidth: '100%', 
           margin: '0 auto',
-          background: `
-            radial-gradient(ellipse at 20% 30%, #8B4513 0%, #654321 25%, #4A3018 50%, #3E2723 75%, #2E1A17 100%),
-            linear-gradient(135deg, #6B4423 0%, #8B5A3C 25%, #704214 50%, #5C3317 75%, #4A2C17 100%)
+          backgroundColor: '#5D4037',
+          backgroundImage: `
+            radial-gradient(circle, #4E342E 1px, transparent 1px),
+            radial-gradient(circle, #6D4C41 1px, transparent 1px)
           `,
+          backgroundSize: '20px 20px, 35px 35px',
+          backgroundPosition: '0 0, 10px 10px',
           position: 'relative'
         }}
         onClick={handleGardenClick}
