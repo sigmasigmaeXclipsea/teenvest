@@ -160,267 +160,82 @@ export default function FreeFormGarden({
   const getPlantVisual = (plant: Plant) => {
     const progress = Math.min(1, (now - plant.plantedAt) / plant.growthTimeMs);
     const stage = progress < 0.25 ? 'seed' : progress < 0.5 ? 'sprout' : progress < 0.75 ? 'growing' : progress < 1 ? 'mature' : 'ready';
-    const scale = 0.3 + progress * 1.2; // More dramatic scaling
     const isReady = progress >= 1;
 
-    // Get variant colors and effects
-    const getVariantStyle = () => {
-      switch (plant.variant) {
-        case 'golden': return 'filter: sepia(100%) saturate(300%) hue-rotate(10deg) brightness(1.2) drop-shadow(0 0 12px rgba(255, 215, 0, 0.6));';
-        case 'rainbow': return 'filter: saturate(200%) hue-rotate(90deg) drop-shadow(0 0 12px rgba(147, 51, 234, 0.6));';
-        case 'frost': return 'filter: hue-rotate(180deg) saturate(150%) brightness(1.3) drop-shadow(0 0 12px rgba(135, 206, 235, 0.6));';
-        case 'candy': return 'filter: hue-rotate(320deg) saturate(200%) brightness(1.2) drop-shadow(0 0 12px rgba(255, 105, 180, 0.6));';
-        case 'thunder': return 'filter: sepia(50%) saturate(300%) hue-rotate(45deg) brightness(1.4) drop-shadow(0 0 12px rgba(255, 255, 0, 0.6));';
-        case 'lunar': return 'filter: hue-rotate(270deg) saturate(180%) brightness(1.3) contrast(1.1) drop-shadow(0 0 12px rgba(147, 51, 234, 0.6));';
-        default: return '';
-      }
+    // Get size based on stage
+    const baseSize = stage === 'seed' ? 20 : stage === 'sprout' ? 35 : stage === 'growing' ? 50 : stage === 'mature' ? 60 : 70;
+
+    // Get variant badge color
+    const getVariantBadge = () => {
+      if (plant.variant === 'normal') return null;
+      const colors: Record<string, string> = {
+        golden: 'bg-yellow-500',
+        rainbow: 'bg-gradient-to-r from-red-500 via-green-500 to-blue-500',
+        frost: 'bg-cyan-400',
+        candy: 'bg-pink-400',
+        thunder: 'bg-yellow-400',
+        lunar: 'bg-purple-500'
+      };
+      return colors[plant.variant] || null;
     };
 
-    const baseSize = stage === 'seed' ? 15 : stage === 'sprout' ? 25 : stage === 'growing' ? 40 : stage === 'mature' ? 55 : 70;
-    const size = baseSize * scale;
+    // Get emoji for each stage
+    const getStageEmoji = () => {
+      if (stage === 'seed') return '🌰';
+      if (stage === 'sprout') return '🌱';
+      if (stage === 'growing') return '🌿';
+      if (stage === 'mature') return '🌾';
+      // Ready - use plant icon
+      return plant.icon || '🌻';
+    };
 
-    // Different visual for each growth stage with variant effects
-    const getStageVisual = () => {
-      switch (stage) {
-        case 'seed':
-          return (
-            <div className="relative w-full h-full">
-              {/* Small dark brown seed with variant effects */}
-              <div 
-                className="absolute inset-0 rounded-full"
-                style={{
-                  background: plant.variant === 'frost' 
-                    ? 'radial-gradient(circle at 30% 30%, #E0F2FE, #BAE6FD)'
-                    : plant.variant === 'candy'
-                    ? 'radial-gradient(circle at 30% 30%, #FCE7F3, #FBCFE8)'
-                    : plant.variant === 'thunder'
-                    ? 'radial-gradient(circle at 30% 30%, #FEF3C7, #FDE68A)'
-                    : plant.variant === 'lunar'
-                    ? 'radial-gradient(circle at 30% 30%, #E9D5FF, #D8B4FE)'
-                    : plant.variant === 'golden'
-                    ? 'radial-gradient(circle at 30% 30%, #FEF3C7, #FCD34D)'
-                    : 'radial-gradient(circle at 30% 30%, #4A3018, #2E1A17)',
-                  boxShadow: plant.variant !== 'normal' 
-                    ? 'inset 0 1px 2px rgba(255,255,255,0.5), 0 1px 3px rgba(0,0,0,0.3)'
-                    : 'inset 0 1px 2px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.3)'
-                }}
-              />
-            </div>
-          );
-        case 'sprout':
-          return (
-            <div className="relative w-full h-full">
-              {/* Small sprout with variant colors */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span 
-                  className={plant.variant === 'frost' ? 'text-cyan-300' : 
-                         plant.variant === 'candy' ? 'text-pink-300' :
-                         plant.variant === 'thunder' ? 'text-yellow-300' :
-                         plant.variant === 'lunar' ? 'text-purple-300' :
-                         plant.variant === 'golden' ? 'text-yellow-200' :
-                         plant.variant === 'rainbow' ? 'text-purple-300' :
-                         'text-green-500'}
-                  style={{ fontSize: size * 0.6 }}
-                >
-                  {plant.variant === 'frost' ? '❄️' :
-                   plant.variant === 'candy' ? '🍬' :
-                   plant.variant === 'thunder' ? '⚡' :
-                   plant.variant === 'lunar' ? '🌙' :
-                   plant.variant === 'golden' ? '✨' :
-                   plant.variant === 'rainbow' ? '🌈' :
-                   '🌱'}
-                </span>
-              </div>
-              {/* Variant soil mound */}
-              <div 
-                className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 h-1/3 rounded-t-full"
-                style={{
-                  background: plant.variant === 'frost' 
-                    ? 'radial-gradient(ellipse at center, #E0F2FE, #BAE6FD)'
-                    : plant.variant === 'candy'
-                    ? 'radial-gradient(ellipse at center, #FCE7F3, #FBCFE8)'
-                    : 'radial-gradient(ellipse at center, #3E2723, #2E1A17)',
-                  opacity: 0.8
-                }}
-              />
-            </div>
-          );
-        case 'growing':
-          return (
-            <div className="relative w-full h-full">
-              {/* Medium plant with variant effects */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span 
-                  className={plant.variant === 'frost' ? 'text-cyan-400' : 
-                         plant.variant === 'candy' ? 'text-pink-400' :
-                         plant.variant === 'thunder' ? 'text-yellow-400' :
-                         plant.variant === 'lunar' ? 'text-purple-400' :
-                         plant.variant === 'golden' ? 'text-yellow-300' :
-                         plant.variant === 'rainbow' ? 'text-purple-400' :
-                         'text-green-600'}
-                  style={{ fontSize: size * 0.7 }}
-                >
-                  {plant.variant === 'frost' ? '🌨️' :
-                   plant.variant === 'candy' ? '🧁' :
-                   plant.variant === 'thunder' ? '⚡' :
-                   plant.variant === 'lunar' ? '🌙' :
-                   plant.variant === 'golden' ? '✨' :
-                   plant.variant === 'rainbow' ? '🌈' :
-                   '🌿'}
-                </span>
-              </div>
-              {/* Variant leaves */}
-              {[...Array(2)].map((_, i) => (
-                <div 
-                  key={i}
-                  className={`absolute w-2 h-2 rounded-full opacity-60`}
-                  style={{
-                    top: `${25 + i * 15}%`,
-                    left: `${25 + i * 10}%`,
-                    background: plant.variant === 'frost' ? '#67E8F9' :
-                             plant.variant === 'candy' ? '#F472B6' :
-                             plant.variant === 'thunder' ? '#FCD34D' :
-                             plant.variant === 'lunar' ? '#C084FC' :
-                             plant.variant === 'golden' ? '#FCD34D' :
-                             plant.variant === 'rainbow' ? '#C084FC' :
-                             '#22C55E',
-                    filter: 'blur(1px)'
-                  }}
-                />
-              ))}
-            </div>
-          );
-        case 'mature':
-          return (
-            <div className="relative w-full h-full">
-              {/* Large plant with variant effects */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span 
-                  className={plant.variant === 'frost' ? 'text-cyan-500' : 
-                         plant.variant === 'candy' ? 'text-pink-500' :
-                         plant.variant === 'thunder' ? 'text-yellow-500' :
-                         plant.variant === 'lunar' ? 'text-purple-500' :
-                         plant.variant === 'golden' ? 'text-yellow-400' :
-                         plant.variant === 'rainbow' ? 'text-purple-500' :
-                         'text-green-700'}
-                  style={{ fontSize: size * 0.8 }}
-                >
-                  {plant.variant === 'frost' ? '❄️' :
-                   plant.variant === 'candy' ? '🍭' :
-                   plant.variant === 'thunder' ? '⚡' :
-                   plant.variant === 'lunar' ? '🌙' :
-                   plant.variant === 'golden' ? '⭐' :
-                   plant.variant === 'rainbow' ? '🌈' :
-                   '🌾'}
-                </span>
-              </div>
-              {/* More variant leaves */}
-              {[...Array(3)].map((_, i) => (
-                <div 
-                  key={i}
-                  className={`absolute w-3 h-3 rounded-full opacity-50`}
-                  style={{
-                    top: `${20 + i * 10}%`,
-                    left: `${20 + i * 8}%`,
-                    background: plant.variant === 'frost' ? '#06B6D4' :
-                             plant.variant === 'candy' ? '#EC4899' :
-                             plant.variant === 'thunder' ? '#F59E0B' :
-                             plant.variant === 'lunar' ? '#9333EA' :
-                             plant.variant === 'golden' ? '#F59E0B' :
-                             plant.variant === 'rainbow' ? '#9333EA' :
-                             '#16A34A',
-                    filter: 'blur(1px)'
-                  }}
-                />
-              ))}
-            </div>
-          );
-        case 'ready':
-          return (
-            <div className="relative w-full h-full">
-              {/* Ready to harvest - full grown with variant effects */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span 
-                  className={plant.variant === 'frost' ? 'text-cyan-600' : 
-                         plant.variant === 'candy' ? 'text-pink-600' :
-                         plant.variant === 'thunder' ? 'text-yellow-600' :
-                         plant.variant === 'lunar' ? 'text-purple-600' :
-                         plant.variant === 'golden' ? 'text-yellow-500' :
-                         plant.variant === 'rainbow' ? 'text-purple-600' :
-                         'text-green-800'}
-                  style={{ fontSize: size * 0.9 }}
-                >
-                  {plant.variant === 'frost' ? '🧊' :
-                   plant.variant === 'candy' ? '🍬' :
-                   plant.variant === 'thunder' ? '⚡' :
-                   plant.variant === 'lunar' ? '🌙' :
-                   plant.variant === 'golden' ? '⭐' :
-                   plant.variant === 'rainbow' ? '🌈' :
-                   (plant.icon || '🌻')}
-                </span>
-              </div>
-              {/* Glowing effect for ready plants */}
-              <div 
-                className="absolute inset-0 rounded-full animate-pulse"
-                style={{
-                  background: plant.variant === 'frost' ? 'radial-gradient(circle at center, rgba(6, 182, 212, 0.3), transparent 70%)' :
-                           plant.variant === 'candy' ? 'radial-gradient(circle at center, rgba(236, 72, 153, 0.3), transparent 70%)' :
-                           plant.variant === 'thunder' ? 'radial-gradient(circle at center, rgba(245, 158, 11, 0.3), transparent 70%)' :
-                           plant.variant === 'lunar' ? 'radial-gradient(circle at center, rgba(147, 51, 234, 0.3), transparent 70%)' :
-                           plant.variant === 'golden' ? 'radial-gradient(circle at center, rgba(245, 158, 11, 0.3), transparent 70%)' :
-                           plant.variant === 'rainbow' ? 'radial-gradient(circle at center, rgba(147, 51, 234, 0.3), transparent 70%)' :
-                           'radial-gradient(circle at center, rgba(34, 197, 94, 0.3), transparent 70%)',
-                  filter: 'blur(8px)'
-                }}
-              />
-              {/* Decorative elements */}
-              {[...Array(3)].map((_, i) => (
-                <div 
-                  key={i}
-                  className={`absolute w-4 h-4 rounded-full opacity-40`}
-                  style={{
-                    top: `${15 + i * 8}%`,
-                    left: `${15 + i * 6}%`,
-                    background: plant.variant === 'frost' ? '#0891B2' :
-                             plant.variant === 'candy' ? '#DB2777' :
-                             plant.variant === 'thunder' ? '#D97706' :
-                             plant.variant === 'lunar' ? '#7C3AED' :
-                             plant.variant === 'golden' ? '#D97706' :
-                             plant.variant === 'rainbow' ? '#7C3AED' :
-                             '#15803D',
-                    filter: 'blur(2px)'
-                  }}
-                />
-              ))}
-            </div>
-          );
-        default:
-          return null;
+    // Apply variant visual effect
+    const getVariantFilter = () => {
+      switch (plant.variant) {
+        case 'golden': return 'drop-shadow(0 0 8px rgba(255, 215, 0, 0.8))';
+        case 'rainbow': return 'drop-shadow(0 0 8px rgba(147, 51, 234, 0.8))';
+        case 'frost': return 'drop-shadow(0 0 8px rgba(34, 211, 238, 0.8))';
+        case 'candy': return 'drop-shadow(0 0 8px rgba(244, 114, 182, 0.8))';
+        case 'thunder': return 'drop-shadow(0 0 8px rgba(250, 204, 21, 0.8))';
+        case 'lunar': return 'drop-shadow(0 0 8px rgba(168, 85, 247, 0.8))';
+        default: return '';
       }
     };
 
     return (
       <div
-        className={`absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-500 ${isReady ? 'animate-pulse' : ''} ${plant.isWilted ? 'opacity-60' : ''}`}
+        className={`absolute transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center cursor-pointer hover:scale-110 transition-transform ${plant.isWilted ? 'opacity-50 grayscale' : ''}`}
         style={{
           left: plant.x,
           top: plant.y,
-          width: size,
-          height: size,
-          transform: `translate(-50%, -50%) ${plant.isWilted ? 'rotate(-15deg) scale(0.9)' : ''}`,
-          filter: getVariantStyle()
+          width: baseSize,
+          height: baseSize,
+          filter: getVariantFilter()
         }}
       >
-        {getStageVisual()}
-        
+        {/* Main plant emoji */}
+        <span 
+          className={`text-center select-none ${isReady ? 'animate-bounce' : ''}`}
+          style={{ fontSize: baseSize * 0.7 }}
+        >
+          {getStageEmoji()}
+        </span>
+
         {/* Ready indicator */}
         {isReady && (
-          <div className="absolute -top-3 -right-3 w-4 h-4 bg-green-500 rounded-full animate-ping shadow-lg shadow-green-500/50" />
+          <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-ping" />
         )}
-        
+
+        {/* Variant badge */}
+        {getVariantBadge() && (
+          <div 
+            className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border border-white ${getVariantBadge()}`}
+          />
+        )}
+
         {/* Wilt indicator */}
         {plant.isWilted && (
-          <div className="absolute -top-2 -right-2 text-xs drop-shadow-md">💀</div>
+          <div className="absolute -top-1 -left-1 text-xs">💀</div>
         )}
       </div>
     );
