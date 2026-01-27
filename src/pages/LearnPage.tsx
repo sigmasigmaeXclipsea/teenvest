@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { useLearningModules, useUserProgress } from '@/hooks/useLearning';
 import { useQuizResults } from '@/hooks/useQuiz';
+import { useXP } from '@/contexts/XPContext';
 import LearningAI from '@/components/LearningAI';
 import AIAssistantCard from '@/components/AIAssistantCard';
 import XPStore from '@/components/XPStore';
@@ -105,7 +106,7 @@ const LearnPage = () => {
   };
   
   const baseXP = calculateXP();
-  const [xp, setXp] = useState(baseXP);
+  const { xp, addXP, loading: xpLoading } = useXP();
   const level = Math.floor(xp / 500) + 1;
 
   // Get dynamic categories based on total modules; filter applies within categories
@@ -113,8 +114,8 @@ const LearnPage = () => {
 
   // All lessons are now accessible; no locking logic
 
-  const handlePurchase = (cost: number) => {
-    setXp(prev => Math.max(0, prev - cost));
+  const handlePurchase = async (cost: number) => {
+    await addXP(-cost);
   };
 
   if (modulesLoading || progressLoading) {

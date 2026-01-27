@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Droplets, Sprout, Coins, Clock, Package, Wrench, Zap, Lightbulb, ArrowRightLeft, Grid3X3 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/contexts/SettingsContext';
+import { useXP } from '@/contexts/XPContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -282,7 +283,7 @@ function getVariantColor(variant: string) {
 export default function GamifiedGarden() {
   const { settings } = useSettings();
   const { toast } = useToast();
-  const [xp, setXp] = useState(0);
+  const { xp, addXP, setXP, loading: xpLoading } = useXP();
   const [money, setMoney] = useState(0); // Start with 0 coins to make progression harder
   const [garden, setGarden] = useState<Garden>({ plants: [], width: 800, height: 600 });
   const [inventory, setInventory] = useState({ seeds: [] as Seed[], gear: [] as Gear[] });
@@ -324,7 +325,7 @@ export default function GamifiedGarden() {
         const parsed = JSON.parse(saved);
         console.log('Loading garden state from version:', version);
         
-        setXp(parsed.xp ?? 0);
+        // XP is now managed by XPContext, not localStorage
         setMoney(parsed.money ?? 0); // Default to 0 coins
         
         if (version === 'v5') {
@@ -362,7 +363,7 @@ export default function GamifiedGarden() {
   useEffect(() => {
     const handleAdminUpdate = (event: CustomEvent) => {
       const { xp, garden } = event.detail;
-      setXp(xp);
+      setXP(xp);
       setGarden(garden);
       toast({ title: 'Admin updated your garden state!' });
     };
@@ -371,11 +372,11 @@ export default function GamifiedGarden() {
     return () => window.removeEventListener('adminGardenUpdate', handleAdminUpdate as EventListener);
   }, []);
 
-  // Save to localStorage
+  // Save to localStorage (but not XP - that's managed by XPContext)
   useEffect(() => {
-    const state = { xp, money, garden, inventory, harvestedPlants, sprinklerPositions, hasSprinkler, currentWeather, seedRestockTime, gearRestockTime, selectedSeed, selectedItem };
+    const state = { money, garden, inventory, harvestedPlants, sprinklerPositions, hasSprinkler, currentWeather, seedRestockTime, gearRestockTime, selectedSeed, selectedItem };
     localStorage.setItem('garden-state-v5', JSON.stringify(state));
-  }, [xp, money, garden, inventory, harvestedPlants, sprinklerPositions, hasSprinkler, currentWeather, seedRestockTime, gearRestockTime, selectedSeed, selectedItem]);
+  }, [money, garden, inventory, harvestedPlants, sprinklerPositions, hasSprinkler, currentWeather, seedRestockTime, gearRestockTime, selectedSeed, selectedItem]);
 
   // Timer tick for countdowns
   useEffect(() => {
@@ -821,7 +822,7 @@ export default function GamifiedGarden() {
   }
 
   // XP to Money exchange
-  function exchangeXpForMoney() {
+  async function exchangeXpForMoney() {
     const amount = parseInt(exchangeAmount) || 0;
     if (amount <= 0) return;
     if (amount > xp) {
@@ -829,7 +830,7 @@ export default function GamifiedGarden() {
       return;
     }
     const coinsReceived = amount * XP_TO_MONEY_RATE;
-    setXp(x => x - amount);
+    await addXP(-amount); // Subtract XP
     setMoney(m => m + coinsReceived);
     setExchangeAmount('');
     toast({ title: 'Exchanged!', description: `${amount} XP → ${coinsReceived} coins` });

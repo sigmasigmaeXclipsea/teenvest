@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
+import { XPProvider } from "@/contexts/XPContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ChatWidget from "@/components/ChatWidget";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -83,7 +84,8 @@ const App = () => (
           </BrowserRouter>
         </TooltipProvider>
       </SettingsProvider>
-    </AuthProvider>
+    </XPProvider>
+  </AuthProvider>
   </QueryClientProvider>
 );
 

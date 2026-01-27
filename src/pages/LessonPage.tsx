@@ -12,6 +12,7 @@ import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { useLearningModules, useUserProgress, useCompleteModule } from '@/hooks/useLearning';
 import { useQuizQuestions, useQuizResults, useSaveQuizResult } from '@/hooks/useQuiz';
 import { useToast } from '@/hooks/use-toast';
+import { useXP } from '@/contexts/XPContext';
 import AIAssistantCard from '@/components/AIAssistantCard';
 import InteractiveBlockRenderer, { type InteractiveBlock } from '@/components/learn/InteractiveBlockRenderer';
 import LessonPodcast from '@/components/LessonPodcast';
@@ -21,6 +22,7 @@ const LessonPage = () => {
   const { moduleId } = useParams<{ moduleId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { addXP } = useXP();
   
   const { data: modules, isLoading: modulesLoading } = useLearningModules();
   const { data: progress } = useUserProgress();
@@ -51,9 +53,10 @@ const LessonPage = () => {
     if (!moduleId) return;
     try {
       await completeModule.mutateAsync(moduleId);
+      await addXP(10); // 10 XP for completing a lesson
       toast({
         title: 'Lesson completed! 🎉',
-        description: 'Great job! Take the quiz to test your knowledge.',
+        description: 'Great job! Take the quiz to test your knowledge. +10 XP',
       });
     } catch (error) {
       toast({
@@ -90,10 +93,26 @@ const LessonPage = () => {
       });
       setShowResults(true);
       
+      // Calculate XP based on quiz performance
+      const scorePercent = (score / quizQuestions.length) * 100;
+      let xpEarned = 0;
+      
+      if (scorePercent === 100) {
+        xpEarned = 50; // Perfect score
+      } else if (scorePercent >= 80) {
+        xpEarned = 30; // Good score
+      } else if (scorePercent >= 60) {
+        xpEarned = 15; // Passing score
+      } else {
+        xpEarned = 5; // Participation
+      }
+      
+      await addXP(xpEarned);
+      
       if (score === quizQuestions.length) {
-        toast({ title: 'Perfect Score! 🏆', description: 'You answered all questions correctly!' });
+        toast({ title: 'Perfect Score! 🏆', description: `You answered all questions correctly! +${xpEarned} XP` });
       } else if (score >= quizQuestions.length * 0.7) {
-        toast({ title: 'Great job! 🎉', description: `You scored ${score}/${quizQuestions.length}` });
+        toast({ title: 'Great job! 🎉', description: `You scored ${score}/${quizQuestions.length}. +${xpEarned} XP` });
       }
     } catch (error) {
       toast({ title: 'Error', description: 'Failed to save quiz result', variant: 'destructive' });
@@ -292,6 +311,20 @@ const LessonPage = () => {
             {activeView === 'content' ? (
               <Card>
                 <CardContent className="p-8">
+                  {/* XP Announcement Banner */}
+                  <div className="mb-6 p-4 bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Trophy className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                      <div>
+                        <p className="font-semibold text-yellow-800 dark:text-yellow-200">Earn XP While Learning!</p>
+                        <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                          Complete this lesson for <span className="font-bold">+10 XP</span> • 
+                          Take the quiz for up to <span className="font-bold">+50 XP</span>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
                   <article className="prose prose-lg dark:prose-invert max-w-none">
                     {renderContent(currentModule.content)}
                   </article>
@@ -426,6 +459,22 @@ const LessonPage = () => {
             ) : currentQuestion ? (
               <Card>
                 <CardContent className="p-8">
+                  {/* XP Announcement Banner */}
+                  <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border border-blue-200 dark:border-blue-700 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Trophy className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                      <div>
+                        <p className="font-semibold text-blue-800 dark:text-blue-200">Quiz XP Rewards!</p>
+                        <p className="text-sm text-blue-700 dark:text-blue-300">
+                          Perfect score: <span className="font-bold">+50 XP</span> • 
+                          80%+: <span className="font-bold">+30 XP</span> • 
+                          60%+: <span className="font-bold">+15 XP</span> • 
+                          Participation: <span className="font-bold">+5 XP</span>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Progress */}
                   <div className="flex items-center justify-between mb-6">
                     <span className="text-sm font-medium">

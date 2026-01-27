@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { TrendingUp, TrendingDown, DollarSign, Briefcase, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, Briefcase, ArrowUpRight, ArrowDownRight, Trophy } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
@@ -13,12 +13,14 @@ import AIAssistantCard from '@/components/AIAssistantCard';
 import DashboardStreakWidget from '@/components/DashboardStreakWidget';
 import StockNews from '@/components/StockNews';
 import { useAuth } from '@/contexts/AuthContext';
+import { useXP } from '@/contexts/XPContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 const COLORS = ['hsl(142, 76%, 36%)', 'hsl(262, 83%, 58%)', 'hsl(200, 98%, 39%)', 'hsl(38, 92%, 50%)', 'hsl(340, 82%, 52%)'];
 
 const DashboardPage = () => {
   const { user } = useAuth();
+  const { xp, loading: xpLoading } = useXP();
   const { data: portfolio, isLoading: portfolioLoading } = usePortfolio();
   const { data: holdings, isLoading: holdingsLoading } = useHoldings();
 
@@ -140,7 +142,22 @@ const DashboardPage = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Experience Points
+              </CardTitle>
+              <Trophy className="w-4 h-4 text-yellow-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-yellow-600">
+                {xpLoading ? '...' : xp.toLocaleString()}
+              </div>
+              <p className="text-sm text-muted-foreground mt-1">Level {Math.floor((xpLoading ? 0 : xp) / 500) + 1}</p>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
