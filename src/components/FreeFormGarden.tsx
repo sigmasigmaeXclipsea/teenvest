@@ -156,80 +156,134 @@ export default function FreeFormGarden({
     setHoveredPosition(null);
   };
 
-  // Get plant visual based on growth stage
+  // Get plant visual based on growth stage - unique aesthetic emojis per stage
   const getPlantVisual = (plant: Plant) => {
     const progress = Math.min(1, (now - plant.plantedAt) / plant.growthTimeMs);
     const stage = progress < 0.25 ? 'seed' : progress < 0.5 ? 'sprout' : progress < 0.75 ? 'growing' : progress < 1 ? 'mature' : 'ready';
     const isReady = progress >= 1;
 
-    // Get size based on stage
-    const baseSize = stage === 'seed' ? 20 : stage === 'sprout' ? 35 : stage === 'growing' ? 50 : stage === 'mature' ? 60 : 70;
+    // Size grows with stage
+    const baseSize = stage === 'seed' ? 24 : stage === 'sprout' ? 32 : stage === 'growing' ? 44 : stage === 'mature' ? 54 : 64;
 
-    // Get variant badge color
-    const getVariantBadge = () => {
-      if (plant.variant === 'normal') return null;
-      const colors: Record<string, string> = {
-        golden: 'bg-yellow-500',
-        rainbow: 'bg-gradient-to-r from-red-500 via-green-500 to-blue-500',
-        frost: 'bg-cyan-400',
-        candy: 'bg-pink-400',
-        thunder: 'bg-yellow-400',
-        lunar: 'bg-purple-500'
-      };
-      return colors[plant.variant] || null;
-    };
-
-    // Get emoji for each stage
+    // Unique emojis for each stage with plant-specific final stage
     const getStageEmoji = () => {
-      if (stage === 'seed') return '🌰';
-      if (stage === 'sprout') return '🌱';
-      if (stage === 'growing') return '🌿';
-      if (stage === 'mature') return '🌾';
-      // Ready - use plant icon
+      const seedType = plant.seedType.toLowerCase();
+      
+      if (stage === 'seed') return '🫘'; // Small bean/seed
+      if (stage === 'sprout') return '🌱'; // Sprout
+      
+      // Growing stage - small leafy plant
+      if (stage === 'growing') {
+        if (seedType.includes('tomato') || seedType.includes('pepper') || seedType.includes('chili')) return '🌿';
+        if (seedType.includes('corn') || seedType.includes('wheat')) return '🌾';
+        if (seedType.includes('flower') || seedType.includes('rose') || seedType.includes('orchid')) return '🌷';
+        if (seedType.includes('tree') || seedType.includes('apple') || seedType.includes('cherry')) return '🌳';
+        return '☘️';
+      }
+      
+      // Mature stage - fuller plant showing type
+      if (stage === 'mature') {
+        if (seedType.includes('tomato')) return '🍅';
+        if (seedType.includes('carrot')) return '🥕';
+        if (seedType.includes('corn')) return '🌽';
+        if (seedType.includes('pumpkin')) return '🎃';
+        if (seedType.includes('strawberry')) return '🍓';
+        if (seedType.includes('grape')) return '🍇';
+        if (seedType.includes('apple')) return '🍎';
+        if (seedType.includes('cherry')) return '🍒';
+        if (seedType.includes('peach')) return '🍑';
+        if (seedType.includes('watermelon')) return '🍉';
+        if (seedType.includes('pepper') || seedType.includes('chili')) return '🌶️';
+        if (seedType.includes('eggplant')) return '🍆';
+        if (seedType.includes('broccoli')) return '🥦';
+        if (seedType.includes('lettuce') || seedType.includes('cabbage')) return '🥬';
+        if (seedType.includes('potato')) return '🥔';
+        if (seedType.includes('onion')) return '🧅';
+        if (seedType.includes('garlic')) return '🧄';
+        if (seedType.includes('cucumber') || seedType.includes('zucchini')) return '🥒';
+        if (seedType.includes('mushroom')) return '🍄';
+        if (seedType.includes('flower') || seedType.includes('rose')) return '🌹';
+        if (seedType.includes('sunflower')) return '🌻';
+        if (seedType.includes('tulip')) return '🌷';
+        if (seedType.includes('cactus')) return '🌵';
+        return '🌿';
+      }
+      
+      // Ready stage - use the plant icon or best match
       return plant.icon || '🌻';
     };
 
-    // Apply variant visual effect
+    // Variant glow effects
+    const getVariantGlow = () => {
+      switch (plant.variant) {
+        case 'golden': return '0 0 12px rgba(255, 215, 0, 0.9), 0 0 24px rgba(255, 215, 0, 0.5)';
+        case 'rainbow': return '0 0 12px rgba(255, 0, 128, 0.7), 0 0 24px rgba(0, 255, 128, 0.5)';
+        case 'frost': return '0 0 12px rgba(135, 206, 250, 0.9), 0 0 24px rgba(135, 206, 250, 0.5)';
+        case 'candy': return '0 0 12px rgba(255, 105, 180, 0.9), 0 0 24px rgba(255, 182, 193, 0.5)';
+        case 'thunder': return '0 0 12px rgba(255, 255, 0, 0.9), 0 0 24px rgba(255, 215, 0, 0.5)';
+        case 'lunar': return '0 0 12px rgba(138, 43, 226, 0.9), 0 0 24px rgba(75, 0, 130, 0.5)';
+        default: return '';
+      }
+    };
+
+    // Variant color filter for the emoji
     const getVariantFilter = () => {
       switch (plant.variant) {
-        case 'golden': return 'drop-shadow(0 0 8px rgba(255, 215, 0, 0.8))';
-        case 'rainbow': return 'drop-shadow(0 0 8px rgba(147, 51, 234, 0.8))';
-        case 'frost': return 'drop-shadow(0 0 8px rgba(34, 211, 238, 0.8))';
-        case 'candy': return 'drop-shadow(0 0 8px rgba(244, 114, 182, 0.8))';
-        case 'thunder': return 'drop-shadow(0 0 8px rgba(250, 204, 21, 0.8))';
-        case 'lunar': return 'drop-shadow(0 0 8px rgba(168, 85, 247, 0.8))';
+        case 'golden': return 'drop-shadow(0 0 4px gold)';
+        case 'rainbow': return 'saturate(1.5) hue-rotate(45deg)';
+        case 'frost': return 'drop-shadow(0 0 4px cyan) brightness(1.1)';
+        case 'candy': return 'drop-shadow(0 0 4px hotpink) saturate(1.3)';
+        case 'thunder': return 'drop-shadow(0 0 4px yellow) brightness(1.2)';
+        case 'lunar': return 'drop-shadow(0 0 4px purple) brightness(0.95)';
         default: return '';
       }
     };
 
     return (
       <div
-        className={`absolute transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center cursor-pointer hover:scale-110 transition-transform ${plant.isWilted ? 'opacity-50 grayscale' : ''}`}
+        className={`absolute transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center cursor-pointer transition-transform hover:scale-110 ${plant.isWilted ? 'opacity-40 grayscale' : ''}`}
         style={{
           left: plant.x,
           top: plant.y,
           width: baseSize,
           height: baseSize,
-          filter: getVariantFilter()
         }}
       >
-        {/* Main plant emoji */}
+        {/* Glow background for variants */}
+        {plant.variant !== 'normal' && (
+          <div 
+            className="absolute inset-0 rounded-full"
+            style={{ boxShadow: getVariantGlow() }}
+          />
+        )}
+        
+        {/* Plant emoji */}
         <span 
-          className={`text-center select-none ${isReady ? 'animate-bounce' : ''}`}
-          style={{ fontSize: baseSize * 0.7 }}
+          className={`text-center select-none z-10 ${isReady ? 'animate-pulse' : ''}`}
+          style={{ 
+            fontSize: baseSize * 0.75,
+            filter: getVariantFilter()
+          }}
         >
           {getStageEmoji()}
         </span>
 
-        {/* Ready indicator */}
+        {/* Ready sparkle */}
         {isReady && (
-          <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-ping" />
+          <div className="absolute -top-1 -right-1 text-xs animate-bounce">✨</div>
         )}
 
-        {/* Variant badge */}
-        {getVariantBadge() && (
+        {/* Variant indicator dot */}
+        {plant.variant !== 'normal' && (
           <div 
-            className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border border-white ${getVariantBadge()}`}
+            className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-white/50 ${
+              plant.variant === 'golden' ? 'bg-yellow-400' :
+              plant.variant === 'rainbow' ? 'bg-gradient-to-r from-red-400 via-green-400 to-blue-400' :
+              plant.variant === 'frost' ? 'bg-cyan-300' :
+              plant.variant === 'candy' ? 'bg-pink-400' :
+              plant.variant === 'thunder' ? 'bg-yellow-300' :
+              'bg-purple-400'
+            }`}
           />
         )}
 
