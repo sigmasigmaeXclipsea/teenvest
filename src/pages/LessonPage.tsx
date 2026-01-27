@@ -22,7 +22,7 @@ const LessonPage = () => {
   const { moduleId } = useParams<{ moduleId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { addXP } = useXP();
+  const { addXP, addQuizPoints } = useXP();
   
   const { data: modules, isLoading: modulesLoading } = useLearningModules();
   const { data: progress } = useUserProgress();
@@ -93,26 +93,26 @@ const LessonPage = () => {
       });
       setShowResults(true);
       
-      // Calculate XP based on quiz performance
+      // Calculate Quiz Points based on quiz performance (convertible to garden coins)
       const scorePercent = (score / quizQuestions.length) * 100;
-      let xpEarned = 0;
+      let pointsEarned = 0;
       
       if (scorePercent === 100) {
-        xpEarned = 50; // Perfect score
+        pointsEarned = 50; // Perfect score
       } else if (scorePercent >= 80) {
-        xpEarned = 30; // Good score
+        pointsEarned = 30; // Good score
       } else if (scorePercent >= 60) {
-        xpEarned = 15; // Passing score
+        pointsEarned = 15; // Passing score
       } else {
-        xpEarned = 5; // Participation
+        pointsEarned = 5; // Participation
       }
       
-      await addXP(xpEarned);
+      await addQuizPoints(pointsEarned);
       
       if (score === quizQuestions.length) {
-        toast({ title: 'Perfect Score! 🏆', description: `You answered all questions correctly! +${xpEarned} XP` });
+        toast({ title: 'Perfect Score! 🏆', description: `You answered all questions correctly! +${pointsEarned} Quiz Points` });
       } else if (score >= quizQuestions.length * 0.7) {
-        toast({ title: 'Great job! 🎉', description: `You scored ${score}/${quizQuestions.length}. +${xpEarned} XP` });
+        toast({ title: 'Great job! 🎉', description: `You scored ${score}/${quizQuestions.length}. +${pointsEarned} Quiz Points` });
       }
     } catch (error) {
       toast({ title: 'Error', description: 'Failed to save quiz result', variant: 'destructive' });
@@ -459,17 +459,20 @@ const LessonPage = () => {
             ) : currentQuestion ? (
               <Card>
                 <CardContent className="p-8">
-                  {/* XP Announcement Banner */}
-                  <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border border-blue-200 dark:border-blue-700 rounded-lg">
+                  {/* Quiz Points Announcement Banner */}
+                  <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border border-purple-200 dark:border-purple-700 rounded-lg">
                     <div className="flex items-center gap-3">
-                      <Trophy className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                      <Trophy className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                       <div>
-                        <p className="font-semibold text-blue-800 dark:text-blue-200">Quiz XP Rewards!</p>
-                        <p className="text-sm text-blue-700 dark:text-blue-300">
-                          Perfect score: <span className="font-bold">+50 XP</span> • 
-                          80%+: <span className="font-bold">+30 XP</span> • 
-                          60%+: <span className="font-bold">+15 XP</span> • 
-                          Participation: <span className="font-bold">+5 XP</span>
+                        <p className="font-semibold text-purple-800 dark:text-purple-200">Quiz Point Rewards!</p>
+                        <p className="text-sm text-purple-700 dark:text-purple-300">
+                          Perfect score: <span className="font-bold">+50 pts</span> • 
+                          80%+: <span className="font-bold">+30 pts</span> • 
+                          60%+: <span className="font-bold">+15 pts</span> • 
+                          Participation: <span className="font-bold">+5 pts</span>
+                        </p>
+                        <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+                          💡 Convert Quiz Points to coins in the Learning Garden!
                         </p>
                       </div>
                     </div>

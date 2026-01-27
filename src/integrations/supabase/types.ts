@@ -81,6 +81,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          quiz_points: number
           updated_at: string
           user_id: string
           xp: number
@@ -88,6 +89,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          quiz_points?: number
           updated_at?: string
           user_id: string
           xp?: number
@@ -95,6 +97,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          quiz_points?: number
           updated_at?: string
           user_id?: string
           xp?: number
