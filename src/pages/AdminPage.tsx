@@ -138,12 +138,15 @@ const AdminPage = () => {
     enabled: !!user,
   });
 
-  // Load current admin garden state (simplified - uses localStorage instead of database)
+  // Load current admin garden state (uses v5 localStorage - the current garden system)
   const { data: adminGardenState, refetch: refetchAdminGarden } = useQuery({
     queryKey: ['admin-garden-state', user?.id],
     queryFn: async () => {
-      // Temporary fix: Read from localStorage instead of database
-      const saved = localStorage.getItem('garden-state-v4');
+      // Try v5 first (current garden system), then v4 as fallback
+      let saved = localStorage.getItem('garden-state-v5');
+      if (!saved) {
+        saved = localStorage.getItem('garden-state-v4');
+      }
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
@@ -362,9 +365,27 @@ const AdminPage = () => {
 
   const updateCurrentUserGardenMutation = useMutation<{ success: boolean }, Error, { money: number; xp: number }>({
     mutationFn: async ({ money, xp }: { money: number; xp: number }) => {
-      // Garden uses localStorage, so we update it directly
-      const saved = localStorage.getItem('garden-state-v4');
-      let gardenState = { money: 50, xp: 0, level: 1, plots: [], inventory: [], lastUpdate: Date.now() };
+      // Garden uses localStorage v5, so we update it directly
+      // Try to load v5 first, then v4, then use defaults
+      let saved = localStorage.getItem('garden-state-v5');
+      if (!saved) {
+        saved = localStorage.getItem('garden-state-v4');
+      }
+      
+      let gardenState: Record<string, unknown> = { 
+        money: 0, 
+        xp: 0, 
+        garden: { plants: [], width: 800, height: 600 },
+        inventory: { seeds: [], gear: [] },
+        harvestedPlants: [],
+        sprinklerPositions: [],
+        hasSprinkler: null,
+        currentWeather: 'normal',
+        seedRestockTime: Date.now() + 60 * 60 * 1000,
+        gearRestockTime: Date.now() + 15 * 60 * 1000,
+        selectedSeed: null,
+        selectedItem: null
+      };
       
       if (saved) {
         try {
@@ -377,10 +398,9 @@ const AdminPage = () => {
       // Update with new values
       gardenState.money = money;
       gardenState.xp = xp;
-      gardenState.lastUpdate = Date.now();
       
-      // Save back to localStorage
-      localStorage.setItem('garden-state-v4', JSON.stringify(gardenState));
+      // Save to v5 (the current garden system)
+      localStorage.setItem('garden-state-v5', JSON.stringify(gardenState));
       
       return { success: true };
     },

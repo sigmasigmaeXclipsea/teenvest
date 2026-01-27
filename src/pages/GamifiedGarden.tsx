@@ -370,7 +370,7 @@ export default function GamifiedGarden() {
 
     window.addEventListener('adminGardenUpdate', handleAdminUpdate as EventListener);
     return () => window.removeEventListener('adminGardenUpdate', handleAdminUpdate as EventListener);
-  }, []);
+  }, [toast]);
 
   // Save to localStorage (but not XP - that's managed by XPContext)
   useEffect(() => {
@@ -900,10 +900,10 @@ export default function GamifiedGarden() {
           </div>
         </div>
 
-        {/* XP Exchange */}
+        {/* XP Exchange - Simple clean design */}
         <div className="bg-card rounded-xl shadow-sm p-4 border">
           <h3 className="font-bold mb-3 flex items-center gap-2 text-foreground">
-            <ArrowRightLeft className="w-5 h-5" /> XP Exchange
+            <ArrowRightLeft className="w-5 h-5 text-green-600" /> XP Exchange
             <span className="text-xs font-normal text-muted-foreground ml-2">(8 XP = 1 coin)</span>
           </h3>
           <div className="flex gap-2 items-center flex-wrap">
@@ -920,6 +920,7 @@ export default function GamifiedGarden() {
               onClick={exchangeXpForMoney} 
               disabled={!exchangeAmount || parseInt(exchangeAmount) <= 0 || parseInt(exchangeAmount) > xp}
               size="sm"
+              className="bg-green-600 hover:bg-green-700 text-white"
             >
               Exchange for {(parseInt(exchangeAmount) || 0) * XP_TO_MONEY_RATE} coins
             </Button>
@@ -967,6 +968,7 @@ export default function GamifiedGarden() {
           sprinklerPositions={sprinklerPositions}
         />
 
+
         {/* Seed Inventory */}
         <div className="bg-card rounded-xl shadow-sm p-4 border">
           <h3 className="font-bold mb-2 flex items-center gap-2 text-foreground">
@@ -1004,14 +1006,14 @@ export default function GamifiedGarden() {
         {/* Items Inventory */}
         <div className="bg-card rounded-xl shadow-sm p-4 border">
           <h3 className="font-bold mb-2 flex items-center gap-2 text-foreground">
-            <Wrench className="w-5 h-5" /> My Items ({inventory.gear.length})
+            <Wrench className="w-5 h-5" /> My Items ({inventory.gear.filter(g => !g.name.includes('Plot')).length})
           </h3>
-          {inventory.gear.length === 0 ? (
+          {inventory.gear.filter(g => !g.name.includes('Plot')).length === 0 ? (
             <p className="text-sm text-muted-foreground">No items. Buy some from the shop!</p>
           ) : (
             <ScrollArea className="h-20">
               <div className="flex gap-2 flex-wrap pr-4">
-                {inventory.gear.map(item => (
+                {inventory.gear.filter(g => !g.name.includes('Plot')).map(item => (
                   <button
                     key={item.id}
                     onClick={() => {
@@ -1238,14 +1240,13 @@ export default function GamifiedGarden() {
             </div>
             <div className="space-y-2">
               {shopGear.map(gear => {
-                const isOwned = gear.type === 'sprinkler' && hasSprinkler === gear.name;
-                const disabled = money < gear.price || isOwned;
+                const disabled = money < gear.price;
                 
                 return (
                   <div key={gear.id} className="flex items-center justify-between p-2 border rounded bg-secondary/30">
                     <div>
                       <div className="font-semibold text-sm text-foreground flex items-center gap-2">
-                        {gear.name}
+                        {gear.type === 'wateringCan' ? '💧' : '⚡'} {gear.name}
                       </div>
                       <div className="text-xs text-muted-foreground">{gear.effect}</div>
                     </div>
@@ -1256,12 +1257,8 @@ export default function GamifiedGarden() {
                       variant="secondary"
                       className="text-xs"
                     >
-                      {isOwned ? 'Owned' : (
-                        <>
-                          <Coins className="w-3 h-3 mr-1" />
-                          {gear.price}
-                        </>
-                      )}
+                      <Coins className="w-3 h-3 mr-1" />
+                      {gear.price}
                     </Button>
                   </div>
                 );
