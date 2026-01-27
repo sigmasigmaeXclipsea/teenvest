@@ -60,7 +60,7 @@ interface FreeFormGardenProps {
   onSelectPlant: (plant: Plant | null) => void;
   onPlaceSprinkler: (x: number, y: number, sprinkler: Gear) => void;
   formatTime: (ms: number) => string;
-  sprinklerPositions: {x: number, y: number, gear: Gear}[];
+  sprinklerPositions: {x: number, y: number, gear: Gear, placedAt: number, timeLimit: number}[];
 }
 
 export default function FreeFormGarden({
@@ -79,6 +79,7 @@ export default function FreeFormGarden({
   sprinklerPositions
 }: FreeFormGardenProps) {
   const [hoveredPosition, setHoveredPosition] = useState<{x: number, y: number} | null>(null);
+  const [hoveredSprinkler, setHoveredSprinkler] = useState<{x: number, y: number, gear: any, placedAt: number, timeLimit: number} | null>(null);
   const [hoveredPlant, setHoveredPlant] = useState<Plant | null>(null);
 
   const now = Date.now();
@@ -380,35 +381,62 @@ export default function FreeFormGarden({
         })}
 
         {/* Sprinklers with radius visualization */}
-        {sprinklerPositions.map((sprinkler, index) => (
-          <div key={`sprinkler-${index}`}>
-            {/* Blue radius circle */}
-            <div
-              className="absolute rounded-full border-2 border-blue-400 bg-blue-100/20 pointer-events-none"
-              style={{
-                left: sprinkler.x - 100,
-                top: sprinkler.y - 100,
-                width: 200,
-                height: 200,
-                boxShadow: '0 0 20px rgba(59, 130, 246, 0.3)'
-              }}
-            />
-            {/* Sprinkler icon */}
-            <div
-              className="absolute transform -translate-x-1/2 -translate-y-1/2 text-2xl animate-pulse drop-shadow-lg z-10"
-              style={{
-                left: sprinkler.x,
-                top: sprinkler.y,
-                filter: 'drop-shadow(0 0 8px rgba(147, 51, 234, 0.6))'
-              }}
-            >
-              ⚡
-              <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-purple-600 text-white text-[8px] px-1 rounded whitespace-nowrap shadow-md">
-                {sprinkler.gear.name}
+        {sprinklerPositions.map((sprinkler, index) => {
+          const timeElapsed = Date.now() - sprinkler.placedAt;
+          const timeRemaining = Math.max(0, sprinkler.timeLimit - timeElapsed);
+          const timeRemainingMinutes = Math.ceil(timeRemaining / (60 * 1000));
+          
+          return (
+            <div key={`sprinkler-${index}`}>
+              {/* Blue radius circle */}
+              <div
+                className="absolute rounded-full border-2 border-blue-400 bg-blue-100/20 pointer-events-none"
+                style={{
+                  left: sprinkler.x - 100,
+                  top: sprinkler.y - 100,
+                  width: 200,
+                  height: 200,
+                  boxShadow: '0 0 20px rgba(59, 130, 246, 0.3)'
+                }}
+              />
+              {/* Sprinkler icon with hover */}
+              <div
+                className="absolute transform -translate-x-1/2 -translate-y-1/2 text-2xl animate-pulse drop-shadow-lg z-10 cursor-pointer"
+                style={{
+                  left: sprinkler.x,
+                  top: sprinkler.y,
+                  filter: 'drop-shadow(0 0 8px rgba(147, 51, 234, 0.6))'
+                }}
+                onMouseEnter={() => setHoveredSprinkler(sprinkler)}
+                onMouseLeave={() => setHoveredSprinkler(null)}
+              >
+                ⚡
+                <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-purple-600 text-white text-[8px] px-1 rounded whitespace-nowrap shadow-md">
+                  {sprinkler.gear.name}
+                </div>
+                {/* Time remaining indicator */}
+                <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[8px] px-1 rounded whitespace-nowrap shadow-md">
+                  {timeRemainingMinutes}m left
+                </div>
               </div>
+              
+              {/* Hover tooltip with detailed info */}
+              {hoveredSprinkler === sprinkler && (
+                <div
+                  className="absolute z-50 bg-gray-900 text-white p-2 rounded shadow-lg text-xs whitespace-nowrap"
+                  style={{
+                    left: sprinkler.x + 20,
+                    top: sprinkler.y - 20
+                  }}
+                >
+                  <div className="font-semibold">{sprinkler.gear.name}</div>
+                  <div>Time remaining: {formatTime(timeRemaining)}</div>
+                  <div className="text-gray-300">Waters nearby plants automatically</div>
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         {/* Plants */}
         {garden.plants.map(plant => (

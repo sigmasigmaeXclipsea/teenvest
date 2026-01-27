@@ -68,7 +68,7 @@ interface HarvestedPlant {
 type Weather = 'normal' | 'rainy' | 'frozen' | 'candy' | 'thunder' | 'lunar';
 
 const MIN_POTS = 3;
-const WILT_THRESHOLD = 90 * 60 * 1000; // 90 minutes without water (increased from 60 min)
+const WILT_THRESHOLD = 4 * 60 * 60 * 1000; // 4 hours without water (much slower death)
 const WATER_REDUCTION_TIME = 20 * 60 * 1000; // Fixed 20 minutes reduction per watering
 const QUIZ_POINTS_TO_MONEY_RATE = 2; // 1 Quiz Point = 2 coins
 
@@ -296,7 +296,7 @@ export default function GamifiedGarden() {
   const [selectedPlant, setSelectedPlant] = useState<Plant | null>(null); // For plant info display
   const [isWateringMode, setIsWateringMode] = useState(false); // When watering can is selected
   const [isSprinklerMode, setIsSprinklerMode] = useState(false); // When placing sprinkler
-  const [sprinklerPositions, setSprinklerPositions] = useState<{x: number, y: number, gear: Gear}[]>([]); // Track placed sprinklers
+  const [sprinklerPositions, setSprinklerPositions] = useState<{x: number, y: number, gear: Gear, placedAt: number, timeLimit: number}[]>([]); // Track placed sprinklers with time limits
   const [achievements, setAchievements] = useState<string[]>([]); // Achievement tracking
   const [currentWeather, setCurrentWeather] = useState<Weather>('normal');
   
@@ -362,6 +362,14 @@ export default function GamifiedGarden() {
         if (version === 'v5') {
           // New garden system
           setGarden(parsed.garden ?? { plants: [], width: 800, height: 600 });
+          // Migrate sprinkler positions to include time limits
+          const oldSprinklers = parsed.sprinklerPositions ?? [];
+          const migratedSprinklers = oldSprinklers.map((s: any) => ({
+            ...s,
+            placedAt: Date.now() - (10 * 60 * 1000), // Assume placed 10 minutes ago for existing sprinklers
+            timeLimit: 30 * 60 * 1000 // 30 minutes time limit
+          }));
+          setSprinklerPositions(migratedSprinklers);
         } else {
           // Migrate from old plot system to new garden system
           setGarden({ plants: [], width: 800, height: 600 });
@@ -370,7 +378,6 @@ export default function GamifiedGarden() {
         
         setInventory(parsed.inventory ?? { seeds: [], gear: [] });
         setHarvestedPlants(parsed.harvestedPlants ?? []);
-        setSprinklerPositions(parsed.sprinklerPositions ?? []);
         setHasSprinkler(parsed.hasSprinkler ?? null);
         setCurrentWeather(parsed.currentWeather ?? 'normal');
         setSeedRestockTime(parsed.seedRestockTime ?? Date.now() + 60 * 60 * 1000);
@@ -894,7 +901,7 @@ export default function GamifiedGarden() {
     }
     
     // Place the sprinkler
-    setSprinklerPositions(prev => [...prev, { x, y, gear: sprinkler }]);
+    setSprinklerPositions(prev => [...prev, { x, y, gear: sprinkler, placedAt: Date.now(), timeLimit: 30 * 60 * 1000 }]); // 30 minutes time limit
     setInventory(inv => ({
       ...inv,
       gear: inv.gear.filter(g => g.id !== sprinkler.id)
@@ -925,9 +932,28 @@ export default function GamifiedGarden() {
     }
   }
 
-  // Auto-wilt check
+  // Auto-wilt check and sprinkler expiration
   useEffect(() => {
     const interval = setInterval(() => {
+      // Check for expired sprinklers
+      setSprinklerPositions(prev => {
+        const now = Date.now();
+        const activeSprinklers = prev.filter(sprinkler => {
+          const timeElapsed = now - sprinkler.placedAt;
+          if (timeElapsed > sprinkler.timeLimit) {
+            toast({
+              title: 'Sprinkler Expired',
+              description: `${sprinkler.gear.name} has run out of water and disappeared`,
+              variant: 'destructive'
+            });
+            return false; // Remove expired sprinkler
+          }
+          return true; // Keep active sprinkler
+        });
+        return activeSprinklers;
+      });
+
+      // Check for wilted plants (much slower now)
       setGarden(g => ({
         ...g,
         plants: g.plants.map(plant => {
