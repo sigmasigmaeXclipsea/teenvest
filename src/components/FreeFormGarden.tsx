@@ -455,105 +455,10 @@ export default function FreeFormGarden({
           position: 'relative'
         }}
         onClick={handleGardenClick}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
       >
-        {/* Weather effects overlay */}
-        {currentWeather !== 'normal' && (
-          <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            {currentWeather === 'rainy' && (
-              <>
-                {[...Array(8)].map((_, i) => (
-                  <div
-                    key={`rain-${i}`}
-                    className="absolute w-1 h-1 bg-blue-400 rounded-full opacity-30"
-                    style={{
-                      left: `${10 + (i * 12)}%`,
-                      animation: `fall ${3 + Math.random() * 2}s linear infinite`,
-                      animationDelay: `${Math.random() * 3}s`
-                    }}
-                  />
-                ))}
-              </>
-            )}
-            {currentWeather === 'frozen' && (
-              <>
-                {[...Array(6)].map((_, i) => (
-                  <div
-                    key={`frost-${i}`}
-                    className="absolute w-1.5 h-1.5 bg-cyan-300 rounded-full opacity-40"
-                    style={{
-                      left: `${15 + (i * 15)}%`,
-                      animation: `fall ${4 + Math.random() * 2}s linear infinite`,
-                      animationDelay: `${Math.random() * 4}s`
-                    }}
-                  />
-                ))}
-              </>
-            )}
-            {currentWeather === 'candy' && (
-              <>
-                {[...Array(7)].map((_, i) => (
-                  <div
-                    key={`candy-${i}`}
-                    className="absolute w-1 h-1 bg-pink-400 rounded-full opacity-50"
-                    style={{
-                      left: `${12 + (i * 13)}%`,
-                      animation: `fall ${3.5 + Math.random() * 2}s linear infinite`,
-                      animationDelay: `${Math.random() * 3.5}s`
-                    }}
-                  />
-                ))}
-              </>
-            )}
-            {currentWeather === 'thunder' && (
-              <>
-                {[...Array(5)].map((_, i) => (
-                  <div
-                    key={`thunder-${i}`}
-                    className="absolute w-1 h-1 bg-yellow-400 rounded-full opacity-60"
-                    style={{
-                      left: `${20 + (i * 16)}%`,
-                      animation: `fall ${2 + Math.random() * 1.5}s linear infinite`,
-                      animationDelay: `${Math.random() * 2}s`
-                    }}
-                  />
-                ))}
-              </>
-            )}
-            {currentWeather === 'lunar' && (
-              <>
-                {[...Array(4)].map((_, i) => (
-                  <div
-                    key={`lunar-${i}`}
-                    className="absolute w-1 h-1 bg-purple-400 rounded-full opacity-40"
-                    style={{
-                      left: `${25 + (i * 18)}%`,
-                      animation: `fall ${5 + Math.random() * 2}s linear infinite`,
-                      animationDelay: `${Math.random() * 5}s`
-                    }}
-                  />
-                ))}
-              </>
-            )}
-            <style dangerouslySetInnerHTML={{
-              __html: `
-                @keyframes fall {
-                  from {
-                    transform: translateY(-20px);
-                  }
-                  to {
-                    transform: translateY(${garden.height + 20}px);
-                  }
-                }
-              `
-            }} />
-          </div>
-        )}
-
         {/* Weather corner display */}
         {currentWeather !== 'normal' && (
-          <div className="absolute top-4 right-4 bg-black/20 backdrop-blur-sm rounded-lg p-2 pointer-events-none">
+          <div className="absolute top-4 right-4 bg-black/20 backdrop-blur-sm rounded-lg p-2 pointer-events-none z-10">
             <div className="flex items-center gap-2">
               <span className="text-lg">{getWeatherInfo().icon}</span>
               <span className={`text-xs font-medium ${getWeatherInfo().color}`}>
@@ -562,26 +467,6 @@ export default function FreeFormGarden({
             </div>
           </div>
         )}
-
-        {/* Soil texture specks */}
-        <div 
-          className="absolute inset-0 opacity-30"
-          style={{
-            backgroundImage: `
-              radial-gradient(circle at 15% 20%, #2E1A17 1px, transparent 1px),
-              radial-gradient(circle at 35% 40%, #3E2723 2px, transparent 2px),
-              radial-gradient(circle at 55% 15%, #4A3018 1px, transparent 1px),
-              radial-gradient(circle at 75% 35%, #2E1A17 1px, transparent 1px),
-              radial-gradient(circle at 25% 60%, #3E2723 2px, transparent 2px),
-              radial-gradient(circle at 45% 80%, #4A3018 1px, transparent 1px),
-              radial-gradient(circle at 65% 55%, #2E1A17 2px, transparent 2px),
-              radial-gradient(circle at 85% 75%, #3E2723 1px, transparent 1px),
-              radial-gradient(circle at 10% 85%, #4A3018 1px, transparent 1px),
-              radial-gradient(circle at 90% 10%, #2E1A17 1px, transparent 1px)
-            `,
-            backgroundSize: '100px 100px, 150px 150px, 80px 80px, 120px 120px, 90px 90px, 110px 110px, 70px 70px, 130px 130px, 100px 100px, 140px 140px'
-          }}
-        />
 
         {/* Soil patches for planted seeds */}
         {garden.plants.map(plant => {
