@@ -166,77 +166,56 @@ export default function FreeFormGarden({
     // Size grows with stage
     const baseSize = stage === 'seed' ? 24 : stage === 'sprout' ? 32 : stage === 'growing' ? 44 : stage === 'mature' ? 54 : 64;
 
-    // Unique emojis for each stage with plant-specific final stage
+    // Use the actual plant icon at all stages, with stage-appropriate size
     const getStageEmoji = () => {
-      const seedType = plant.seedType.toLowerCase();
+      // Always use the plant's actual icon if available
+      const plantIcon = plant.icon || '🌱';
       
-      if (stage === 'seed') return '🫘'; // Small bean/seed
-      if (stage === 'sprout') return '🌱'; // Sprout
+      // For early stages, show generic growth indicators
+      if (stage === 'seed') return '🫘';
+      if (stage === 'sprout') return '🌱';
+      if (stage === 'growing') return '🌿';
       
-      // Growing stage - small leafy plant
-      if (stage === 'growing') {
-        if (seedType.includes('tomato') || seedType.includes('pepper') || seedType.includes('chili')) return '🌿';
-        if (seedType.includes('corn') || seedType.includes('wheat')) return '🌾';
-        if (seedType.includes('flower') || seedType.includes('rose') || seedType.includes('orchid')) return '🌷';
-        if (seedType.includes('tree') || seedType.includes('apple') || seedType.includes('cherry')) return '🌳';
-        return '☘️';
-      }
-      
-      // Mature stage - fuller plant showing type
-      if (stage === 'mature') {
-        if (seedType.includes('tomato')) return '🍅';
-        if (seedType.includes('carrot')) return '🥕';
-        if (seedType.includes('corn')) return '🌽';
-        if (seedType.includes('pumpkin')) return '🎃';
-        if (seedType.includes('strawberry')) return '🍓';
-        if (seedType.includes('grape')) return '🍇';
-        if (seedType.includes('apple')) return '🍎';
-        if (seedType.includes('cherry')) return '🍒';
-        if (seedType.includes('peach')) return '🍑';
-        if (seedType.includes('watermelon')) return '🍉';
-        if (seedType.includes('pepper') || seedType.includes('chili')) return '🌶️';
-        if (seedType.includes('eggplant')) return '🍆';
-        if (seedType.includes('broccoli')) return '🥦';
-        if (seedType.includes('lettuce') || seedType.includes('cabbage')) return '🥬';
-        if (seedType.includes('potato')) return '🥔';
-        if (seedType.includes('onion')) return '🧅';
-        if (seedType.includes('garlic')) return '🧄';
-        if (seedType.includes('cucumber') || seedType.includes('zucchini')) return '🥒';
-        if (seedType.includes('mushroom')) return '🍄';
-        if (seedType.includes('flower') || seedType.includes('rose')) return '🌹';
-        if (seedType.includes('sunflower')) return '🌻';
-        if (seedType.includes('tulip')) return '🌷';
-        if (seedType.includes('cactus')) return '🌵';
-        return '🌿';
-      }
-      
-      // Ready stage - use the plant icon or best match
-      return plant.icon || '🌻';
+      // For mature and ready stages, show the actual plant icon
+      return plantIcon;
     };
 
-    // Variant glow effects
+    // Variant glow effects - more prominent
     const getVariantGlow = () => {
       switch (plant.variant) {
-        case 'golden': return '0 0 12px rgba(255, 215, 0, 0.9), 0 0 24px rgba(255, 215, 0, 0.5)';
-        case 'rainbow': return '0 0 12px rgba(255, 0, 128, 0.7), 0 0 24px rgba(0, 255, 128, 0.5)';
-        case 'frost': return '0 0 12px rgba(135, 206, 250, 0.9), 0 0 24px rgba(135, 206, 250, 0.5)';
-        case 'candy': return '0 0 12px rgba(255, 105, 180, 0.9), 0 0 24px rgba(255, 182, 193, 0.5)';
-        case 'thunder': return '0 0 12px rgba(255, 255, 0, 0.9), 0 0 24px rgba(255, 215, 0, 0.5)';
-        case 'lunar': return '0 0 12px rgba(138, 43, 226, 0.9), 0 0 24px rgba(75, 0, 130, 0.5)';
+        case 'golden': return '0 0 16px rgba(255, 215, 0, 1), 0 0 32px rgba(255, 215, 0, 0.7), 0 0 48px rgba(255, 215, 0, 0.4)';
+        case 'rainbow': return '0 0 16px rgba(255, 0, 128, 0.9), 0 0 32px rgba(0, 255, 128, 0.7), 0 0 48px rgba(128, 0, 255, 0.5)';
+        case 'frost': return '0 0 16px rgba(135, 206, 250, 1), 0 0 32px rgba(135, 206, 250, 0.7), 0 0 48px rgba(200, 240, 255, 0.5)';
+        case 'candy': return '0 0 16px rgba(255, 105, 180, 1), 0 0 32px rgba(255, 182, 193, 0.7), 0 0 48px rgba(255, 192, 203, 0.5)';
+        case 'thunder': return '0 0 16px rgba(255, 255, 0, 1), 0 0 32px rgba(255, 215, 0, 0.8), 0 0 48px rgba(255, 255, 100, 0.5)';
+        case 'lunar': return '0 0 16px rgba(138, 43, 226, 1), 0 0 32px rgba(75, 0, 130, 0.7), 0 0 48px rgba(200, 150, 255, 0.5)';
         default: return '';
       }
     };
 
-    // Variant color filter for the emoji
+    // Variant color filter for the emoji - stronger effects
     const getVariantFilter = () => {
       switch (plant.variant) {
-        case 'golden': return 'drop-shadow(0 0 4px gold)';
-        case 'rainbow': return 'saturate(1.5) hue-rotate(45deg)';
-        case 'frost': return 'drop-shadow(0 0 4px cyan) brightness(1.1)';
-        case 'candy': return 'drop-shadow(0 0 4px hotpink) saturate(1.3)';
-        case 'thunder': return 'drop-shadow(0 0 4px yellow) brightness(1.2)';
-        case 'lunar': return 'drop-shadow(0 0 4px purple) brightness(0.95)';
+        case 'golden': return 'drop-shadow(0 0 6px gold) drop-shadow(0 0 12px gold) brightness(1.1)';
+        case 'rainbow': return 'saturate(2) hue-rotate(60deg) drop-shadow(0 0 6px magenta)';
+        case 'frost': return 'drop-shadow(0 0 6px cyan) drop-shadow(0 0 12px cyan) brightness(1.2) saturate(0.8)';
+        case 'candy': return 'drop-shadow(0 0 6px hotpink) drop-shadow(0 0 12px pink) saturate(1.5)';
+        case 'thunder': return 'drop-shadow(0 0 6px yellow) drop-shadow(0 0 12px orange) brightness(1.3)';
+        case 'lunar': return 'drop-shadow(0 0 6px purple) drop-shadow(0 0 12px violet) brightness(0.9) saturate(1.2)';
         default: return '';
+      }
+    };
+
+    // Variant emoji indicator
+    const getVariantEmoji = () => {
+      switch (plant.variant) {
+        case 'golden': return '⭐';
+        case 'rainbow': return '🌈';
+        case 'frost': return '❄️';
+        case 'candy': return '🍬';
+        case 'thunder': return '⚡';
+        case 'lunar': return '🌙';
+        default: return null;
       }
     };
 
@@ -280,18 +259,11 @@ export default function FreeFormGarden({
           <div className="absolute -top-1 -right-1 text-xs animate-bounce">✨</div>
         )}
 
-        {/* Variant indicator dot */}
-        {plant.variant !== 'normal' && (
-          <div 
-            className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-white/50 ${
-              plant.variant === 'golden' ? 'bg-yellow-400' :
-              plant.variant === 'rainbow' ? 'bg-gradient-to-r from-red-400 via-green-400 to-blue-400' :
-              plant.variant === 'frost' ? 'bg-cyan-300' :
-              plant.variant === 'candy' ? 'bg-pink-400' :
-              plant.variant === 'thunder' ? 'bg-yellow-300' :
-              'bg-purple-400'
-            }`}
-          />
+        {/* Variant emoji indicator */}
+        {plant.variant !== 'normal' && getVariantEmoji() && (
+          <div className="absolute -top-1 -left-1 text-sm animate-pulse" style={{ filter: 'drop-shadow(0 0 4px white)' }}>
+            {getVariantEmoji()}
+          </div>
         )}
 
         {/* Wilt indicator */}
