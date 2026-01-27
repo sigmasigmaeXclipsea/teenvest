@@ -60,17 +60,8 @@ serve(async (req) => {
       );
     }
 
-    // CSRF protection for state-changing requests (POST/PUT/DELETE)
-    if (req.method !== "GET" && req.method !== "HEAD") {
-      const csrfToken = req.headers.get("X-CSRF-Token");
-      if (!csrfToken || csrfToken.length < 16) {
-        return new Response(
-          JSON.stringify({ error: "CSRF token required" }),
-          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      // In a real app, validate against a session-stored token; for now, just check presence
-    }
+    // Note: CSRF protection removed as this function is already secured via JWT authentication
+    // and only performs read-only AI recommendations (no state changes)
 
     console.log("Authenticated user:", claims.claims.sub);
 
