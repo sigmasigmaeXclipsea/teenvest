@@ -1005,14 +1005,14 @@ export default function GamifiedGarden() {
         {/* Items Inventory */}
         <div className="bg-card rounded-xl shadow-sm p-4 border">
           <h3 className="font-bold mb-2 flex items-center gap-2 text-foreground">
-            <Wrench className="w-5 h-5" /> My Items ({inventory.gear.length})
+            <Wrench className="w-5 h-5" /> My Items ({inventory.gear.filter(g => !g.name.includes('Plot')).length})
           </h3>
-          {inventory.gear.length === 0 ? (
+          {inventory.gear.filter(g => !g.name.includes('Plot')).length === 0 ? (
             <p className="text-sm text-muted-foreground">No items. Buy some from the shop!</p>
           ) : (
             <ScrollArea className="h-20">
               <div className="flex gap-2 flex-wrap pr-4">
-                {inventory.gear.map(item => (
+                {inventory.gear.filter(g => !g.name.includes('Plot')).map(item => (
                   <button
                     key={item.id}
                     onClick={() => {
