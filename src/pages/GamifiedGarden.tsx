@@ -149,8 +149,8 @@ function formatTime(ms: number) {
   return `${minutes}m ${seconds}s`;
 }
 function calculateVariant(sprinklerType: string | null): 'normal' | 'golden' | 'rainbow' {
-  const baseGolden = 0.1;
-  const baseRainbow = 0.02;
+  const baseGolden = 0.02; // Reduced from 0.1 to 0.02 (2% base chance)
+  const baseRainbow = 0.005; // Reduced from 0.02 to 0.005 (0.5% base chance)
   
   let boost = 1;
   switch (sprinklerType) {
@@ -237,11 +237,11 @@ function getWeatherMultiplier(weather: Weather): number {
 
 function getWeatherMutationChance(weather: Weather): number {
   switch (weather) {
-    case 'frozen': return 0.4; // 40% chance for frost mutation
-    case 'candy': return 0.35; // 35% chance for candy mutation
-    case 'thunder': return 0.25; // 25% chance for thunder mutation
-    case 'rainy': return 0.3; // 30% chance for rain boost (but no special mutation)
-    case 'lunar': return 0.2; // 20% chance for lunar mutation
+    case 'rainy': return 0.02; // 2% chance for common frost mutation
+    case 'frozen': return 0.04; // 4% chance for frost mutation
+    case 'candy': return 0.03; // 3% chance for candy mutation  
+    case 'thunder': return 0.02; // 2% chance for thunder mutation
+    case 'lunar': return 0.01; // 1% chance for rare lunar mutation
     default: return 0;
   }
 }
@@ -386,23 +386,38 @@ export default function GamifiedGarden() {
     return () => clearInterval(interval);
   }, []);
 
-  // Weather changing system - changes every 15-30 minutes (much rarer)
+  // Weather changing system - changes every 45-90 minutes (much rarer)
   useEffect(() => {
     const changeWeather = () => {
-      const weatherTypes: Weather[] = ['normal', 'rainy', 'frozen', 'candy', 'thunder', 'lunar'];
-      // 70% chance of normal weather, 30% chance of special weather
-      const randomWeather = Math.random() < 0.7 ? 'normal' : weatherTypes[Math.floor(Math.random() * (weatherTypes.length - 1)) + 1];
+      const random = Math.random();
+      let newWeather: Weather = 'normal';
       
-      if (randomWeather !== currentWeather) {
-        const mutationChance = getWeatherMutationChance(randomWeather);
-        const multiplier = getWeatherMultiplier(randomWeather);
+      // Much rarer weather system:
+      // 70% normal, 15% rainy, 8% frozen, 4% candy, 2% thunder, 1% lunar
+      if (random < 0.70) {
+        newWeather = 'normal';
+      } else if (random < 0.85) {
+        newWeather = 'rainy';
+      } else if (random < 0.93) {
+        newWeather = 'frozen';
+      } else if (random < 0.97) {
+        newWeather = 'candy';
+      } else if (random < 0.99) {
+        newWeather = 'thunder';
+      } else {
+        newWeather = 'lunar';
+      }
+      
+      if (newWeather !== currentWeather) {
+        const mutationChance = getWeatherMutationChance(newWeather);
+        const multiplier = getWeatherMultiplier(newWeather);
         
-        setCurrentWeather(randomWeather);
+        setCurrentWeather(newWeather);
         
-        if (randomWeather !== 'normal') {
+        if (newWeather !== 'normal') {
           toast({ 
             title: `🌦️ Weather Change!`, 
-            description: `${getWeatherName(randomWeather)} weather is now active! ${mutationChance > 0 ? `${Math.round(mutationChance * 100)}% mutation chance` : 'Growth boost'} with ${multiplier}x value multiplier!` 
+            description: `${getWeatherName(newWeather)} weather is now active! ${mutationChance > 0 ? `${Math.round(mutationChance * 100)}% mutation chance` : 'Growth boost'} with ${multiplier}x value multiplier!` 
           });
         } else {
           toast({ 
@@ -501,6 +516,37 @@ export default function GamifiedGarden() {
   // Plant seed
   function plantSeed(x: number, y: number, seed: Seed) {
     const actualSize = calculateSize(seed.baseSizeKg);
+    
+    // Check for weather-based mutations first (rarest)
+    let variant: 'normal' | 'golden' | 'rainbow' | 'frost' | 'candy' | 'thunder' | 'lunar' = 'normal';
+    
+    if (currentWeather !== 'normal') {
+      const mutationChance = getWeatherMutationChance(currentWeather);
+      if (Math.random() < mutationChance) {
+        // Apply weather-specific mutation
+        switch (currentWeather) {
+          case 'rainy':
+          case 'frozen':
+            variant = 'frost';
+            break;
+          case 'candy':
+            variant = 'candy';
+            break;
+          case 'thunder':
+            variant = 'thunder';
+            break;
+          case 'lunar':
+            variant = 'lunar';
+            break;
+        }
+      }
+    }
+    
+    // If no weather mutation, check for normal golden/rainbow variants
+    if (variant === 'normal') {
+      variant = calculateVariant(hasSprinkler);
+    }
+    
     const plant: Plant = {
       id: generateId(),
       seedType: seed.name,
@@ -508,7 +554,7 @@ export default function GamifiedGarden() {
       growthTimeMs: seed.baseGrowthTime * 60 * 1000,
       lastWateredAt: Date.now(),
       isWilted: false,
-      variant: 'normal',
+      variant: variant,
       sizeKg: actualSize,
       sellPrice: calculateSellPrice(seed.sellPrice, actualSize, seed.baseSizeKg),
       basePrice: seed.sellPrice, // Store base price for tooltip
@@ -520,6 +566,14 @@ export default function GamifiedGarden() {
     setGarden(g => ({ ...g, plants: [...g.plants, plant] }));
     setInventory(inv => ({ ...inv, seeds: inv.seeds.filter(s => s.id !== seed.id) }));
     setSelectedSeed(null);
+    
+    // Show mutation notification if applicable
+    if (variant !== 'normal' && variant !== 'golden' && variant !== 'rainbow') {
+      toast({
+        title: '🌟 Weather Mutation!',
+        description: `${seed.name} mutated into ${variant} variant due to ${getWeatherName(currentWeather)} weather!`
+      });
+    }
   }
 
   // Water plant
