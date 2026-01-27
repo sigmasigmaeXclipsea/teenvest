@@ -77,6 +77,30 @@ export type Database = {
         }
         Relationships: []
       }
+      garden_state: {
+        Row: {
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+          xp: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          xp?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          xp?: number
+        }
+        Relationships: []
+      }
       holdings: {
         Row: {
           average_cost: number
