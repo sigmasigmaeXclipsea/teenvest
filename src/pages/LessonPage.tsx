@@ -44,9 +44,23 @@ const LessonPage = () => {
   const isCompleted = progress?.some(p => p.module_id === moduleId && p.completed);
   const quizScore = quizResults?.find(r => r.module_id === moduleId);
   const currentQuestion = quizQuestions?.[currentQuestionIndex];
-  const interactiveBlocks = Array.isArray(currentModule?.interactive_blocks)
-    ? (currentModule?.interactive_blocks as InteractiveBlock[])
-    : [];
+const interactiveBlocks = (() => {
+    const raw = currentModule?.interactive_blocks as unknown;
+    if (Array.isArray(raw)) return raw as InteractiveBlock[];
+    if (typeof raw === 'string') {
+      try {
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? (parsed as InteractiveBlock[]) : [];
+      } catch {
+        return [];
+      }
+    }
+    if (raw && typeof raw === 'object') {
+      const maybeArray = raw as any;
+      return Array.isArray(maybeArray) ? (maybeArray as InteractiveBlock[]) : [];
+    }
+    return [];
+  })();
   const hasInteractiveBlocks = interactiveBlocks.length > 0;
 
   const categoryModules = useMemo(() => {
@@ -108,9 +122,10 @@ const LessonPage = () => {
     try {
       await completeModule.mutateAsync(moduleId);
       await addXP(10); // 10 XP for completing a lesson
+      await addQuizPoints(10);
       toast({
         title: 'Lesson completed! 🎉',
-        description: 'Great job! Take the quiz to test your knowledge. +10 XP',
+        description: 'Great job! +10 XP and +10 Quiz Points (usable in the Garden)',
       });
     } catch (error) {
       toast({

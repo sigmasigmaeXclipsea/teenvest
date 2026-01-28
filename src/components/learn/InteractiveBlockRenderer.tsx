@@ -2,6 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import MiniQuizBlock from '@/components/learn/MiniQuizBlock';
 import TradeSimBlock from '@/components/learn/TradeSimBlock';
 import ScenarioChartBlock from '@/components/learn/ScenarioChartBlock';
+import CandlestickBuilderBlock from '@/components/learn/CandlestickBuilderBlock';
+import ChartAnnotatorBlock from '@/components/learn/ChartAnnotatorBlock';
 
 export type InteractiveBlock =
   | {
@@ -30,6 +32,19 @@ export type InteractiveBlock =
       sliderLabel: string;
       sliderRange: { min: number; max: number; step?: number };
       seriesFormula?: 'compound' | 'linear';
+    }
+  | {
+      type: 'candlestick_builder';
+      title?: string;
+      start?: { open: number; high: number; low: number; close: number };
+      min?: number;
+      max?: number;
+    }
+  | {
+      type: 'chart_annotator';
+      title?: string;
+      symbol?: string;
+      timeframe?: string;
     };
 
 type InteractiveBlockRendererProps = {
@@ -52,6 +67,14 @@ const InteractiveBlockRenderer = ({ blocks }: InteractiveBlockRendererProps) => 
 
         if (block.type === 'interactive_chart') {
           return <ScenarioChartBlock key={`chart-${index}`} {...block} />;
+        }
+
+        if (block.type === 'candlestick_builder') {
+          return <CandlestickBuilderBlock key={`candle-builder-${index}`} {...block} />;
+        }
+
+        if (block.type === 'chart_annotator') {
+          return <ChartAnnotatorBlock key={`chart-annotator-${index}`} {...block} />;
         }
 
         return (

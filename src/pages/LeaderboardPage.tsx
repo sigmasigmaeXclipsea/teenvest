@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { useLeaderboard, type LeaderboardEntry } from '@/hooks/useLeaderboard';
+import { useRankLeaderboard, type RankLeaderboardEntry } from '@/hooks/useRankLeaderboard';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import {
@@ -19,9 +20,16 @@ import {
 const ENTRIES_PER_PAGE = 10;
 
 const LeaderboardPage = () => {
-  const { data: leaderboard, isLoading } = useLeaderboard();
+  const [mode, setMode] = useState<'portfolio' | 'rank'>('portfolio');
+
+  const { data: portfolioLeaderboard, isLoading: portfolioLoading, error: portfolioError } = useLeaderboard();
+  const { data: rankLeaderboard, isLoading: rankLoading, error: rankError } = useRankLeaderboard();
   const { user } = useAuth();
   const [currentPage, setCurrentPage] = useState(1);
+
+  const leaderboard = mode === 'portfolio' ? portfolioLeaderboard : rankLeaderboard;
+  const isLoading = mode === 'portfolio' ? portfolioLoading : rankLoading;
+  const error = mode === 'portfolio' ? portfolioError : rankError;
 
   const getRankIcon = (rank: number) => {
     if (rank === 1) return <Trophy className="w-6 h-6 text-primary" />;
@@ -48,11 +56,84 @@ const LeaderboardPage = () => {
     );
   }
 
-  const enrichedLeaderboard = (leaderboard || []).map((entry) => ({
+  const renderRankEntry = (entry: RankLeaderboardEntry, showSeparator = false) => (
+    <div key={entry.rank}>
+      {showSeparator && (
+        <div className="flex items-center gap-2 my-3 text-muted-foreground text-sm">
+          <div className="flex-1 border-t border-dashed" />
+          <span>Your Ranking</span>
+          <div className="flex-1 border-t border-dashed" />
+        </div>
+      )}
+      <div
+        className={`flex items-center justify-between p-4 rounded-lg border ${getRankBg(entry.rank, entry.is_current_user)} transition-colors hover:bg-secondary/50`}
+      >
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
+            {getRankIcon(entry.rank)}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <p className="font-semibold">{entry.display_name}</p>
+              {entry.is_current_user && (
+                <Badge variant="outline" className="text-xs gap-1 border-primary text-primary">
+                  <Star className="w-3 h-3" />
+                  You
+                </Badge>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground">{entry.rank_name} · {entry.xp.toLocaleString()} XP</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          {entry.profile_public && !entry.is_current_user && (
+            <Link to={`/profile/${entry.user_id}`}>
+              <Button variant="ghost" size="sm" className="gap-1">
+                <User className="w-4 h-4" />
+                View
+              </Button>
+            </Link>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  if (error) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col items-center justify-center h-64 gap-4">
+          <div className="text-destructive">Unable to load leaderboard</div>
+          <div className="text-sm text-muted-foreground">Please try again later</div>
+          <Button onClick={() => window.location.reload()} variant="outline">
+            Retry
+          </Button>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!leaderboard || leaderboard.length === 0) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col items-center justify-center h-64 gap-4">
+          <Trophy className="w-12 h-12 text-muted-foreground" />
+          <div className="text-lg font-semibold">No leaderboard data yet</div>
+          <div className="text-sm text-muted-foreground">Start trading to appear on the leaderboard!</div>
+          <Button asChild>
+            <Link to="/trade">Start Trading</Link>
+          </Button>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  const enrichedLeaderboard = (leaderboard || []).map((entry: any) => ({
     ...entry,
     is_current_user: entry.is_current_user || entry.user_id === user?.id,
   }));
 
+<<<<<<< HEAD
   // Separate top 3 for featured cards
   const top3 = enrichedLeaderboard.filter((entry) => entry.rank <= 3);
   
@@ -70,8 +151,14 @@ const LeaderboardPage = () => {
   
   // Check if current user is outside top 100
   const isUserOutsideTop100 = !!currentUserEntry && currentUserEntry.rank > 100;
+=======
+  // Separate top 10 and current user if outside top 10
+  const top10 = enrichedLeaderboard.filter((entry: any) => entry.rank <= 10);
+  const currentUserEntry = enrichedLeaderboard.find((entry: any) => entry.is_current_user);
+  const isUserOutsideTop10 = !!currentUserEntry && currentUserEntry.rank > 10;
+>>>>>>> 545fffa (Fix lesson interactives, quiz points, and beanstalk questions)
 
-  const renderEntry = (entry: LeaderboardEntry, showSeparator = false) => (
+  const renderPortfolioEntry = (entry: LeaderboardEntry, showSeparator = false) => (
     <div key={entry.rank}>
       {showSeparator && (
         <div className="flex items-center gap-2 my-3 text-muted-foreground text-sm">
@@ -155,17 +242,44 @@ const LeaderboardPage = () => {
           <p className="text-muted-foreground">See how you rank against other teen investors</p>
         </div>
 
+        <div className="flex gap-2">
+          <Button
+            variant={mode === 'portfolio' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setMode('portfolio')}
+          >
+            Portfolio Value
+          </Button>
+          <Button
+            variant={mode === 'rank' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setMode('rank')}
+          >
+            Rank
+          </Button>
+        </div>
+
         {/* Top 3 Cards */}
         <div className="grid gap-4 md:grid-cols-3">
+<<<<<<< HEAD
           {top3.map((entry) => (
+=======
+          {top10.slice(0, 3).map((entry: any) => (
+>>>>>>> 545fffa (Fix lesson interactives, quiz points, and beanstalk questions)
             <Card key={entry.rank} className={`${getRankBg(entry.rank, entry.is_current_user)} border`}>
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   {getRankIcon(entry.rank)}
-                  <Badge variant={entry.gain_percent >= 0 ? 'default' : 'destructive'} className="gap-1">
-                    {entry.gain_percent >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                    {entry.gain_percent >= 0 ? '+' : ''}{entry.gain_percent.toFixed(2)}%
-                  </Badge>
+                  {mode === 'portfolio' ? (
+                    <Badge variant={entry.gain_percent >= 0 ? 'default' : 'destructive'} className="gap-1">
+                      {entry.gain_percent >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                      {entry.gain_percent >= 0 ? '+' : ''}{Number(entry.gain_percent).toFixed(2)}%
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="gap-1">
+                      {entry.rank_name}
+                    </Badge>
+                  )}
                 </div>
               </CardHeader>
               <CardContent>
@@ -177,10 +291,26 @@ const LeaderboardPage = () => {
                         <Badge variant="outline" className="text-xs border-primary text-primary">You</Badge>
                       )}
                     </div>
+<<<<<<< HEAD
                     <p className="text-2xl font-bold text-primary">
                       ${entry.total_value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">Total Portfolio Value</p>
+=======
+                    {mode === 'portfolio' ? (
+                      <>
+                        <p className="text-2xl font-bold text-primary">
+                          ${Number(entry.total_value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">Portfolio Value</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-2xl font-bold text-primary">{Number(entry.xp).toLocaleString()} XP</p>
+                        <p className="text-xs text-muted-foreground mt-1">{entry.rank_name}</p>
+                      </>
+                    )}
+>>>>>>> 545fffa (Fix lesson interactives, quiz points, and beanstalk questions)
                   </div>
                   {entry.profile_public && !entry.is_current_user && (
                     <Link to={`/profile/${entry.user_id}`}>
@@ -200,16 +330,32 @@ const LeaderboardPage = () => {
           <CardHeader>
             <CardTitle>All Rankings</CardTitle>
             <CardDescription>
+<<<<<<< HEAD
               {isUserOutsideTop100 && currentUserEntry
                 ? `Top 100 performers + your rank (#${currentUserEntry.rank})`
                 : `Top 100 performers by portfolio value (Page ${currentPage} of ${totalPages || 1})`}
+=======
+              {isUserOutsideTop10 && currentUserEntry
+                ? `Top 10 performers + your rank (#${currentUserEntry.rank})`
+                : mode === 'portfolio' ? 'Top 10 by portfolio value' : 'Top 10 by rank (XP)'}
+>>>>>>> 545fffa (Fix lesson interactives, quiz points, and beanstalk questions)
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
+<<<<<<< HEAD
               {currentPageEntries.map((entry) => renderEntry(entry))}
               
               {isUserOutsideTop100 && currentUserEntry && currentPage === totalPages && renderEntry(currentUserEntry, true)}
+=======
+              {mode === 'portfolio'
+                ? top10.map((entry: any) => renderPortfolioEntry(entry))
+                : top10.map((entry: any) => renderRankEntry(entry))}
+              
+              {isUserOutsideTop10 && currentUserEntry && (mode === 'portfolio'
+                ? renderPortfolioEntry(currentUserEntry, true)
+                : renderRankEntry(currentUserEntry, true))}
+>>>>>>> 545fffa (Fix lesson interactives, quiz points, and beanstalk questions)
 
               {(!enrichedLeaderboard || enrichedLeaderboard.length === 0) && (
                 <div className="text-center py-8 text-muted-foreground">

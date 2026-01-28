@@ -1402,7 +1402,7 @@ const LandingPage = () => {
             
             <p className="text-lg text-muted-foreground mb-6 max-w-lg">
               Master investing with <span className="text-primary font-semibold">zero risk</span>.
-              Trade stocks, complete challenges, and level up your money skills.
+              Trade stocks, complete challenges, and rank up your money skills.
             </p>
 
             <div className="grid grid-cols-3 gap-3 max-w-md mb-8">
@@ -1415,7 +1415,7 @@ const LandingPage = () => {
                 <p className="text-lg font-bold text-warning">7 days</p>
               </div>
               <div className="rounded-xl bg-card/70 border border-emerald-500/20 px-3 py-2 backdrop-blur">
-                <p className="text-[11px] text-muted-foreground">Level</p>
+                <p className="text-[11px] text-muted-foreground">Rank</p>
                 <p className="text-lg font-bold text-emerald-500">3</p>
               </div>
             </div>
@@ -1493,7 +1493,7 @@ const LandingPage = () => {
               { step: '01', title: 'Learn', desc: 'Bite-sized lessons you can finish in minutes.', icon: BookOpen, color: 'from-primary/20 to-primary/5' },
               { step: '02', title: 'Practice', desc: 'Interactive quizzes and charts to test ideas.', icon: Sparkles, color: 'from-accent/20 to-accent/5' },
               { step: '03', title: 'Trade', desc: 'Simulated trades to learn with zero risk.', icon: Briefcase, color: 'from-emerald-500/20 to-emerald-500/5' },
-              { step: '04', title: 'Level Up', desc: 'Earn XP, streaks, and new achievements.', icon: Trophy, color: 'from-warning/20 to-warning/5' },
+              { step: '04', title: 'Rank Up', desc: 'Earn XP, streaks, and new achievements.', icon: Trophy, color: 'from-warning/20 to-warning/5' },
             ].map((step) => (
               <motion.div
                 key={step.step}
@@ -1863,7 +1863,7 @@ const LandingPage = () => {
             </div>
             
             <h2 className="text-4xl md:text-6xl font-black tracking-tight mb-6">
-              Ready to <span className="gradient-text">Level Up</span>?
+              Ready to <span className="gradient-text">Rank Up</span>?
             </h2>
             
             <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">

@@ -15,6 +15,7 @@ import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { useLearningModules, useUserProgress } from '@/hooks/useLearning';
 import { useQuizResults } from '@/hooks/useQuiz';
 import { useXP } from '@/contexts/XPContext';
+import { getRankFromXP } from '@/lib/ranks';
 import LearningAI from '@/components/LearningAI';
 import AIAssistantCard from '@/components/AIAssistantCard';
 import XPStore from '@/components/XPStore';
@@ -116,7 +117,7 @@ const LearnPage = () => {
   
   const baseXP = calculateXP();
   const { xp, addXP, loading: xpLoading } = useXP();
-  const level = Math.floor(xp / 500) + 1;
+  const rank = getRankFromXP(xp).name;
 
   // Categories: prefer explicit module.category when present
   const categories = useMemo<LessonCategory[]>(() => {
@@ -199,8 +200,8 @@ const LearnPage = () => {
               <div className="flex items-center gap-2 bg-card/80 backdrop-blur px-4 py-2 rounded-xl border shadow-sm">
                 <Trophy className="w-5 h-5 text-amber-500" />
                 <div>
-                  <p className="text-xs text-muted-foreground">Level</p>
-                  <p className="font-bold">{level}</p>
+                  <p className="text-xs text-muted-foreground">Rank</p>
+                  <p className="font-bold">{xpLoading ? '...' : rank}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 bg-card/80 backdrop-blur px-4 py-2 rounded-xl border shadow-sm">

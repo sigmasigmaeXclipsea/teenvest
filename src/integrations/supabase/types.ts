@@ -612,6 +612,19 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_rank_leaderboard: {
+        Args: never
+        Returns: {
+          display_name: string
+          is_current_user: boolean
+          profile_public: boolean
+          rank: number
+          rank_index: number
+          rank_name: string
+          user_id: string
+          xp: number
+        }[]
+      }
       get_platform_stats: { Args: never; Returns: Json }
       get_public_profile: { Args: { _user_id: string }; Returns: Json }
       get_recent_platform_trades: {

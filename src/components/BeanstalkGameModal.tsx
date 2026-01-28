@@ -43,6 +43,7 @@ const BeanstalkGameModal = ({
 }: BeanstalkGameModalProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
+  const nextQuestionAtRef = useRef<number>(300);
   const { toast } = useToast();
   
   const [gameState, setGameState] = useState<'idle' | 'playing' | 'paused' | 'question' | 'gameover' | 'completed'>('idle');
@@ -61,38 +62,43 @@ const BeanstalkGameModal = ({
   const generateQuestions = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('learning-ai', {
-        body: {
-          prompt: `Create 5 multiple choice questions based on this lesson. Each question should have 4 options with one correct answer.
-
-Title: ${title}
-Content: ${content}
-
-Return the response as a JSON array in this exact format:
-[
-  {
-    "question": "Question text here",
-    "options": ["Option A", "Option B", "Option C", "Option D"],
-    "correctAnswer": 0
-  }
-]
-
-Make sure the JSON is valid and properly formatted.`,
-          context: 'quiz_generation'
-        }
-      });
+      if (!moduleId) {
+        throw new Error('Missing lesson id');
+      }
+      const { data, error } = await supabase
+        .from('quiz_questions')
+        .select('question, options, correct_answer')
+        .eq('module_id', moduleId)
+        .order('order_index', { ascending: true });
 
       if (error) throw error;
 
-      const text = data?.response || '';
-      const jsonMatch = text.match(/\[[\s\S]*\]/);
-      
-      if (jsonMatch) {
-        const parsedQuestions = JSON.parse(jsonMatch[0]);
-        setQuestions(parsedQuestions);
-      } else {
-        throw new Error('Invalid response format');
+      const parsedQuestions: Question[] = (data || [])
+        .map((q: any) => {
+          let options: any = q.options;
+          if (typeof options === 'string') {
+            try {
+              options = JSON.parse(options);
+            } catch {
+              options = [];
+            }
+          }
+
+          if (!Array.isArray(options)) return null;
+
+          return {
+            question: q.question,
+            options,
+            correctAnswer: q.correct_answer,
+          } as Question;
+        })
+        .filter(Boolean) as Question[];
+
+      if (!parsedQuestions || parsedQuestions.length === 0) {
+        throw new Error('No quiz questions found for this lesson');
       }
+
+      setQuestions(parsedQuestions);
       
     } catch (error: any) {
       toast({
@@ -100,9 +106,12 @@ Make sure the JSON is valid and properly formatted.`,
         description: error.message || 'Failed to generate questions',
         variant: 'destructive',
       });
+      return false;
     } finally {
       setIsLoading(false);
     }
+
+    return true;
   };
 
   // Initialize clouds
@@ -200,24 +209,26 @@ Make sure the JSON is valid and properly formatted.`,
     ctx.fillRect(playerX + 5, player.y - 20, 5, 5);
     ctx.fillRect(playerX - 5, player.y - 10, 10, 3);
 
-    // Update beanstalk offset (scrolling effect)
-    setBeanstalkOffset(prev => prev + BEANSTALK_SPEED);
-    setHeight(Math.floor(beanstalkOffset / 10));
+    setBeanstalkOffset(prev => {
+      const nextOffset = prev + BEANSTALK_SPEED;
+      setHeight(Math.floor(nextOffset / 10));
 
-    // Trigger questions at intervals
-    if (beanstalkOffset > 0 && beanstalkOffset % 300 === 0 && questions.length > 0) {
-      const randomQuestion = questions[Math.floor(Math.random() * questions.length)];
-      setCurrentQuestion(randomQuestion);
-      setSelectedAnswer(null);
-      setTimeLeft(QUESTION_TIME_LIMIT);
-      setGameState('question');
-    }
+      if (questions.length > 0 && nextOffset >= nextQuestionAtRef.current) {
+        const randomQuestion = questions[Math.floor(Math.random() * questions.length)];
+        nextQuestionAtRef.current = nextQuestionAtRef.current + 300;
+        setCurrentQuestion(randomQuestion);
+        setSelectedAnswer(null);
+        setTimeLeft(QUESTION_TIME_LIMIT);
+        setGameState('question');
+      }
 
-    // Check win condition
-    if (beanstalkOffset > 2000) {
-      setGameState('completed');
-      onComplete?.(score, height);
-    }
+      if (nextOffset > 2000) {
+        setGameState('completed');
+        onComplete?.(score, Math.floor(nextOffset / 10));
+      }
+
+      return nextOffset;
+    });
 
     animationRef.current = requestAnimationFrame(gameLoop);
   }, [gameState, clouds, beanstalkOffset, questions, score, height, onComplete]);
@@ -244,12 +255,14 @@ Make sure the JSON is valid and properly formatted.`,
   // Start game
   const startGame = async () => {
     if (questions.length === 0) {
-      await generateQuestions();
+      const ok = await generateQuestions();
+      if (!ok) return;
     }
     setGameState('playing');
     setScore(0);
     setHeight(0);
     setBeanstalkOffset(0);
+    nextQuestionAtRef.current = 300;
     setPlayer({ y: 200, velocity: 0, isJumping: false });
   };
 

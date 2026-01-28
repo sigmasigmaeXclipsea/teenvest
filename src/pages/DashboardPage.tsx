@@ -14,6 +14,7 @@ import DashboardStreakWidget from '@/components/DashboardStreakWidget';
 import StockNews from '@/components/StockNews';
 import { useAuth } from '@/contexts/AuthContext';
 import { useXP } from '@/contexts/XPContext';
+import { getRankFromXP } from '@/lib/ranks';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 const COLORS = ['hsl(142, 76%, 36%)', 'hsl(262, 83%, 58%)', 'hsl(200, 98%, 39%)', 'hsl(38, 92%, 50%)', 'hsl(340, 82%, 52%)'];
@@ -154,7 +155,7 @@ const DashboardPage = () => {
               <div className="text-2xl font-bold text-yellow-600">
                 {xpLoading ? '...' : xp.toLocaleString()}
               </div>
-              <p className="text-sm text-muted-foreground mt-1">Level {Math.floor((xpLoading ? 0 : xp) / 500) + 1}</p>
+              <p className="text-sm text-muted-foreground mt-1">Rank {getRankFromXP(xpLoading ? 0 : xp).name}</p>
             </CardContent>
           </Card>
 
