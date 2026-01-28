@@ -549,7 +549,6 @@ export default function GamifiedGarden() {
   
   function restockGear() {
     const gear = GEAR_TEMPLATES.map(template => ({ ...template, id: generateId() }));
-    console.log('Setting shop gear:', gear); // Debug log
     setShopGear(gear);
   }
 

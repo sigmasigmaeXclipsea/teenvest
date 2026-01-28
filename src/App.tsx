@@ -40,65 +40,6 @@ const queryClient = new QueryClient({
   },
 });
 
-const DebugRuntimeListeners = () => {
-  useEffect(() => {
-    const handleError = (event: ErrorEvent) => {
-      // #region agent log
-      fetch('http://127.0.0.1:7243/ingest/744e271c-c7d9-439f-a2cd-18d8a6231997', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId: 'debug-session',
-          runId: 'pre-fix',
-          hypothesisId: 'H2',
-          location: 'App.tsx:window.error',
-          message: 'Unhandled window error',
-          data: {
-            message: event.message,
-            filename: event.filename,
-            lineno: event.lineno,
-            colno: event.colno,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion agent log
-    };
-
-    const handleRejection = (event: PromiseRejectionEvent) => {
-      const reason =
-        event.reason instanceof Error
-          ? { name: event.reason.name, message: event.reason.message }
-          : { message: String(event.reason) };
-      // #region agent log
-      fetch('http://127.0.0.1:7243/ingest/744e271c-c7d9-439f-a2cd-18d8a6231997', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId: 'debug-session',
-          runId: 'pre-fix',
-          hypothesisId: 'H2',
-          location: 'App.tsx:window.unhandledrejection',
-          message: 'Unhandled promise rejection',
-          data: reason,
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion agent log
-    };
-
-    window.addEventListener('error', handleError);
-    window.addEventListener('unhandledrejection', handleRejection);
-
-    return () => {
-      window.removeEventListener('error', handleError);
-      window.removeEventListener('unhandledrejection', handleRejection);
-    };
-  }, []);
-
-  return null;
-};
-
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -108,7 +49,6 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
-              <DebugRuntimeListeners />
               <ErrorBoundary>
                 <Routes>
                   <Route path="/" element={<LandingPage />} />
