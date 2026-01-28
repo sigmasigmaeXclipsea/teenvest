@@ -362,12 +362,12 @@ export default function GamifiedGarden() {
         if (version === 'v5') {
           // New garden system
           setGarden(parsed.garden ?? { plants: [], width: 800, height: 600 });
-          // Migrate sprinkler positions to include time limits
+          // Load sprinkler positions - preserve original placedAt timestamps
           const oldSprinklers = parsed.sprinklerPositions ?? [];
           const migratedSprinklers = oldSprinklers.map((s: any) => ({
             ...s,
-            placedAt: Date.now() - (10 * 60 * 1000), // Assume placed 10 minutes ago for existing sprinklers
-            timeLimit: 30 * 60 * 1000 // 30 minutes time limit
+            placedAt: s.placedAt ?? Date.now() - (10 * 60 * 1000), // Only default if missing
+            timeLimit: s.timeLimit ?? 30 * 60 * 1000 // Only default if missing
           }));
           setSprinklerPositions(migratedSprinklers);
         } else {
