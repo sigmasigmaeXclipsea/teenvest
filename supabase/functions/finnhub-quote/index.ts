@@ -63,7 +63,11 @@ serve(async (req: Request) => {
       });
     }
 
-    const FINNHUB_API_KEY = 'd4ef1bpr01qrumpf5ojgd4ef1bpr01qrumpf5ok0';
+    const FINNHUB_API_KEY = Deno.env.get('FINNHUB_API_KEY');
+    
+    if (!FINNHUB_API_KEY) {
+      throw new Error('FINNHUB_API_KEY is not configured');
+    }
     
     // Fetch quote and profile data
     const [quoteResponse, profileResponse] = await Promise.all([
