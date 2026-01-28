@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
-import { useLearningModules, useUserProgress } from '@/hooks/useLearning';
+import { useLearningModules, useUserProgress, type LearningModule } from '@/hooks/useLearning';
 import { useQuizResults } from '@/hooks/useQuiz';
 import { useXP } from '@/contexts/XPContext';
 import { getRankFromXP } from '@/lib/ranks';

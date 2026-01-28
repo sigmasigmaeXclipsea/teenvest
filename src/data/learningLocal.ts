@@ -67,7 +67,7 @@ const keyPointSets = [
   ],
 ];
 
-const fillTemplate = (template: string, topic: string) => template.replaceAll('{topic}', topic);
+const fillTemplate = (template: string, topic: string) => template.replace(/{topic}/g, topic);
 
 const ensureSentence = (text: string) => {
   const trimmed = text.trim();
@@ -479,7 +479,7 @@ const buildMiniQuizBlock = (seed: LessonSeed, orderIndex: number, variant: 'defi
 
 const buildChartBlock = (seed: LessonSeed, orderIndex: number) => {
   const chartLabel = seed.category === 'Foundations' ? 'Years invested' : 'Risk level';
-  const seriesFormula = seed.category === 'Foundations' ? 'compound' : 'linear';
+  const seriesFormula = (seed.category === 'Foundations' ? 'compound' : 'linear') as 'compound' | 'linear';
   return {
     type: 'interactive_chart' as const,
     title: `${seed.title} in action`,
@@ -537,7 +537,7 @@ const buildAutoInteractiveBlocks = (seed: LessonSeed, orderIndex: number): Inter
     return [buildChartBlock(seed, orderIndex)];
   }
   if (mod === 4) {
-    if (seed.category === 'Strategy' && orderIndex % 10 === 4) {
+    if (orderIndex % 10 === 4) {
       return [buildTradeSimBlock(seed)];
     }
     return [buildMiniQuizBlock(seed, orderIndex, 'application')];
