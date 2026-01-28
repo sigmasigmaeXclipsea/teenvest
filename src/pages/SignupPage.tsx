@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { TrendingUp, Mail, Lock, Eye, EyeOff, User } from 'lucide-react';
+import { TrendingUp, Mail, Lock, Eye, EyeOff, User, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { validatePassword, getPasswordStrengthLabel } from '@/lib/passwordValidation';
 
 const SignupPage = () => {
   const [displayName, setDisplayName] = useState('');
@@ -18,6 +19,10 @@ const SignupPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Password validation
+  const passwordValidation = useMemo(() => validatePassword(password, email), [password, email]);
+  const strengthInfo = useMemo(() => getPasswordStrengthLabel(passwordValidation.score), [passwordValidation.score]);
+
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
@@ -28,6 +33,17 @@ const SignupPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
+    // Validate password before submitting
+    if (!passwordValidation.isValid) {
+      toast({
+        title: 'Weak Password',
+        description: passwordValidation.errors[0] || 'Please choose a stronger password',
+        variant: 'destructive',
+      });
+      setLoading(false);
+      return;
+    }
 
     const { error } = await signUp(email, password, displayName);
 
@@ -111,7 +127,7 @@ const SignupPage = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-10 pr-10"
-                    minLength={6}
+                    minLength={8}
                     required
                   />
                   <button
@@ -122,9 +138,39 @@ const SignupPage = () => {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                
+                {/* Password strength indicator */}
+                {password.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full transition-all duration-300 ${strengthInfo.color}`}
+                          style={{ width: `${(passwordValidation.score / 4) * 100}%` }}
+                        />
+                      </div>
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {strengthInfo.label}
+                      </span>
+                    </div>
+                    
+                    {passwordValidation.errors.length > 0 && (
+                      <div className="flex items-start gap-1.5 text-destructive">
+                        <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                        <span className="text-xs">{passwordValidation.errors[0]}</span>
+                      </div>
+                    )}
+                    
+                    {passwordValidation.errors.length === 0 && passwordValidation.suggestions.length > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        Tip: {passwordValidation.suggestions[0]}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className="w-full" disabled={loading || !passwordValidation.isValid}>
                 {loading ? 'Creating account...' : 'Create Account'}
               </Button>
             </form>
