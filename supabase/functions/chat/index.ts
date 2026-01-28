@@ -60,16 +60,8 @@ serve(async (req) => {
       );
     }
 
-    // CSRF protection for state-changing requests
-    if (req.method !== "GET" && req.method !== "HEAD") {
-      const csrfToken = req.headers.get("X-CSRF-Token");
-      if (!csrfToken || csrfToken.length < 16) {
-        return new Response(
-          JSON.stringify({ error: "CSRF token required" }),
-          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-    }
+    // Note: CSRF protection is not required here since we validate JWT tokens
+    // and this endpoint doesn't modify server state beyond streaming AI responses
 
     console.log("Authenticated user:", claims.claims.sub);
 
