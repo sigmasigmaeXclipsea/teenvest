@@ -9,9 +9,27 @@ type TradeSimBlockProps = {
   startPrice: number;
   volatility?: number;
   steps?: number;
+  headline?: string;
+  summary?: string;
+  stat?: string;
+  sentiment?: 'bullish' | 'bearish' | 'neutral';
+  biasStrength?: number;
+  newsImpactPrompted?: boolean;
 };
 
-const TradeSimBlock = ({ symbol, startPrice, volatility = 0.02, steps = 10 }: TradeSimBlockProps) => {
+const TradeSimBlock = ({
+  symbol,
+  startPrice,
+  volatility = 0.02,
+  steps = 10,
+  headline,
+  summary,
+  stat,
+  sentiment = 'neutral',
+  biasStrength = 0,
+  newsImpactPrompted = false,
+}: TradeSimBlockProps) => {
+  const ticksPerPress = 10;
   const prices = useMemo(() => {
     const series: number[] = [];
     let price = startPrice;
@@ -20,30 +38,64 @@ const TradeSimBlock = ({ symbol, startPrice, volatility = 0.02, steps = 10 }: Tr
     for (let i = 1; i <= steps; i += 1) {
       const drift = Math.sin(i * 1.7) * volatility;
       const noise = Math.cos(i * 2.3) * 0.5 * volatility;
-      const change = drift + noise;
-      price = Math.max(1, price * (1 + change));
+      const baseChange = drift + noise;
+      let nextChange = baseChange;
+
+      if (newsImpactPrompted && sentiment !== 'neutral' && biasStrength > 0) {
+        const shouldBiasUp = sentiment === 'bullish';
+        const roll = Math.random();
+        const biasApplied = roll < biasStrength;
+        if (biasApplied) {
+          const biasSign = shouldBiasUp ? 1 : -1;
+          nextChange = Math.abs(baseChange) * biasSign + biasSign * volatility * 0.25;
+        }
+      }
+
+      price = Math.max(1, price * (1 + nextChange));
       series.push(Number(price.toFixed(2)));
     }
 
     return series;
-  }, [startPrice, steps, volatility]);
+  }, [startPrice, steps, volatility, sentiment, biasStrength, newsImpactPrompted]);
 
   const [stepIndex, setStepIndex] = useState(0);
   const [entryPrice, setEntryPrice] = useState<number | null>(null);
+  const [position, setPosition] = useState<'long' | 'short' | null>(null);
   const [realizedPnl, setRealizedPnl] = useState(0);
 
   const currentPrice = prices[stepIndex] ?? startPrice;
-  const hasPosition = entryPrice !== null;
-  const unrealized = hasPosition ? Number((currentPrice - entryPrice).toFixed(2)) : 0;
+  const hasPosition = entryPrice !== null && position !== null;
+  const unrealized = hasPosition
+    ? Number((position === 'long' ? currentPrice - entryPrice : entryPrice - currentPrice).toFixed(2))
+    : 0;
 
   const moveNext = () => {
-    setStepIndex((prev) => Math.min(prev + 1, prices.length - 1));
+    setStepIndex((prev) => Math.min(prev + ticksPerPress, prices.length - 1));
   };
 
   const resetSim = () => {
     setStepIndex(0);
     setEntryPrice(null);
+    setPosition(null);
     setRealizedPnl(0);
+  };
+
+  const openPosition = (nextPosition: 'long' | 'short') => {
+    setPosition(nextPosition);
+    setEntryPrice(currentPrice);
+  };
+
+  const closePosition = () => {
+    if (!hasPosition || entryPrice === null || position === null) return;
+    setRealizedPnl((prev) => Number((prev + unrealized).toFixed(2)));
+    setEntryPrice(null);
+    setPosition(null);
+  };
+
+  const sentimentStyles = {
+    bullish: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600',
+    bearish: 'border-destructive/30 bg-destructive/10 text-destructive',
+    neutral: 'border-border/60 bg-secondary/40 text-muted-foreground',
   };
 
   return (
@@ -55,10 +107,28 @@ const TradeSimBlock = ({ symbol, startPrice, volatility = 0.02, steps = 10 }: Tr
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {(headline || summary || stat) && (
+          <div className={`rounded-lg border px-3 py-2 text-xs ${sentimentStyles[sentiment]}`}>
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-semibold">{headline ?? 'Market update'}</p>
+              <span className="text-[10px] uppercase tracking-wide">
+                {sentiment}
+              </span>
+            </div>
+            {summary && <p className="mt-1">{summary}</p>}
+            {stat && <p className="mt-1 font-medium">{stat}</p>}
+            {newsImpactPrompted && biasStrength > 0 && (
+              <p className="mt-1 text-[11px] font-semibold">
+                News bias: {Math.round(biasStrength * 100)}% {sentiment === 'bullish' ? 'up' : 'down'} chance
+              </p>
+            )}
+          </div>
+        )}
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs text-muted-foreground">Current price</p>
             <p className="text-2xl font-semibold">${currentPrice.toFixed(2)}</p>
+            <p className="text-[11px] text-muted-foreground">Start price: ${startPrice.toFixed(2)}</p>
           </div>
           <div className="text-right">
             <p className="text-xs text-muted-foreground">Unrealized P/L</p>
@@ -70,35 +140,33 @@ const TradeSimBlock = ({ symbol, startPrice, volatility = 0.02, steps = 10 }: Tr
 
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span>Step {stepIndex + 1} / {prices.length}</span>
-          {hasPosition && <span>Entry: ${entryPrice?.toFixed(2)}</span>}
+          {hasPosition && (
+            <span>
+              {position === 'long' ? 'Long' : 'Short'} @ ${entryPrice?.toFixed(2)}
+            </span>
+          )}
         </div>
 
         <div className="flex gap-2">
-          <Button
-            size="sm"
-            onClick={() => setEntryPrice(currentPrice)}
-            disabled={hasPosition}
-            className="gap-1"
-          >
-            <TrendingUp className="w-4 h-4" />
-            Buy 1
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() => {
-              if (entryPrice === null) return;
-              setRealizedPnl((prev) => Number((prev + (currentPrice - entryPrice)).toFixed(2)));
-              setEntryPrice(null);
-            }}
-            disabled={!hasPosition}
-            className="gap-1"
-          >
-            <TrendingDown className="w-4 h-4" />
-            Sell 1
-          </Button>
+          {!hasPosition ? (
+            <>
+              <Button size="sm" onClick={() => openPosition('long')} className="gap-1">
+                <TrendingUp className="w-4 h-4" />
+                Buy
+              </Button>
+              <Button size="sm" variant="secondary" onClick={() => openPosition('short')} className="gap-1">
+                <TrendingDown className="w-4 h-4" />
+                Short
+              </Button>
+            </>
+          ) : (
+            <Button size="sm" variant="secondary" onClick={closePosition} className="gap-1">
+              <TrendingDown className="w-4 h-4" />
+              {position === 'long' ? 'Sell' : 'Cover'}
+            </Button>
+          )}
           <Button size="sm" variant="outline" onClick={moveNext} disabled={stepIndex >= prices.length - 1}>
-            Next tick
+            Advance {ticksPerPress} ticks
           </Button>
           <Button size="sm" variant="ghost" onClick={resetSim}>
             Reset
@@ -113,7 +181,7 @@ const TradeSimBlock = ({ symbol, startPrice, volatility = 0.02, steps = 10 }: Tr
             </span>
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            Try buying before an upswing and selling after the move.
+            Use the news to decide whether to go long or short.
           </p>
         </div>
       </CardContent>

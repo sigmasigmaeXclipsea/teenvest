@@ -1,3 +1,4 @@
+import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { TrendingUp, TrendingDown, BookOpen, Trophy, Shield, ArrowRight, BarChart3, Briefcase, Target, Bot, Sparkles, Zap, Flame, Rocket, User, LogOut, Play, Star, Sprout, Headphones } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -35,46 +36,28 @@ const InfiniteCarousel = ({ children, direction = 'left', speed = 1 }: { childre
   const isPausedRef = useRef(false);
   const positionRef = useRef(0);
   const animationRef = useRef<number>();
-  const initializedRef = useRef(false);
+  const totalWidthRef = useRef(0);
 
   useEffect(() => {
     const track = trackRef.current;
     const container = containerRef.current;
     if (!track || !container) return;
 
-    const cards = Array.from(track.children) as HTMLElement[];
-    if (cards.length === 0) return;
-
-    const cardWidth = cards[0].offsetWidth + 24; // width + gap
-    const totalWidth = cardWidth * cards.length;
-
-    // Set initial position for reverse direction (only once)
-    if (direction === 'right' && !initializedRef.current) {
-      positionRef.current = -cardWidth * (cards.length / 2);
-      initializedRef.current = true;
-    }
+    if (track.scrollWidth === 0) return;
+    totalWidthRef.current = track.scrollWidth / 2;
+    positionRef.current = direction === 'right' ? -totalWidthRef.current : 0;
 
     const animate = () => {
       if (!isPausedRef.current) {
         if (direction === 'left') {
           positionRef.current -= speed;
-          // When first card is fully off screen, move it to the end
-          if (positionRef.current <= -cardWidth) {
-            positionRef.current += cardWidth;
-            const firstCard = track.firstElementChild;
-            if (firstCard) {
-              track.appendChild(firstCard);
-            }
+          if (positionRef.current <= -totalWidthRef.current) {
+            positionRef.current = 0;
           }
         } else {
           positionRef.current += speed;
-          // When last card comes into view, move last card to beginning
           if (positionRef.current >= 0) {
-            positionRef.current -= cardWidth;
-            const lastCard = track.lastElementChild;
-            if (lastCard) {
-              track.insertBefore(lastCard, track.firstElementChild);
-            }
+            positionRef.current = -totalWidthRef.current;
           }
         }
         track.style.transform = `translateX(${positionRef.current}px)`;
@@ -99,7 +82,11 @@ const InfiniteCarousel = ({ children, direction = 'left', speed = 1 }: { childre
       onMouseLeave={() => { isPausedRef.current = false; }}
     >
       <div ref={trackRef} className="flex gap-6">
-        {children}
+        {React.Children.toArray(children).concat(React.Children.toArray(children)).map((child, index) => (
+          <div key={`carousel-item-${index}`} className="flex-shrink-0">
+            {child}
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -427,6 +414,122 @@ const TradeSimPreview = () => {
         className="mt-3 w-full rounded-lg border border-accent/30 bg-accent/10 py-2 text-xs font-semibold text-accent hover:bg-accent/20"
       >
         Run next tick
+      </button>
+    </div>
+  );
+};
+
+const LessonProgressPreview = () => {
+  const [completed, setCompleted] = useState(12);
+  const total = 30;
+  const percent = Math.min(100, Math.round((completed / total) * 100));
+
+  return (
+    <div className="rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card/60 p-4">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-semibold text-primary">Lesson Progress</span>
+        <BookOpen className="w-4 h-4 text-primary" />
+      </div>
+      <p className="text-sm font-semibold mb-2">Foundations track</p>
+      <div className="flex items-center justify-between rounded-lg border border-border/60 bg-secondary/40 px-3 py-2">
+        <span className="text-xs text-muted-foreground">Completed</span>
+        <span className="text-lg font-bold">
+          {completed}/{total}
+        </span>
+      </div>
+      <div className="mt-3 h-2 w-full rounded-full bg-primary/10">
+        <div className="h-2 rounded-full bg-primary" style={{ width: `${percent}%` }} />
+      </div>
+      <button
+        type="button"
+        onClick={() => setCompleted((prev) => Math.min(prev + 1, total))}
+        className="mt-3 w-full rounded-lg border border-primary/30 bg-primary/10 py-2 text-xs font-semibold text-primary hover:bg-primary/20"
+      >
+        Complete next lesson
+      </button>
+    </div>
+  );
+};
+
+const LessonSkillsPreview = () => {
+  const skills = ['Risk control', 'Charts', 'Diversification', 'Compounding'];
+
+  return (
+    <div className="rounded-2xl border border-emerald-500/25 bg-gradient-to-br from-emerald-500/10 via-card to-card/60 p-4">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-semibold text-emerald-600">Skill Builder</span>
+        <Sparkles className="w-4 h-4 text-emerald-500" />
+      </div>
+      <p className="text-sm font-semibold mb-3">Unlock core investing skills</p>
+      <div className="flex flex-wrap gap-2">
+        {skills.map((skill) => (
+          <span
+            key={skill}
+            className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold text-emerald-700"
+          >
+            {skill}
+          </span>
+        ))}
+      </div>
+      <div className="mt-3 rounded-lg border border-border/60 bg-secondary/40 px-3 py-2 text-xs text-muted-foreground">
+        Finish the next lesson to earn a new badge.
+      </div>
+    </div>
+  );
+};
+
+const LessonPodcastPreview = () => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const sampleScript =
+    'Welcome to the TeenVest lesson podcast. In this short recap, we cover compounding, diversification, and risk control in under six minutes.';
+
+  useEffect(() => {
+    return () => {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  const togglePlayback = () => {
+    if (!('speechSynthesis' in window)) return;
+    const synth = window.speechSynthesis;
+    if (synth.speaking && !synth.paused) {
+      synth.pause();
+      setIsPlaying(false);
+      return;
+    }
+    if (synth.paused) {
+      synth.resume();
+      setIsPlaying(true);
+      return;
+    }
+    const utterance = new SpeechSynthesisUtterance(sampleScript);
+    utterance.rate = 0.95;
+    utterance.pitch = 1.0;
+    utterance.onstart = () => setIsPlaying(true);
+    utterance.onend = () => setIsPlaying(false);
+    utterance.onerror = () => setIsPlaying(false);
+    synth.cancel();
+    synth.speak(utterance);
+  };
+
+  return (
+    <div className="rounded-2xl border border-purple-500/25 bg-gradient-to-br from-purple-500/10 via-card to-card/60 p-4">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-semibold text-purple-600">Lesson Podcast</span>
+        <Headphones className="w-4 h-4 text-purple-500" />
+      </div>
+      <p className="text-sm font-semibold mb-2">Listen to a quick recap</p>
+      <div className="rounded-lg border border-border/60 bg-secondary/40 px-3 py-2 text-xs text-muted-foreground">
+        6 min recap • Portfolio basics
+      </div>
+      <button
+        type="button"
+        onClick={togglePlayback}
+        className="mt-3 w-full rounded-lg border border-purple-500/30 bg-purple-500/10 py-2 text-xs font-semibold text-purple-600 hover:bg-purple-500/20"
+      >
+        {isPlaying ? 'Pause podcast' : 'Play podcast'}
       </button>
     </div>
   );
@@ -1030,6 +1133,17 @@ type FeatureCardProps = {
 
 const FeatureCard: FC<FeatureCardProps> = ({ icon: Icon, title, desc, gradient, screenshot }) => {
   const [isHovering, setIsHovering] = useState(false);
+  const screenshotNode =
+    typeof screenshot === 'string' ? (
+      <img
+        src={screenshot}
+        alt={title}
+        className="h-full w-full object-cover"
+        loading="lazy"
+      />
+    ) : (
+      screenshot
+    );
   
   return (
     <div
@@ -1064,7 +1178,7 @@ const FeatureCard: FC<FeatureCardProps> = ({ icon: Icon, title, desc, gradient, 
             </div>
           </div>
           <div className="flex-1 rounded-xl overflow-hidden bg-gray-900 shadow-2xl border border-white/10 min-h-[300px]">
-            {screenshot}
+            {screenshotNode}
           </div>
         </div>
       )}
@@ -1626,10 +1740,13 @@ const LandingPage = () => {
             </h2>
           </motion.div>
 
-          <div className="grid gap-4 md:grid-cols-3 max-w-5xl mx-auto mb-10">
+          <div className="grid gap-4 md:grid-cols-3 max-w-6xl mx-auto mb-10">
             <MiniQuizPreview />
             <MiniChartPreview />
             <TradeSimPreview />
+            <LessonProgressPreview />
+            <LessonSkillsPreview />
+            <LessonPodcastPreview />
           </div>
 
           {/* First Carousel - First 3 Features */}

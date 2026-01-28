@@ -17,6 +17,12 @@ export type InteractiveBlock =
       startPrice: number;
       volatility?: number;
       steps?: number;
+      headline?: string;
+      summary?: string;
+      stat?: string;
+      sentiment?: 'bullish' | 'bearish' | 'neutral';
+      biasStrength?: number;
+      newsImpactPrompted?: boolean;
     }
   | {
       type: 'interactive_chart';

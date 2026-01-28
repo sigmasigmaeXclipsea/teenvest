@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { localQuizQuestions } from '@/data/learningLocal';
 
 export interface QuizQuestion {
   id: string;
@@ -21,25 +21,37 @@ export interface QuizResult {
   completed_at: string;
 }
 
+const LOCAL_RESULTS_KEY = 'local-quiz-results-v1';
+const LOCAL_QUIZ_ENABLED = true;
+
+const readLocalResults = (): QuizResult[] => {
+  try {
+    const raw = localStorage.getItem(LOCAL_RESULTS_KEY);
+    const parsed = raw ? (JSON.parse(raw) as QuizResult[]) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const writeLocalResults = (results: QuizResult[]) => {
+  localStorage.setItem(LOCAL_RESULTS_KEY, JSON.stringify(results));
+};
+
 export const useQuizQuestions = (moduleId: string | null) => {
   return useQuery({
     queryKey: ['quiz-questions', moduleId],
     queryFn: async () => {
       if (!moduleId) return [];
-      
-      const { data, error } = await supabase
-        .from('quiz_questions')
-        .select('*')
-        .eq('module_id', moduleId)
-        .order('order_index', { ascending: true });
-      
-      if (error) throw error;
-      
-      // Parse options from JSONB
-      return (data || []).map(q => ({
-        ...q,
-        options: typeof q.options === 'string' ? JSON.parse(q.options) : q.options,
-      })) as QuizQuestion[];
+      if (LOCAL_QUIZ_ENABLED) {
+        return localQuizQuestions
+          .filter((q) => q.module_id === moduleId)
+          .sort((a, b) => a.order_index - b.order_index);
+      }
+
+      return localQuizQuestions
+        .filter((q) => q.module_id === moduleId)
+        .sort((a, b) => a.order_index - b.order_index);
     },
     enabled: !!moduleId,
   });
@@ -47,27 +59,25 @@ export const useQuizQuestions = (moduleId: string | null) => {
 
 export const useQuizResults = () => {
   const { user } = useAuth();
+  const userId = user?.id ?? 'local-user';
 
   return useQuery({
     queryKey: ['quiz-results', user?.id],
     queryFn: async () => {
-      if (!user) throw new Error('Not authenticated');
-      
-      const { data, error } = await supabase
-        .from('quiz_results')
-        .select('*')
-        .eq('user_id', user.id);
-      
-      if (error) throw error;
-      return (data as QuizResult[]) || [];
+      if (LOCAL_QUIZ_ENABLED) {
+        return readLocalResults().filter((result) => result.user_id === userId);
+      }
+
+      return readLocalResults().filter((result) => result.user_id === userId);
     },
-    enabled: !!user,
+    enabled: true,
   });
 };
 
 export const useSaveQuizResult = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const userId = user?.id ?? 'local-user';
 
   return useMutation({
     mutationFn: async ({ moduleId, score, totalQuestions }: { 
@@ -75,21 +85,44 @@ export const useSaveQuizResult = () => {
       score: number; 
       totalQuestions: number;
     }) => {
-      if (!user) throw new Error('Not authenticated');
-      
-      const { error } = await supabase
-        .from('quiz_results')
-        .upsert({
-          user_id: user.id,
+      if (LOCAL_QUIZ_ENABLED) {
+        const results = readLocalResults();
+        const existing = results.find((result) => result.user_id === userId && result.module_id === moduleId);
+        const next: QuizResult = {
+          id: existing?.id ?? `${userId}-${moduleId}`,
+          user_id: userId,
           module_id: moduleId,
           score,
           total_questions: totalQuestions,
           completed_at: new Date().toISOString(),
-        }, {
-          onConflict: 'user_id,module_id',
-        });
-      
-      if (error) throw error;
+        };
+
+        const nextResults = existing
+          ? results.map((result) =>
+              result.user_id === userId && result.module_id === moduleId ? next : result
+            )
+          : [...results, next];
+        writeLocalResults(nextResults);
+        return;
+      }
+
+      const results = readLocalResults();
+      const existing = results.find((result) => result.user_id === userId && result.module_id === moduleId);
+      const next: QuizResult = {
+        id: existing?.id ?? `${userId}-${moduleId}`,
+        user_id: userId,
+        module_id: moduleId,
+        score,
+        total_questions: totalQuestions,
+        completed_at: new Date().toISOString(),
+      };
+      writeLocalResults(
+        existing
+          ? results.map((result) =>
+              result.user_id === userId && result.module_id === moduleId ? next : result
+            )
+          : [...results, next]
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quiz-results'] });

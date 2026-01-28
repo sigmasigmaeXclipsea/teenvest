@@ -15,11 +15,25 @@ const LessonPodcast = ({ moduleId, title, content }: LessonPodcastProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [podcastScript, setPodcastScript] = useState('');
-  const [audioUrl, setAudioUrl] = useState('');
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const { toast } = useToast();
 
   // Generate podcast script using Lovable AI edge function
+  const stripMarkdown = (text: string) => {
+    return text
+      .replace(/\*\*/g, '')
+      .replace(/^- /gm, '')
+      .replace(/\n+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+
+  const buildFallbackScript = () => {
+    const cleaned = stripMarkdown(content);
+    const snippet = cleaned.slice(0, 700);
+    return `Welcome to the TeenVest lesson podcast on ${title}. ${snippet} This wraps up your quick audio recap.`;
+  };
+
   const generatePodcast = async () => {
     setIsLoading(true);
     try {
@@ -38,15 +52,18 @@ Return the script in a conversational podcast format with natural speaking patte
       if (error) throw error;
 
       const script = data?.response || '';
-      setPodcastScript(script);
-      
+      const nextScript = script || buildFallbackScript();
+      setPodcastScript(nextScript);
+
       // Use text-to-speech in the browser
-      speakText(script);
-      
+      speakText(nextScript);
     } catch (error: any) {
+      const fallbackScript = buildFallbackScript();
+      setPodcastScript(fallbackScript);
+      speakText(fallbackScript);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to generate podcast',
+        description: error.message || 'Failed to generate podcast, using local recap',
         variant: 'destructive',
       });
     } finally {
@@ -61,6 +78,7 @@ Return the script in a conversational podcast format with natural speaking patte
       window.speechSynthesis.cancel();
       
       const utterance = new SpeechSynthesisUtterance(text);
+      utteranceRef.current = utterance;
       utterance.rate = 0.9; // Slightly slower for learning
       utterance.pitch = 1.0;
       utterance.volume = 1.0;
@@ -74,6 +92,8 @@ Return the script in a conversational podcast format with natural speaking patte
       
       utterance.onstart = () => setIsPlaying(true);
       utterance.onend = () => setIsPlaying(false);
+      utterance.onpause = () => setIsPlaying(false);
+      utterance.onresume = () => setIsPlaying(true);
       utterance.onerror = () => {
         setIsPlaying(false);
         toast({
@@ -94,28 +114,54 @@ Return the script in a conversational podcast format with natural speaking patte
   };
 
   const togglePlayPause = () => {
+    if (!('speechSynthesis' in window)) {
+      toast({
+        title: 'Not Supported',
+        description: 'Your browser does not support text-to-speech',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     if (!podcastScript) {
       generatePodcast();
-    } else if (isPlaying) {
-      window.speechSynthesis.pause();
-      setIsPlaying(false);
-    } else {
-      window.speechSynthesis.resume();
-      setIsPlaying(true);
+      return;
     }
+
+    const synth = window.speechSynthesis;
+    if (synth.speaking && !synth.paused) {
+      synth.pause();
+      setIsPlaying(false);
+      return;
+    }
+    if (synth.paused) {
+      synth.resume();
+      setIsPlaying(true);
+      return;
+    }
+    speakText(podcastScript);
   };
 
   const stopPodcast = () => {
-    window.speechSynthesis.cancel();
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
     setIsPlaying(false);
   };
 
   // Load voices on component mount
   useEffect(() => {
-    if ('speechSynthesis' in window) {
+    if (!('speechSynthesis' in window)) return;
+    const handleVoicesChanged = () => {
       window.speechSynthesis.getVoices();
-    }
-  }, []);
+    };
+    window.speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged);
+    handleVoicesChanged();
+    return () => {
+      window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
+      window.speechSynthesis.cancel();
+    };
+  }, [moduleId]);
 
   return (
     <Card className="w-full">

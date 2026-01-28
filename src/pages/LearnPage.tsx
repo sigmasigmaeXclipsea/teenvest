@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
@@ -42,8 +42,17 @@ const getDifficulty = (index: number, totalModules: number): { label: string; co
   return { label: 'Advanced', color: 'bg-red-500/10 text-red-600 dark:text-red-400' };
 };
 
-// Dynamic categories based on total modules
-const getCategories = (totalModules: number) => {
+type LessonCategory = {
+  name: 'Foundations' | 'Strategy' | 'Advanced';
+  icon: typeof BookOpen;
+  color: string;
+  description: string;
+  startIndex?: number;
+  endIndex?: number;
+  modules?: LearningModule[];
+};
+
+const fallbackCategories = (totalModules: number): LessonCategory[] => {
   const foundationsEnd = Math.floor(totalModules * 0.3);
   const strategyEnd = Math.floor(totalModules * 0.6);
   
@@ -109,8 +118,36 @@ const LearnPage = () => {
   const { xp, addXP, loading: xpLoading } = useXP();
   const level = Math.floor(xp / 500) + 1;
 
-  // Get dynamic categories based on total modules; filter applies within categories
-  const categories = getCategories(totalModules);
+  // Categories: prefer explicit module.category when present
+  const categories = useMemo<LessonCategory[]>(() => {
+    if (!modules || modules.length === 0) return [];
+    const hasCategory = modules.some((module) => !!module.category);
+    if (!hasCategory) return fallbackCategories(totalModules);
+
+    return [
+      {
+        name: 'Foundations',
+        icon: BookOpen,
+        color: 'from-emerald-500 to-teal-500',
+        description: 'Master the basics of investing',
+        modules: modules.filter((module) => module.category === 'Foundations'),
+      },
+      {
+        name: 'Strategy',
+        icon: Target,
+        color: 'from-amber-500 to-orange-500',
+        description: 'Build your investment toolkit',
+        modules: modules.filter((module) => module.category === 'Strategy'),
+      },
+      {
+        name: 'Advanced',
+        icon: Trophy,
+        color: 'from-purple-500 to-pink-500',
+        description: 'Professional-level strategies',
+        modules: modules.filter((module) => module.category === 'Advanced'),
+      },
+    ];
+  }, [modules, totalModules]);
 
   // All lessons are now accessible; no locking logic
 
@@ -230,7 +267,9 @@ const LearnPage = () => {
           <div className="lg:col-span-2 space-y-8">
             {/* Learning Path Categories */}
             {categories.map((category, catIndex) => {
-              const allInCategory = modules?.slice(category.startIndex, category.endIndex) || [];
+              const allInCategory = category.modules
+                ? category.modules
+                : modules?.slice(category.startIndex, category.endIndex) || [];
               const categoryModules = search.trim()
                 ? allInCategory.filter(
                     (m) =>

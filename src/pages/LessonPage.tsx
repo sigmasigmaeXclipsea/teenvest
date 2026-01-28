@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, CheckCircle, BookOpen, HelpCircle, Award, ChevronLeft, ChevronRight, XCircle, CheckCircle2, MessageCircle, Sparkles, Trophy } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { ArrowLeft, Clock, CheckCircle, BookOpen, HelpCircle, Award, ChevronLeft, ChevronRight, XCircle, CheckCircle2, Sparkles, Trophy, Zap } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,14 +15,16 @@ import { useToast } from '@/hooks/use-toast';
 import { useXP } from '@/contexts/XPContext';
 import AIAssistantCard from '@/components/AIAssistantCard';
 import InteractiveBlockRenderer, { type InteractiveBlock } from '@/components/learn/InteractiveBlockRenderer';
+import CandlestickBuilder from '@/components/learn/CandlestickBuilder';
+import ChartAnnotator from '@/components/learn/ChartAnnotator';
 import LessonPodcast from '@/components/LessonPodcast';
 import BeanstalkGameModal from '@/components/BeanstalkGameModal';
 
 const LessonPage = () => {
   const { moduleId } = useParams<{ moduleId: string }>();
-  const navigate = useNavigate();
   const { toast } = useToast();
   const { addXP, addQuizPoints } = useXP();
+  const contentTopRef = useRef<HTMLDivElement | null>(null);
   
   const { data: modules, isLoading: modulesLoading } = useLearningModules();
   const { data: progress } = useUserProgress();
@@ -45,9 +47,61 @@ const LessonPage = () => {
   const interactiveBlocks = Array.isArray(currentModule?.interactive_blocks)
     ? (currentModule?.interactive_blocks as InteractiveBlock[])
     : [];
+  const hasInteractiveBlocks = interactiveBlocks.length > 0;
+
+  const categoryModules = useMemo(() => {
+    if (!modules) return [];
+    if (!currentModule?.category) return modules;
+    return modules.filter((module) => module.category === currentModule.category);
+  }, [modules, currentModule?.category]);
+
+  const categoryCompletedCount = useMemo(() => {
+    if (!progress || categoryModules.length === 0) return 0;
+    const ids = new Set(categoryModules.map((module) => module.id));
+    return progress.filter((entry) => entry.completed && ids.has(entry.module_id)).length;
+  }, [progress, categoryModules]);
+
+  const skillsForCategory = useMemo(() => {
+    const map: Record<string, string[]> = {
+      Foundations: ['Risk control', 'Compounding', 'Diversification', 'Market basics'],
+      Strategy: ['Entry/Exit', 'Signals', 'Risk/Reward', 'Position sizing'],
+      Advanced: ['Factor analysis', 'Options', 'Macro context', 'Portfolio construction'],
+    };
+    return map[currentModule?.category ?? 'Foundations'] ?? map.Foundations;
+  }, [currentModule?.category]);
+
+  const quizScorePercent = useMemo(() => {
+    if (quizScore) {
+      return Math.round((quizScore.score / Math.max(1, quizScore.total_questions)) * 100);
+    }
+    if (showResults && quizQuestions) {
+      const score = Object.values(selectedAnswers).filter(
+        (answer, index) => answer === quizQuestions[index]?.correct_answer
+      ).length;
+      return Math.round((score / Math.max(1, quizQuestions.length)) * 100);
+    }
+    return null;
+  }, [quizScore, showResults, quizQuestions, selectedAnswers]);
+
+  const skillProgress = useMemo(() => {
+    const base = quizScorePercent ?? 55;
+    return skillsForCategory.map((skill, index) => ({
+      name: skill,
+      level: Math.min(98, Math.max(40, base - index * 6)),
+    }));
+  }, [skillsForCategory, quizScorePercent]);
 
   const nextModule = modules?.[moduleIndex + 1];
   const prevModule = modules?.[moduleIndex - 1];
+
+  useEffect(() => {
+    setActiveView('content');
+    setCurrentQuestionIndex(0);
+    setSelectedAnswers({});
+    setShowResults(false);
+    setIsGameModalOpen(false);
+    contentTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [moduleId]);
 
   const handleCompleteModule = async () => {
     if (!moduleId) return;
@@ -207,6 +261,7 @@ const LessonPage = () => {
   return (
     <DashboardLayout>
       <div className="max-w-5xl mx-auto">
+        <div ref={contentTopRef} />
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <Link to="/learn">
@@ -252,7 +307,7 @@ const LessonPage = () => {
                   {quizQuestions.length} Quiz Questions
                 </Badge>
               )}
-              {interactiveBlocks.length > 0 && (
+              {hasInteractiveBlocks && (
                 <Badge variant="outline" className="gap-1 bg-primary/10 text-primary border-primary/20">
                   <Sparkles className="w-3 h-3" />
                   Interactive
@@ -329,7 +384,7 @@ const LessonPage = () => {
                     {renderContent(currentModule.content)}
                   </article>
 
-                  {interactiveBlocks.length > 0 && (
+                  {hasInteractiveBlocks && (
                     <div className="mt-10 space-y-4">
                       <div className="flex items-center gap-2 text-sm font-semibold text-primary">
                         <Sparkles className="w-4 h-4" />
@@ -338,6 +393,47 @@ const LessonPage = () => {
                       <InteractiveBlockRenderer blocks={interactiveBlocks} />
                     </div>
                   )}
+
+                  <div className="mt-8 grid gap-4 md:grid-cols-2">
+                    <Card className="relative overflow-hidden border-primary/40 bg-gradient-to-br from-primary/20 via-card/90 to-card/80 shadow-lg ring-1 ring-primary/20 transition-transform hover:-translate-y-1">
+                      <div className="absolute -right-8 -top-10 h-24 w-24 rounded-full bg-primary/20 blur-2xl" />
+                      <CardContent className="relative p-5 space-y-4 text-foreground">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-primary">Lesson Progress</span>
+                          <div className="flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-2 py-1 text-[10px] font-semibold text-primary">
+                            <Zap className="h-3 w-3" />
+                            XP Boost
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between rounded-xl border border-border/70 bg-secondary/60 px-4 py-3">
+                          <div>
+                            <p className="text-xs text-muted-foreground">
+                              {currentModule.category ?? 'All lessons'}
+                            </p>
+                            <p className="text-lg font-bold text-foreground">
+                              {categoryCompletedCount}/{categoryModules.length || modules?.length || 0}
+                            </p>
+                          </div>
+                          <div className="h-12 w-12 rounded-full border-4 border-primary/30 bg-primary/15 flex items-center justify-center text-xs font-semibold text-primary">
+                            {Math.round(
+                              (categoryCompletedCount /
+                                Math.max(1, categoryModules.length || modules?.length || 1)) * 100
+                            )}
+                            %
+                          </div>
+                        </div>
+                        <Progress
+                          value={
+                            (categoryCompletedCount /
+                              Math.max(1, categoryModules.length || modules?.length || 1)) * 100
+                          }
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Complete the next lesson to unlock bonus XP.
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </div>
 
                   {/* Action Buttons */}
                   <div className="flex flex-wrap gap-3 mt-10 pt-6 border-t">
@@ -366,6 +462,13 @@ const LessonPage = () => {
                         </Button>
                       </Link>
                     )}
+                  </div>
+
+                  <div className="mt-10">
+                    <CandlestickBuilder />
+                  </div>
+                  <div className="mt-8">
+                    <ChartAnnotator moduleId={moduleId || ''} />
                   </div>
                 </CardContent>
               </Card>
@@ -412,6 +515,52 @@ const LessonPage = () => {
                         quizQuestions && ans === quizQuestions[i]?.correct_answer
                       ).length} out of {quizQuestions?.length}
                     </p>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-[1.2fr_1fr] items-start mb-8">
+                    <Card className="relative overflow-hidden border-emerald-500/40 bg-gradient-to-br from-emerald-500/20 via-card/90 to-card/80 shadow-lg ring-1 ring-emerald-500/20">
+                      <div className="absolute -left-10 -bottom-12 h-28 w-28 rounded-full bg-emerald-500/20 blur-2xl" />
+                      <CardContent className="relative p-5 space-y-4 text-foreground">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-200">Skill Builder</span>
+                          <Sparkles className="w-4 h-4 text-emerald-500" />
+                        </div>
+                        <p className="text-sm font-semibold text-foreground">Quiz-powered skill growth</p>
+                        <div className="space-y-3">
+                          {skillProgress.map((skill) => (
+                            <div key={skill.name} className="rounded-lg border border-emerald-500/30 bg-emerald-500/15 px-3 py-2">
+                              <div className="flex items-center justify-between text-xs font-semibold text-emerald-700 dark:text-emerald-200">
+                                <span>{skill.name}</span>
+                                <span>{skill.level}%</span>
+                              </div>
+                              <div className="mt-2 h-1.5 w-full rounded-full bg-emerald-500/20">
+                                <div
+                                  className="h-1.5 rounded-full bg-emerald-500"
+                                  style={{ width: `${skill.level}%` }}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Your quiz score updates each skill band instantly.
+                        </p>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border-primary/30 bg-gradient-to-br from-primary/15 via-card to-card/80">
+                      <CardContent className="p-5">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-xs font-semibold text-primary">Quiz Score</span>
+                          <Badge variant="outline" className="text-xs border-primary/40 text-primary">
+                            {quizScorePercent ?? 0}%
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Stronger scores unlock higher skill levels and XP.
+                        </p>
+                      </CardContent>
+                    </Card>
                   </div>
 
                   <div className="space-y-4">
