@@ -171,23 +171,70 @@ const buildStrategyContent = (seed: LessonSeed, orderIndex: number) => {
   const whySentence = ensureSentence(fillTemplate(meta.why, topic));
   const exerciseSentence = ensureSentence(fillTemplate(meta.exercise, topic));
 
+  const overviewSentences = [
+    ensureSentence(seed.definition),
+    ensureSentence(`This strategy focuses on translating ${topic} into a repeatable decision system`),
+    whySentence,
+    ensureSentence(`Understanding ${topic} helps you execute with discipline instead of emotion`),
+    ensureSentence(`You will use ${topic} whenever market conditions match your predefined criteria`),
+  ];
+
+  const setupSentences = [
+    ensureSentence(`Define the market condition where ${topic} historically performs best`),
+    ensureSentence('Clarify the signal you will act on and the timeframe it applies to'),
+    ensureSentence('Write down the exact trigger so you are not improvising under pressure'),
+    ensureSentence('Back-test the setup on historical data to gauge win rate and drawdown'),
+  ];
+
+  const signalSentences = [
+    ensureSentence('Use one confirming input to reduce false signals'),
+    ensureSentence('If the confirmation fails, stand down and wait for the next setup'),
+    ensureSentence('Track the percentage of times confirmation improved your entries'),
+    ensureSentence('Avoid stacking too many filters, which can eliminate valid trades'),
+  ];
+
+  const riskSentences = [
+    ensureSentence('Decide your stop level before entry and size the position to that stop'),
+    ensureSentence('Target a reward that justifies the risk and matches the expected move'),
+    ensureSentence('Never move your stop further away once the trade is live'),
+    ensureSentence('Log the risk/reward ratio for every trade to spot patterns'),
+  ];
+
+  const psychologySentences = [
+    ensureSentence('Accept that not every trade will win; focus on process over outcome'),
+    ensureSentence('Review losing trades without blame to extract lessons'),
+    ensureSentence('Maintain a checklist to reduce impulsive decisions'),
+  ];
+
   return `**Overview**
-${ensureSentence(seed.definition)}
-${ensureSentence(`This strategy focuses on translating ${topic} into a repeatable decision system`)}
-${whySentence}
+${overviewSentences[0]}
+${overviewSentences[1]}
+${overviewSentences[2]}
+${overviewSentences[3]}
+${overviewSentences[4]}
 
 **Strategy setup**
-${ensureSentence(`Define the market condition where ${topic} historically performs best`)}
-${ensureSentence('Clarify the signal you will act on and the timeframe it applies to')}
-${ensureSentence('Write down the exact trigger so you are not improvising under pressure')}
+${setupSentences[0]}
+${setupSentences[1]}
+${setupSentences[2]}
+${setupSentences[3]}
 
 **Signal & confirmation**
-${ensureSentence('Use one confirming input to reduce false signals')}
-${ensureSentence('If the confirmation fails, stand down and wait for the next setup')}
+${signalSentences[0]}
+${signalSentences[1]}
+${signalSentences[2]}
+${signalSentences[3]}
 
 **Risk plan**
-${ensureSentence('Decide your stop level before entry and size the position to that stop')}
-${ensureSentence('Target a reward that justifies the risk and matches the expected move')}
+${riskSentences[0]}
+${riskSentences[1]}
+${riskSentences[2]}
+${riskSentences[3]}
+
+**Trading psychology**
+${psychologySentences[0]}
+${psychologySentences[1]}
+${psychologySentences[2]}
 
 **Key points**
 - ${points[0]}
@@ -198,6 +245,99 @@ ${ensureSentence('Target a reward that justifies the risk and matches the expect
 - ${ensureSentence('Confirm trend, catalyst, or range condition')}
 - ${ensureSentence('Set entry, stop, and target levels')}
 - ${ensureSentence('Record the trade rationale and exit rule')}
+- ${ensureSentence('Review outcome and update journal')}
+
+**Common mistakes**
+- ${mistakes[0]}
+- ${mistakes[1]}
+
+**Mini exercise**
+- ${exerciseSentence}`;
+};
+
+const buildAdvancedContent = (seed: LessonSeed, orderIndex: number) => {
+  const topic = seed.title.toLowerCase();
+  const meta = categoryMeta.Advanced;
+  const points = keyPointSets[orderIndex % keyPointSets.length].map((point) =>
+    ensureSentence(fillTemplate(point, topic))
+  );
+  const mistakes = meta.mistakes.map((mistake) => ensureSentence(mistake));
+  const whySentence = ensureSentence(fillTemplate(meta.why, topic));
+  const exerciseSentence = ensureSentence(fillTemplate(meta.exercise, topic));
+
+  const overviewSentences = [
+    ensureSentence(seed.definition),
+    ensureSentence(`${seed.title} sits at the intersection of theory and real-world market dynamics`),
+    whySentence,
+    ensureSentence(`Mastering ${topic} differentiates advanced practitioners from casual participants`),
+    ensureSentence(`This concept requires both quantitative understanding and contextual judgment`),
+  ];
+
+  const theorySentences = [
+    ensureSentence(`The academic foundation of ${topic} comes from portfolio theory and econometrics`),
+    ensureSentence('Researchers identified patterns that persist across markets and time periods'),
+    ensureSentence('However, real markets have frictions, so textbook formulas need adjustment'),
+    ensureSentence('Develop intuition for when models break down due to regime shifts'),
+  ];
+
+  const applicationSentences = [
+    ensureSentence(`Apply ${topic} by integrating it into your existing decision framework`),
+    ensureSentence('Start with small position sizes until you verify edge in live conditions'),
+    ensureSentence('Document every hypothesis and its outcome to build an evidence base'),
+    ensureSentence('Iterate quickly; discard ideas that do not survive out-of-sample testing'),
+  ];
+
+  const edgeCases = [
+    ensureSentence('Liquidity crises can invalidate normal relationships'),
+    ensureSentence('Correlations shift during stress, reducing diversification benefits'),
+    ensureSentence('Crowded trades unwind violently when sentiment reverses'),
+  ];
+
+  const integrationSentences = [
+    ensureSentence(`Combine ${topic} with macro context for a fuller picture`),
+    ensureSentence('Cross-check signals from multiple timeframes before acting'),
+    ensureSentence('Use scenario analysis to stress-test assumptions'),
+  ];
+
+  return `**Overview**
+${overviewSentences[0]}
+${overviewSentences[1]}
+${overviewSentences[2]}
+${overviewSentences[3]}
+${overviewSentences[4]}
+
+**Theoretical foundation**
+${theorySentences[0]}
+${theorySentences[1]}
+${theorySentences[2]}
+${theorySentences[3]}
+
+**Practical application**
+${applicationSentences[0]}
+${applicationSentences[1]}
+${applicationSentences[2]}
+${applicationSentences[3]}
+
+**Edge cases & regime shifts**
+${edgeCases[0]}
+${edgeCases[1]}
+${edgeCases[2]}
+
+**Integrating with your process**
+${integrationSentences[0]}
+${integrationSentences[1]}
+${integrationSentences[2]}
+
+**Key points**
+- ${points[0]}
+- ${points[1]}
+- ${points[2]}
+
+**Advanced checklist**
+- ${ensureSentence('Verify data quality before running analysis')}
+- ${ensureSentence('Check for look-ahead bias in any back-test')}
+- ${ensureSentence('Monitor position for regime changes post-entry')}
+- ${ensureSentence('Update thesis if fundamentals shift materially')}
 
 **Common mistakes**
 - ${mistakes[0]}
@@ -208,34 +348,18 @@ ${ensureSentence('Target a reward that justifies the risk and matches the expect
 };
 
 const buildLessonContent = (seed: LessonSeed, orderIndex: number) => {
-  if (seed.category === 'Foundations' && orderIndex <= 30) {
+  if (seed.category === 'Foundations') {
     return buildFoundationsContent(seed, orderIndex);
   }
   if (seed.category === 'Strategy') {
     return buildStrategyContent(seed, orderIndex);
   }
+  if (seed.category === 'Advanced') {
+    return buildAdvancedContent(seed, orderIndex);
+  }
 
-  const topic = seed.title.toLowerCase();
-  const meta = categoryMeta[seed.category];
-  const points = keyPointSets[orderIndex % keyPointSets.length].map((point) => fillTemplate(point, topic));
-
-  return `**Overview**
-${seed.definition}
-
-**Key points**
-- ${points[0]}
-- ${points[1]}
-- ${points[2]}
-
-**Why it matters**
-${fillTemplate(meta.why, topic)}
-
-**Common mistakes**
-- ${meta.mistakes[0]}
-- ${meta.mistakes[1]}
-
-**Mini exercise**
-- ${fillTemplate(meta.exercise, topic)}`;
+  // Fallback to Foundations style
+  return buildFoundationsContent(seed, orderIndex);
 };
 
 const foundationsSeeds: LessonSeed[] = [
