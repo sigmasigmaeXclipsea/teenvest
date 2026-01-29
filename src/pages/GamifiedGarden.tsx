@@ -75,10 +75,6 @@ type Weather = 'normal' | 'rainy' | 'frozen' | 'candy' | 'thunder' | 'lunar';
 const OWNER_EMAIL = '2landonl10@gmail.com';
 const MIN_POTS = 3;
 const WILT_THRESHOLD = 4 * 60 * 60 * 1000; // 4 hours without water (much slower death)
-<<<<<<< Updated upstream
-const WATER_REDUCTION_TIME = 20 * 60 * 1000; // Fixed 20 minutes reduction per watering
-const QUIZ_POINTS_TO_MONEY_RATE = 0.5; // 2 Quiz Points = 1 coin
-=======
 const QUIZ_POINTS_TO_MONEY_RATE = 2; // 1 Quiz Point = 2 coins
 const SPRINKLER_RADIUS = 100;
 const SPRINKLER_GROWTH_REDUCTION: Record<string, number> = {
@@ -87,7 +83,6 @@ const SPRINKLER_GROWTH_REDUCTION: Record<string, number> = {
   'Deluxe Sprinkler': 0.3,
   'Magic Sprinkler': 0.5,
 };
->>>>>>> Stashed changes
 
 // 40 different seeds ordered by price (cheapest to most expensive) with scaled stock rates
 const SEED_TEMPLATES: Omit<Seed, 'id' | 'inStock' | 'stockQuantity'>[] = [
