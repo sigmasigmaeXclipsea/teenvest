@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import ReactMarkdown from 'react-markdown';
 
 type Message = {
   role: 'user' | 'assistant';
@@ -235,10 +236,25 @@ const ChatWidget = () => {
                       "max-w-[80%] p-3 rounded-2xl text-sm",
                       msg.role === 'user'
                         ? "bg-primary text-primary-foreground rounded-br-md"
-                        : "bg-secondary rounded-bl-md"
+                        : "bg-secondary rounded-bl-md prose prose-sm dark:prose-invert max-w-none"
                     )}
                   >
-                    {msg.content}
+                    {msg.role === 'assistant' ? (
+                      <ReactMarkdown
+                        components={{
+                          p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                          strong: ({ children }) => <strong className="font-bold">{children}</strong>,
+                          em: ({ children }) => <em className="italic">{children}</em>,
+                          ul: ({ children }) => <ul className="list-disc ml-4 mb-2">{children}</ul>,
+                          ol: ({ children }) => <ol className="list-decimal ml-4 mb-2">{children}</ol>,
+                          li: ({ children }) => <li className="mb-1">{children}</li>,
+                        }}
+                      >
+                        {msg.content}
+                      </ReactMarkdown>
+                    ) : (
+                      msg.content
+                    )}
                   </div>
                   {msg.role === 'user' && (
                     <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
