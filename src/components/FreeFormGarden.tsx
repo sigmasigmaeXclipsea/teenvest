@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Droplets } from 'lucide-react';
 
 interface Plant {
   id: string;
   seedType: string;
   plantedAt: number;
-  growthTimeMs: number;
+  startPortfolioValue: number;
+  targetPortfolioValue: number;
+  growthTargetPercent: number;
   lastWateredAt: number;
   isWilted: boolean;
   variant: 'normal' | 'golden' | 'rainbow' | 'frost' | 'candy' | 'thunder' | 'lunar';
@@ -49,6 +50,7 @@ interface Gear {
 
 interface FreeFormGardenProps {
   garden: Garden;
+  portfolioValue: number;
   selectedSeed: Seed | null;
   selectedItem: Gear | null;
   isWateringMode: boolean;
@@ -65,6 +67,7 @@ interface FreeFormGardenProps {
 
 export default function FreeFormGarden({
   garden,
+  portfolioValue,
   selectedSeed,
   selectedItem,
   isWateringMode,
@@ -83,6 +86,17 @@ export default function FreeFormGarden({
   const [hoveredPlant, setHoveredPlant] = useState<Plant | null>(null);
 
   const now = Date.now();
+
+  const getGrowthProgress = (plant: Plant) => {
+    if (plant.startPortfolioValue === undefined || plant.targetPortfolioValue === undefined) {
+      return 0;
+    }
+    const start = plant.startPortfolioValue;
+    const target = plant.targetPortfolioValue;
+    if (target <= start) return 1;
+    const progress = (portfolioValue - start) / (target - start);
+    return Math.min(1, Math.max(0, progress));
+  };
 
   // Get weather display info
   const getWeatherInfo = () => {
@@ -135,7 +149,7 @@ export default function FreeFormGarden({
       if (isWateringMode && selectedItem?.type === 'wateringCan') {
         onWaterPlant(clickedPlant.id);
       } else {
-        const isReady = now - clickedPlant.plantedAt >= clickedPlant.growthTimeMs;
+        const isReady = getGrowthProgress(clickedPlant) >= 1;
         if (isReady) {
           onHarvestPlant(clickedPlant.id);
         } else {
@@ -160,7 +174,7 @@ export default function FreeFormGarden({
 
   // Get plant visual based on growth stage - unique aesthetic emojis per stage
   const getPlantVisual = (plant: Plant) => {
-    const progress = Math.min(1, (now - plant.plantedAt) / plant.growthTimeMs);
+    const progress = getGrowthProgress(plant);
     const stage = progress < 0.25 ? 'seed' : progress < 0.5 ? 'sprout' : progress < 0.75 ? 'growing' : progress < 1 ? 'mature' : 'ready';
     const isReady = progress >= 1;
 
@@ -221,8 +235,12 @@ export default function FreeFormGarden({
     };
 
     const displayStage = progress < 0.25 ? 'Seed' : progress < 0.5 ? 'Sprout' : progress < 0.75 ? 'Growing' : progress < 1 ? 'Mature' : 'Ready';
-    const timeRemaining = Math.max(0, plant.growthTimeMs - (now - plant.plantedAt));
+    const targetValue = plant.targetPortfolioValue ?? portfolioValue;
+    const growthRemaining = Math.max(0, targetValue - portfolioValue);
+    const progressPercent = Math.round(progress * 100);
+    const targetPercent = plant.growthTargetPercent ?? 0;
     const isHovered = hoveredPlant?.id === plant.id;
+    const hideSeedEmoji = isHovered && stage === 'seed';
 
     return (
       <div
@@ -244,32 +262,36 @@ export default function FreeFormGarden({
           />
         )}
         
-        {/* Plant emoji */}
-        <span 
-          className={`text-center select-none z-10 ${isReady ? 'animate-pulse' : ''}`}
-          style={{ 
-            fontSize: baseSize * 0.75,
-            filter: getVariantFilter()
-          }}
-        >
-          {getStageEmoji()}
-        </span>
+        {!hideSeedEmoji && (
+          <>
+            {/* Plant emoji */}
+            <span 
+              className={`text-center select-none z-10 ${isReady ? 'animate-pulse' : ''}`}
+              style={{ 
+                fontSize: baseSize * 0.75,
+                filter: getVariantFilter()
+              }}
+            >
+              {getStageEmoji()}
+            </span>
 
-        {/* Ready sparkle */}
-        {isReady && (
-          <div className="absolute -top-1 -right-1 text-xs animate-bounce">✨</div>
-        )}
+            {/* Ready sparkle */}
+            {isReady && (
+              <div className="absolute -top-1 -right-1 text-xs animate-bounce">✨</div>
+            )}
 
-        {/* Variant emoji indicator */}
-        {plant.variant !== 'normal' && getVariantEmoji() && (
-          <div className="absolute -top-1 -left-1 text-sm animate-pulse" style={{ filter: 'drop-shadow(0 0 4px white)' }}>
-            {getVariantEmoji()}
-          </div>
-        )}
+            {/* Variant emoji indicator */}
+            {plant.variant !== 'normal' && getVariantEmoji() && (
+              <div className="absolute -top-1 -left-1 text-sm animate-pulse" style={{ filter: 'drop-shadow(0 0 4px white)' }}>
+                {getVariantEmoji()}
+              </div>
+            )}
 
-        {/* Wilt indicator */}
-        {plant.isWilted && (
-          <div className="absolute -top-1 -left-1 text-xs">💀</div>
+            {/* Wilt indicator */}
+            {plant.isWilted && (
+              <div className="absolute -top-1 -left-1 text-xs">💀</div>
+            )}
+          </>
         )}
 
         {/* Hover tooltip */}
@@ -299,11 +321,16 @@ export default function FreeFormGarden({
             <div className="flex gap-2 text-muted-foreground">
               <span>{displayStage}</span>
               <span>•</span>
-              <span>{timeRemaining > 0 ? formatTime(timeRemaining) : '✅ Ready!'}</span>
+              <span>{progressPercent}%</span>
+              <span>•</span>
+              <span>{growthRemaining > 0 ? `+${growthRemaining.toFixed(0)} value` : '✅ Ready!'}</span>
             </div>
             <div className="flex justify-between mt-1 pt-1 border-t border-border">
               <span className="text-muted-foreground">{plant.sizeKg.toFixed(1)}kg</span>
               <span className="text-green-500 font-medium">🪙{plant.sellPrice}</span>
+            </div>
+            <div className="text-[10px] text-muted-foreground mt-1">
+              Needs +{(targetPercent * 100).toFixed(1)}% portfolio growth
             </div>
             {plant.isWilted && <div className="text-red-500 mt-1">💀 Needs water!</div>}
           </div>
@@ -356,7 +383,7 @@ export default function FreeFormGarden({
 
         {/* Soil patches for planted seeds */}
         {garden.plants.map(plant => {
-          const progress = Math.min(1, (now - plant.plantedAt) / plant.growthTimeMs);
+          const progress = getGrowthProgress(plant);
           const isSprout = progress < 0.33;
           
           if (!isSprout) return null;

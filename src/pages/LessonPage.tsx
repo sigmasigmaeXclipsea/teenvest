@@ -15,6 +15,12 @@ import { useToast } from '@/hooks/use-toast';
 import { useXP } from '@/contexts/XPContext';
 import AIAssistantCard from '@/components/AIAssistantCard';
 import InteractiveBlockRenderer, { type InteractiveBlock } from '@/components/learn/InteractiveBlockRenderer';
+<<<<<<< Updated upstream
+=======
+import CandlestickBuilder from '@/components/learn/CandlestickBuilder';
+import ChartAnnotator from '@/components/learn/ChartAnnotator';
+import Level2Simulator from '@/components/learn/Level2Simulator';
+>>>>>>> Stashed changes
 import LessonPodcast from '@/components/LessonPodcast';
 import BeanstalkGameModal from '@/components/BeanstalkGameModal';
 
@@ -477,6 +483,18 @@ const interactiveBlocks = (() => {
                     )}
                   </div>
 
+<<<<<<< Updated upstream
+=======
+                  <div className="mt-10">
+                    <CandlestickBuilder />
+                  </div>
+                  <div className="mt-8">
+                    <ChartAnnotator moduleId={moduleId || ''} />
+                  </div>
+                  <div className="mt-8">
+                    <Level2Simulator moduleId={moduleId || ''} lessonIndex={moduleIndex + 1} />
+                  </div>
+>>>>>>> Stashed changes
                 </CardContent>
               </Card>
             ) : activeView === 'game' ? (

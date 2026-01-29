@@ -14,7 +14,6 @@ import {
   Shield,
   Award,
   User,
-  Lightbulb,
   Search,
   Sprout
 } from 'lucide-react';
@@ -35,7 +34,6 @@ const navItems = [
   { path: '/research', icon: Search, label: 'Research' },
   { path: '/trade', icon: Briefcase, label: 'Trade' },
   { path: '/history', icon: History, label: 'History' },
-  { path: '/insights', icon: Lightbulb, label: 'Insights' },
   { path: '/learn', icon: BookOpen, label: 'Learn' },
   { path: '/garden', icon: Sprout, label: 'Garden' },
   { path: '/profile', icon: User, label: 'Profile' },

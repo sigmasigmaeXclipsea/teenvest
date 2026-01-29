@@ -312,6 +312,12 @@ const ResearchPage = () => {
               </CardContent>
             </Card>
           </div>
+
+          {/* Market News */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-foreground">Market News</h3>
+            <StockNews market />
+          </div>
         </div>
       </DashboardLayout>
     );

@@ -1,19 +1,24 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Droplets, Sprout, Coins, Clock, Package, Wrench, Zap, Lightbulb, ArrowRightLeft, Grid3X3, Star } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useXP } from '@/contexts/XPContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import FreeFormGarden from '@/components/FreeFormGarden';
+import { useHoldings, usePortfolio } from '@/hooks/usePortfolio';
+import { supabase } from '@/integrations/supabase/client';
 
 // Types
 interface Plant {
   id: string;
   seedType: string;
   plantedAt: number;
-  growthTimeMs: number;
+  startPortfolioValue: number;
+  targetPortfolioValue: number;
+  growthTargetPercent: number;
   lastWateredAt: number;
   isWilted: boolean;
   variant: 'normal' | 'golden' | 'rainbow' | 'frost' | 'candy' | 'thunder' | 'lunar';
@@ -67,10 +72,22 @@ interface HarvestedPlant {
 
 type Weather = 'normal' | 'rainy' | 'frozen' | 'candy' | 'thunder' | 'lunar';
 
+const OWNER_EMAIL = '2landonl10@gmail.com';
 const MIN_POTS = 3;
 const WILT_THRESHOLD = 4 * 60 * 60 * 1000; // 4 hours without water (much slower death)
+<<<<<<< Updated upstream
 const WATER_REDUCTION_TIME = 20 * 60 * 1000; // Fixed 20 minutes reduction per watering
 const QUIZ_POINTS_TO_MONEY_RATE = 0.5; // 2 Quiz Points = 1 coin
+=======
+const QUIZ_POINTS_TO_MONEY_RATE = 2; // 1 Quiz Point = 2 coins
+const SPRINKLER_RADIUS = 100;
+const SPRINKLER_GROWTH_REDUCTION: Record<string, number> = {
+  'Basic Sprinkler': 0.1,
+  'Advanced Sprinkler': 0.2,
+  'Deluxe Sprinkler': 0.3,
+  'Magic Sprinkler': 0.5,
+};
+>>>>>>> Stashed changes
 
 // 40 different seeds ordered by price (cheapest to most expensive) with scaled stock rates
 const SEED_TEMPLATES: Omit<Seed, 'id' | 'inStock' | 'stockQuantity'>[] = [
@@ -131,7 +148,7 @@ const SEED_TEMPLATES: Omit<Seed, 'id' | 'inStock' | 'stockQuantity'>[] = [
 
 // Base gear templates - plot upgrade price is dynamic
 const GEAR_TEMPLATES: Omit<Gear, 'id'>[] = [
-  { name: 'Watering Can', type: 'wateringCan', effect: '10 uses - Reduces growth time by 20 minutes', price: 150 },
+  { name: 'Watering Can', type: 'wateringCan', effect: '10 uses - Revives wilting plants and keeps them fresh', price: 150 },
   { name: 'Basic Sprinkler', type: 'sprinkler', effect: 'Waters plants in 100px radius - 10% golden chance boost', price: 400 },
   { name: 'Advanced Sprinkler', type: 'sprinkler', effect: 'Waters plants in 100px radius - 20% golden chance boost', price: 800 },
   { name: 'Deluxe Sprinkler', type: 'sprinkler', effect: 'Waters plants in 100px radius - 30% golden chance boost', price: 1500 },
@@ -211,6 +228,43 @@ function calculateSellPrice(basePrice: number, actualSize: number, baseSize: num
   return dynamicPrice; // Always at least base price
 }
 
+function getGrowthTargetPercent(rarity: Seed['rarity']): number {
+  switch (rarity) {
+    case 'common':
+      return 0.001; // 0.1%
+    case 'uncommon':
+      return 0.003; // 0.3%
+    case 'rare':
+      return 0.006; // 0.6%
+    case 'epic':
+      return 0.012; // 1.2%
+    case 'mythic':
+      return 0.02; // 2%
+    case 'legendary':
+      return 0.03; // 3%
+    case 'exotic':
+      return 0.04; // 4%
+    default:
+      return 0.01;
+  }
+}
+
+function getSprinklerGrowthReduction(sprinklerName: string | null): number {
+  if (!sprinklerName) return 0;
+  return SPRINKLER_GROWTH_REDUCTION[sprinklerName] ?? 0;
+}
+
+function getSeedTemplateByName(seedType: string): Seed | undefined {
+  const template = SEED_TEMPLATES.find((seed) => seed.name === seedType);
+  if (!template) return undefined;
+  return {
+    id: '',
+    inStock: false,
+    stockQuantity: 0,
+    ...template,
+  };
+}
+
 function getRarityColor(rarity: string) {
   switch (rarity) {
     case 'common': return 'text-gray-500 bg-gray-100 dark:bg-gray-800';
@@ -283,7 +337,12 @@ function getVariantColor(variant: string) {
 export default function GamifiedGarden() {
   const { settings } = useSettings();
   const { toast } = useToast();
+  const { user } = useAuth();
   const { xp, quizPoints, addXP, setXP, spendQuizPoints, loading: xpLoading } = useXP();
+  const { data: portfolio, isLoading: portfolioLoading } = usePortfolio();
+  const { data: holdings, isLoading: holdingsLoading } = useHoldings();
+  const [portfolioSnapshot, setPortfolioSnapshot] = useState<number | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [money, setMoney] = useState(0); // Start with 0 coins to make progression harder
   const [garden, setGarden] = useState<Garden>({ plants: [], width: 800, height: 600 });
   const [inventory, setInventory] = useState({ seeds: [] as Seed[], gear: [] as Gear[] });
@@ -307,6 +366,77 @@ export default function GamifiedGarden() {
   
   // Quiz Points exchange
   const [exchangeAmount, setExchangeAmount] = useState('');
+
+  const computedPortfolioValue = useMemo(() => {
+    if (portfolioLoading || holdingsLoading || !portfolio || holdings === undefined) {
+      return null;
+    }
+    const cashBalance = Number(portfolio.cash_balance ?? 0);
+    const holdingsValue = holdings.reduce((sum, holding) => {
+      return sum + Number(holding.shares) * Number(holding.average_cost);
+    }, 0);
+    return cashBalance + holdingsValue;
+  }, [portfolio, holdings, portfolioLoading, holdingsLoading]);
+
+  useEffect(() => {
+    if (computedPortfolioValue !== null) {
+      setPortfolioSnapshot(computedPortfolioValue);
+    }
+  }, [computedPortfolioValue]);
+
+  const portfolioValue = portfolioSnapshot ?? 0;
+  const portfolioValueReady = portfolioSnapshot !== null;
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const checkAdmin = async () => {
+      if (!user) {
+        if (isMounted) setIsAdmin(false);
+        return;
+      }
+
+      if (user.email === OWNER_EMAIL) {
+        if (isMounted) setIsAdmin(true);
+        return;
+      }
+
+      const { data, error } = await supabase.rpc('has_role', {
+        _user_id: user.id,
+        _role: 'admin',
+      });
+
+      if (isMounted) {
+        setIsAdmin(!error && data === true);
+      }
+    };
+
+    checkAdmin();
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
+
+  const normalizePlantGrowth = useCallback((plant: Plant): Plant => {
+    if (
+      plant.targetPortfolioValue !== undefined &&
+      plant.startPortfolioValue !== undefined &&
+      plant.growthTargetPercent !== undefined
+    ) {
+      return plant;
+    }
+    const template = getSeedTemplateByName(plant.seedType);
+    const growthTargetPercent = plant.growthTargetPercent ?? (template ? getGrowthTargetPercent(template.rarity) : 0.01);
+    const startPortfolioValue = plant.startPortfolioValue ?? portfolioValue;
+    const targetPortfolioValue = plant.targetPortfolioValue ?? Number((startPortfolioValue * (1 + growthTargetPercent)).toFixed(2));
+
+    return {
+      ...plant,
+      growthTargetPercent,
+      startPortfolioValue,
+      targetPortfolioValue,
+    };
+  }, [portfolioValue]);
 
   // Load from localStorage and migrate old XP to database
   useEffect(() => {
@@ -425,6 +555,16 @@ export default function GamifiedGarden() {
     }, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (!portfolioValueReady) return;
+    setGarden((g) => {
+      if (g.plants.length === 0) return g;
+      const nextPlants = g.plants.map(normalizePlantGrowth);
+      const changed = nextPlants.some((plant, index) => plant !== g.plants[index]);
+      return changed ? { ...g, plants: nextPlants } : g;
+    });
+  }, [normalizePlantGrowth, portfolioValueReady]);
 
   // Weather changing system - changes every 45-90 minutes (much rarer)
   useEffect(() => {
@@ -552,9 +692,33 @@ export default function GamifiedGarden() {
     setShopGear(gear);
   }
 
+  const getNearbySprinkler = useCallback((x: number, y: number) => {
+    if (sprinklerPositions.length === 0) return null;
+    const nearby = sprinklerPositions.filter(s => {
+      const distance = Math.sqrt(Math.pow(s.x - x, 2) + Math.pow(s.y - y, 2));
+      return distance <= SPRINKLER_RADIUS;
+    });
+    if (nearby.length === 0) return null;
+    return nearby.reduce((best, current) => {
+      const bestReduction = getSprinklerGrowthReduction(best.gear.name);
+      const currentReduction = getSprinklerGrowthReduction(current.gear.name);
+      return currentReduction > bestReduction ? current : best;
+    }, nearby[0]);
+  }, [sprinklerPositions]);
+
   // Plant seed
   function plantSeed(x: number, y: number, seed: Seed) {
+    if (!portfolioValueReady) {
+      toast({
+        title: 'Loading portfolio value',
+        description: 'Please wait a moment before planting.',
+      });
+      return;
+    }
+
     const actualSize = calculateSize(seed.baseSizeKg);
+    const nearbySprinkler = getNearbySprinkler(x, y);
+    const sprinklerName = nearbySprinkler?.gear.name ?? hasSprinkler;
     
     // Check for weather-based mutations first (rarest)
     let variant: 'normal' | 'golden' | 'rainbow' | 'frost' | 'candy' | 'thunder' | 'lunar' = 'normal';
@@ -583,14 +747,22 @@ export default function GamifiedGarden() {
     
     // If no weather mutation, check for normal golden/rainbow variants
     if (variant === 'normal') {
-      variant = calculateVariant(hasSprinkler);
+      variant = calculateVariant(sprinklerName);
     }
     
+    const baseGrowthTargetPercent = getGrowthTargetPercent(seed.rarity);
+    const sprinklerReduction = getSprinklerGrowthReduction(sprinklerName);
+    const growthTargetPercent = Math.max(0.0001, baseGrowthTargetPercent * (1 - sprinklerReduction));
+    const startPortfolioValue = portfolioValue;
+    const targetPortfolioValue = Number((startPortfolioValue * (1 + growthTargetPercent)).toFixed(2));
+
     const plant: Plant = {
       id: generateId(),
       seedType: seed.name,
       plantedAt: Date.now(),
-      growthTimeMs: seed.baseGrowthTime * 60 * 1000,
+      startPortfolioValue,
+      targetPortfolioValue,
+      growthTargetPercent,
       lastWateredAt: Date.now(),
       isWilted: false,
       variant: variant,
@@ -621,15 +793,9 @@ export default function GamifiedGarden() {
       ...g,
       plants: g.plants.map(plant => {
         if (plant.id === plantId) {
-          const elapsed = Date.now() - plant.plantedAt;
-          const remaining = Math.max(0, plant.growthTimeMs - elapsed);
-          const newRemaining = Math.max(0, remaining - WATER_REDUCTION_TIME);
-          const newGrowthTimeMs = elapsed + newRemaining;
-          
           return { 
             ...plant, 
             lastWateredAt: Date.now(), 
-            growthTimeMs: newGrowthTimeMs,
             isWilted: false 
           };
         }
@@ -701,10 +867,12 @@ export default function GamifiedGarden() {
   function harvestPlant(plantId: string) {
     const plant = garden.plants.find(p => p.id === plantId);
     if (!plant) return;
-    if (Date.now() - plant.plantedAt < plant.growthTimeMs) return;
+    if (portfolioValue < plant.targetPortfolioValue) return;
     
     // Apply weather mutations with specific percentages
-    let finalVariant = plant.variant === 'normal' ? calculateVariant(hasSprinkler) : plant.variant;
+    const nearbySprinkler = getNearbySprinkler(plant.x, plant.y);
+    const sprinklerName = nearbySprinkler?.gear.name ?? hasSprinkler;
+    let finalVariant = plant.variant === 'normal' ? calculateVariant(sprinklerName) : plant.variant;
     let weatherMultiplier = 1;
     
     if (currentWeather !== 'normal' && finalVariant === 'normal') {
@@ -804,23 +972,25 @@ export default function GamifiedGarden() {
 
   // Buy from shop - uses money and checks stock
   function buySeed(seed: Seed) {
-    if (!seed.inStock) {
+    if (!isAdmin && !seed.inStock) {
       toast({ title: 'Out of Stock', description: `${seed.name} is not available`, variant: 'destructive' });
       return;
     }
     
-    if (seed.stockQuantity <= 0) {
+    if (!isAdmin && seed.stockQuantity <= 0) {
       toast({ title: 'Out of Stock', description: `${seed.name} is sold out`, variant: 'destructive' });
       return;
     }
     
-    if (money < seed.price) {
+    if (!isAdmin && money < seed.price) {
       toast({ title: 'Not enough coins', description: `Need ${seed.price} coins`, variant: 'destructive' });
       return;
     }
     
     // Purchase the seed
-    setMoney(m => m - seed.price);
+    if (!isAdmin) {
+      setMoney(m => m - seed.price);
+    }
     // Create a unique seed object for the inventory with a new ID
     const uniqueSeed = {
       ...seed,
@@ -829,15 +999,17 @@ export default function GamifiedGarden() {
     setInventory(inv => ({ ...inv, seeds: [...inv.seeds, uniqueSeed] }));
     
     // Decrease stock quantity
-    setShopSeeds(seeds => 
-      seeds.map(s => 
-        s.id === seed.id 
-          ? { ...s, stockQuantity: s.stockQuantity - 1, inStock: s.stockQuantity - 1 > 0 }
-          : s
-      )
-    );
+    if (!isAdmin) {
+      setShopSeeds(seeds => 
+        seeds.map(s => 
+          s.id === seed.id 
+            ? { ...s, stockQuantity: s.stockQuantity - 1, inStock: s.stockQuantity - 1 > 0 }
+            : s
+        )
+      );
+    }
     
-    toast({ title: 'Purchased', description: `${seed.name} seed` });
+    toast({ title: isAdmin ? 'Granted (Admin)' : 'Purchased', description: `${seed.name} seed` });
   }
   
   function buyGear(gear: Gear) {
@@ -1052,6 +1224,7 @@ export default function GamifiedGarden() {
         {/* Free-Form Garden */}
         <FreeFormGarden 
           garden={garden}
+          portfolioValue={portfolioValue}
           selectedSeed={selectedSeed}
           selectedItem={selectedItem}
           isWateringMode={isWateringMode}
@@ -1295,16 +1468,17 @@ export default function GamifiedGarden() {
             <ScrollArea className="h-96">
               <div className="space-y-2 pr-4">
                 {shopSeeds.map(seed => {
-                  const canAfford = money >= seed.price;
-                  const isAvailable = seed.inStock && seed.stockQuantity > 0 && canAfford;
+                  const canAfford = isAdmin || money >= seed.price;
+                  const isAvailable = isAdmin || (seed.inStock && seed.stockQuantity > 0 && canAfford);
+                  const showOutOfStock = !isAdmin && (!seed.inStock || seed.stockQuantity <= 0);
                   
                   return (
                     <div 
                       key={seed.id} 
                       className={`
                         flex items-center justify-between p-2 border rounded bg-secondary/30 transition-all
-                        ${seed.inStock && seed.stockQuantity > 0 && canAfford ? 'ring-1 ring-gray-400/50 shadow-md shadow-gray-400/10' : ''}
-                        ${!seed.inStock || seed.stockQuantity <= 0 ? 'opacity-50' : ''}
+                        ${isAvailable ? 'ring-1 ring-gray-400/50 shadow-md shadow-gray-400/10' : ''}
+                        ${showOutOfStock ? 'opacity-50' : ''}
                       `}
                     >
                       <div className="flex items-center gap-2">
@@ -1315,14 +1489,14 @@ export default function GamifiedGarden() {
                             <span className={`text-[10px] px-1.5 py-0.5 rounded-full uppercase font-bold ${getRarityColor(seed.rarity)}`}>
                               {seed.rarity}
                             </span>
-                            {(!seed.inStock || seed.stockQuantity <= 0) && (
+                            {showOutOfStock && (
                               <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-400">
                                 OUT OF STOCK
                               </span>
                             )}
-                            {seed.inStock && seed.stockQuantity > 0 && (
+                            {!showOutOfStock && (
                               <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-400">
-                                {seed.stockQuantity} left
+                                {isAdmin ? 'ADMIN' : `${seed.stockQuantity} left`}
                               </span>
                             )}
                           </div>
@@ -1339,7 +1513,7 @@ export default function GamifiedGarden() {
                         className="text-xs"
                       >
                         <Coins className="w-3 h-3 mr-1" />
-                        {seed.price}
+                        {isAdmin ? 'FREE' : seed.price}
                       </Button>
                     </div>
                   );

@@ -26,7 +26,6 @@ import StockPage from "./pages/StockPage";
 import SettingsPage from "./pages/SettingsPage";
 import AdminPage from "./pages/AdminPage";
 import ProfilePage from "./pages/ProfilePage";
-import InsightsPage from "./pages/InsightsPage";
 import ResearchPage from "./pages/ResearchPage";
 import GamifiedGarden from "./pages/GamifiedGarden";
 import NotFound from "./pages/NotFound";
@@ -71,7 +70,7 @@ const App = () => (
                       </ErrorBoundary>
                     </ProtectedRoute>
                   } />
-                  <Route path="/insights" element={<ProtectedRoute><ErrorBoundary><InsightsPage /></ErrorBoundary></ProtectedRoute>} />
+                  <Route path="/insights" element={<ProtectedRoute><ErrorBoundary><LearnPage initialTab="insights" /></ErrorBoundary></ProtectedRoute>} />
                   <Route path="/research" element={<ProtectedRoute><ErrorBoundary><ResearchPage /></ErrorBoundary></ProtectedRoute>} />
                   <Route path="/leaderboard" element={<ProtectedRoute><ErrorBoundary><LeaderboardPage /></ErrorBoundary></ProtectedRoute>} />
                   <Route path="/profile" element={<ProtectedRoute><ErrorBoundary><ProfilePage /></ErrorBoundary></ProtectedRoute>} />

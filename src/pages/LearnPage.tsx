@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   BookOpen, Clock, CheckCircle, ChevronRight, GraduationCap, Award, 
-  Sparkles, Trophy, Flame, Target, Brain, Star, Zap, Lock, Search, TrendingUp, BarChart3, HelpCircle
+  Sparkles, Trophy, Flame, Target, Brain, Star, Zap, Lock, Search, TrendingUp, BarChart3, HelpCircle,
+  Lightbulb, Newspaper
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { useLearningModules, useUserProgress, type LearningModule } from '@/hooks/useLearning';
 import { useQuizResults } from '@/hooks/useQuiz';
@@ -19,6 +21,10 @@ import { getRankFromXP } from '@/lib/ranks';
 import LearningAI from '@/components/LearningAI';
 import AIAssistantCard from '@/components/AIAssistantCard';
 import XPStore from '@/components/XPStore';
+import PortfolioTimeline from '@/components/PortfolioTimeline';
+import MistakeFeed from '@/components/MistakeFeed';
+import MarketNewsExplained from '@/components/MarketNewsExplained';
+import GameLayer from '@/components/GameLayer';
 
 const container = {
   hidden: { opacity: 0 },
@@ -53,6 +59,10 @@ type LessonCategory = {
   modules?: LearningModule[];
 };
 
+type LearnPageProps = {
+  initialTab?: 'learn' | 'insights';
+};
+
 const fallbackCategories = (totalModules: number): LessonCategory[] => {
   const foundationsEnd = Math.floor(totalModules * 0.3);
   const strategyEnd = Math.floor(totalModules * 0.6);
@@ -85,11 +95,16 @@ const fallbackCategories = (totalModules: number): LessonCategory[] => {
   ];
 };
 
-const LearnPage = () => {
+const LearnPage = ({ initialTab = 'learn' }: LearnPageProps) => {
   const [search, setSearch] = useState('');
+  const [activeTab, setActiveTab] = useState<'learn' | 'insights'>(initialTab);
   const { data: modules, isLoading: modulesLoading } = useLearningModules();
   const { data: progress, isLoading: progressLoading } = useUserProgress();
   const { data: quizResults } = useQuizResults();
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
 
   const isCompleted = (moduleId: string) => {
     return progress?.some(p => p.module_id === moduleId && p.completed);
@@ -171,12 +186,25 @@ const LearnPage = () => {
 
   return (
     <DashboardLayout>
-      <motion.div 
-        className="space-y-8"
-        variants={container}
-        initial="hidden"
-        animate="show"
-      >
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'learn' | 'insights')} className="space-y-6">
+        <TabsList className="grid w-full max-w-xs grid-cols-2">
+          <TabsTrigger value="learn" className="gap-2">
+            <BookOpen className="w-4 h-4" />
+            Learn
+          </TabsTrigger>
+          <TabsTrigger value="insights" className="gap-2">
+            <Lightbulb className="w-4 h-4" />
+            Insights
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="learn">
+          <motion.div 
+            className="space-y-8"
+            variants={container}
+            initial="hidden"
+            animate="show"
+          >
         {/* Hero Header */}
         <motion.div variants={item} className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 via-accent/10 to-background p-8 border">
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
@@ -522,6 +550,61 @@ const LearnPage = () => {
           </motion.div>
         </div>
       </motion.div>
+        </TabsContent>
+
+        <TabsContent value="insights">
+          <div className="space-y-6">
+            {/* Header */}
+            <div>
+              <h1 className="text-2xl font-bold flex items-center gap-2">
+                <Lightbulb className="w-6 h-6" />
+                Insights & Challenges
+              </h1>
+              <p className="text-muted-foreground">
+                Learn from your trades, track your progress, and stay informed
+              </p>
+            </div>
+
+            {/* Mobile-first tabs */}
+            <Tabs defaultValue="challenges" className="w-full">
+              <TabsList className="grid w-full grid-cols-4 mb-6">
+                <TabsTrigger value="challenges" className="gap-1 text-xs sm:text-sm">
+                  <Trophy className="w-4 h-4" />
+                  <span className="hidden sm:inline">Challenges</span>
+                </TabsTrigger>
+                <TabsTrigger value="timeline" className="gap-1 text-xs sm:text-sm">
+                  <Clock className="w-4 h-4" />
+                  <span className="hidden sm:inline">Timeline</span>
+                </TabsTrigger>
+                <TabsTrigger value="patterns" className="gap-1 text-xs sm:text-sm">
+                  <Sparkles className="w-4 h-4" />
+                  <span className="hidden sm:inline">Patterns</span>
+                </TabsTrigger>
+                <TabsTrigger value="news" className="gap-1 text-xs sm:text-sm">
+                  <Newspaper className="w-4 h-4" />
+                  <span className="hidden sm:inline">News</span>
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="challenges" className="space-y-6">
+                <GameLayer />
+              </TabsContent>
+
+              <TabsContent value="timeline" className="space-y-6">
+                <PortfolioTimeline />
+              </TabsContent>
+
+              <TabsContent value="patterns" className="space-y-6">
+                <MistakeFeed />
+              </TabsContent>
+
+              <TabsContent value="news" className="space-y-6">
+                <MarketNewsExplained />
+              </TabsContent>
+            </Tabs>
+          </div>
+        </TabsContent>
+      </Tabs>
     </DashboardLayout>
   );
 };
