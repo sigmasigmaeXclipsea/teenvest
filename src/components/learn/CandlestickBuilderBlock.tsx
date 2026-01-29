@@ -57,7 +57,7 @@ const CandlestickBuilderBlock = ({
   const chart = useMemo(() => {
     const height = 220;
     const width = 220;
-    const padding = 18;
+    const padding = 24;
 
     const range = Math.max(1, derived.high - derived.low);
     const y = (value: number) => {
@@ -66,14 +66,18 @@ const CandlestickBuilderBlock = ({
     };
 
     const x = width / 2;
-    const wickTop = y(derived.high);
-    const wickBottom = y(derived.low);
 
-    const bodyTop = y(Math.max(derived.open, derived.close));
-    const bodyBottom = y(Math.min(derived.open, derived.close));
-    const bodyHeight = Math.max(8, bodyBottom - bodyTop);
-
-    return { width, height, x, wickTop, wickBottom, bodyTop, bodyHeight };
+    return {
+      width,
+      height,
+      x,
+      yHigh: y(derived.high),
+      yLow: y(derived.low),
+      yOpen: y(derived.open),
+      yClose: y(derived.close),
+      bodyTop: y(Math.max(derived.open, derived.close)),
+      bodyHeight: Math.max(8, Math.abs(y(derived.open) - y(derived.close))),
+    };
   }, [derived]);
 
   const slider = (
@@ -106,27 +110,41 @@ const CandlestickBuilderBlock = ({
       </CardHeader>
       <CardContent className="grid gap-4 lg:grid-cols-2">
         <div className="rounded-xl border bg-background/40 p-4">
-          <div className="text-center text-sm text-muted-foreground mb-3">Japanese candlestick</div>
+          <div className="text-center text-sm text-muted-foreground mb-3">{isBullish ? 'Bullish' : 'Bearish'} candle</div>
           <div className="flex items-center justify-center">
             <svg width={chart.width} height={chart.height} role="img" aria-label="candlestick">
+              {/* Wick line from High to Low */}
               <line
                 x1={chart.x}
                 x2={chart.x}
-                y1={chart.wickTop}
-                y2={chart.wickBottom}
+                y1={chart.yHigh}
+                y2={chart.yLow}
                 stroke={isBullish ? '#10b981' : '#ef4444'}
                 strokeWidth={3}
                 strokeLinecap="round"
               />
+              {/* Body rectangle */}
               <rect
                 x={chart.x - 22}
                 y={chart.bodyTop}
                 width={44}
                 height={chart.bodyHeight}
-                rx={12}
+                rx={6}
                 fill={isBullish ? '#10b981' : '#ef4444'}
                 opacity={0.9}
               />
+              {/* Price level markers */}
+              <circle cx={chart.x + 30} cy={chart.yHigh} r={4} fill="#10b981" />
+              <text x={chart.x + 38} y={chart.yHigh + 4} fontSize={10} fill="currentColor" className="fill-muted-foreground">H</text>
+              
+              <circle cx={chart.x + 30} cy={chart.yLow} r={4} fill="#ef4444" />
+              <text x={chart.x + 38} y={chart.yLow + 4} fontSize={10} fill="currentColor" className="fill-muted-foreground">L</text>
+              
+              <circle cx={chart.x - 30} cy={chart.yOpen} r={4} fill="#8b5cf6" />
+              <text x={chart.x - 48} y={chart.yOpen + 4} fontSize={10} fill="currentColor" className="fill-muted-foreground">O</text>
+              
+              <circle cx={chart.x - 30} cy={chart.yClose} r={4} fill="#06b6d4" />
+              <text x={chart.x - 48} y={chart.yClose + 4} fontSize={10} fill="currentColor" className="fill-muted-foreground">C</text>
             </svg>
           </div>
           <div className="mt-3 text-center text-sm text-muted-foreground">
