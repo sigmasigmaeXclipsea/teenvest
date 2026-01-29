@@ -33,6 +33,29 @@
 
 **Always run a full project search** (Ctrl+Shift+F) before and after variable changes to ensure complete consistency.
 
+### AI Bot Markdown Formatting
+**IMPORTANT**: All AI bot responses support basic markdown formatting. When working with AI responses or updating AI-related components:
+
+- **Bold text**: Use `**text**` for **bold** formatting
+- **Italic text**: Use `*text*` for *italic* formatting  
+- **Combined**: You can use both `**bold and *italic* text**`
+
+**Supported Components**:
+- `AIAssistantCard` - Renders markdown in assistant messages only (not user messages)
+- `ChatWidget` - Renders markdown in assistant messages only (not user messages)
+
+**Implementation Details**:
+- Markdown parsing is handled by `src/lib/markdown.ts`
+- Only `*` and `**` syntax is supported (keep it simple)
+- User messages are displayed as plain text (no markdown parsing)
+- Assistant messages use `parseMarkdown()` function for formatting
+
+**Example Usage**:
+```typescript
+// This will render as proper bold/italic text
+const aiResponse = "This is **important** and this is *emphasized*.";
+```
+
 ## How can I edit this code?
 
 There are several ways of editing your application.

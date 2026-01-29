@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { parseMarkdown } from '@/lib/markdown';
 
 type Message = {
   role: 'user' | 'assistant';
@@ -238,7 +239,7 @@ const ChatWidget = () => {
                         : "bg-secondary rounded-bl-md"
                     )}
                   >
-                    {msg.content}
+                    {msg.role === 'assistant' ? parseMarkdown(msg.content) : msg.content}
                   </div>
                   {msg.role === 'user' && (
                     <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
