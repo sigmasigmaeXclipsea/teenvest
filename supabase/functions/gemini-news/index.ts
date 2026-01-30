@@ -1,10 +1,17 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { 
+  rateLimit, 
+  RateLimitConfig, 
+  sanitizeInput,
+  validateSymbol,
+  secureCorsHeaders,
+  createRateLimitResponse,
+  createErrorResponse,
+  createSuccessResponse
+} from "../_shared/security.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+const rateLimitConfig: RateLimitConfig = { windowMs: 60 * 1000, maxRequests: 15 };
 
 interface NewsRequest {
   symbol?: string;
@@ -13,17 +20,24 @@ interface NewsRequest {
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: secureCorsHeaders })
+  }
+
+  if (req.method !== 'POST') {
+    return createErrorResponse('Method not allowed', 405);
   }
 
   try {
+    // Validate request size (max 2KB)
+    const contentLength = req.headers.get('content-length');
+    if (contentLength && parseInt(contentLength) > 2048) {
+      return createErrorResponse('Request too large', 413);
+    }
+
     // Authentication check
     const authHeader = req.headers.get('Authorization')
     if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(
-        JSON.stringify({ error: 'Authentication required', success: false }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return createErrorResponse('Authentication required', 401);
     }
 
     const supabaseClient = createClient(
@@ -37,18 +51,34 @@ serve(async (req: Request) => {
     
     if (authError || !claims?.claims?.sub) {
       console.error('Auth error:', authError)
-      return new Response(
-        JSON.stringify({ error: 'Invalid authentication', success: false }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return createErrorResponse('Invalid authentication', 401);
     }
 
-    const { symbol, market }: NewsRequest = await req.json()
+    // Rate limiting per user
+    const userId = claims.claims.sub as string;
+    const rateLimitResult = rateLimit(userId, rateLimitConfig);
+    if (!rateLimitResult.allowed) {
+      console.warn(`Rate limit exceeded for user: ${userId}`);
+      return createRateLimitResponse(rateLimitResult.resetTime!);
+    }
+
+    const body: NewsRequest = await req.json()
+    const { symbol, market } = body;
+
+    // Validate inputs
+    let validatedSymbol: string | null = null;
+    if (symbol) {
+      validatedSymbol = validateSymbol(symbol);
+      if (!validatedSymbol) {
+        return createErrorResponse('Invalid symbol format', 400);
+      }
+    }
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')
     
     if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured')
+      console.error('LOVABLE_API_KEY is not configured');
+      return createErrorResponse('Service temporarily unavailable', 503);
     }
 
     let prompt = ''
@@ -70,8 +100,8 @@ serve(async (req: Request) => {
       Current date: ${new Date().toLocaleDateString()}
       
       IMPORTANT: Return ONLY the JSON array, no markdown formatting or code blocks.`
-    } else if (symbol) {
-      prompt = `You are a financial news analyst. Provide the latest official news about ${symbol.toUpperCase()} stock.
+    } else if (validatedSymbol) {
+      prompt = `You are a financial news analyst. Provide the latest official news about ${validatedSymbol} stock.
       Focus on company announcements, earnings, analyst ratings, and significant business developments.
       Return exactly 5 news items in JSON format with the following structure:
       [
@@ -88,7 +118,7 @@ serve(async (req: Request) => {
       
       IMPORTANT: Return ONLY the JSON array, no markdown formatting or code blocks.`
     } else {
-      throw new Error('Either symbol or market parameter is required')
+      return createErrorResponse('Either symbol or market parameter is required', 400);
     }
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -107,17 +137,11 @@ serve(async (req: Request) => {
 
     if (!response.ok) {
       if (response.status === 429) {
-        return new Response(JSON.stringify({ 
-          error: 'Rate limit exceeded. Please try again in a moment.',
-          success: false 
-        }), {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
+        return createErrorResponse('AI service rate limit. Please try again later.', 429);
       }
       const errorText = await response.text()
       console.error('AI gateway error:', response.status, errorText)
-      throw new Error('AI service temporarily unavailable')
+      return createErrorResponse('AI service temporarily unavailable', 502);
     }
 
     const data = await response.json()
@@ -126,7 +150,6 @@ serve(async (req: Request) => {
     // Parse the JSON response - handle potential markdown code blocks
     let newsData
     try {
-      // Try to extract JSON from the response (handle markdown code blocks)
       const jsonMatch = content.match(/\[[\s\S]*\]/)
       if (jsonMatch) {
         newsData = JSON.parse(jsonMatch[0])
@@ -134,26 +157,18 @@ serve(async (req: Request) => {
         throw new Error('No JSON array found in response')
       }
     } catch (parseError) {
-      console.error('Failed to parse news response:', parseError, 'Content:', content)
+      console.error('Failed to parse news response:', parseError)
       newsData = []
     }
     
-    return new Response(JSON.stringify({ 
+    return createSuccessResponse({ 
       success: true, 
       data: newsData,
       source: 'AI-powered'
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    });
 
   } catch (error: any) {
     console.error('Error:', error)
-    return new Response(JSON.stringify({ 
-      error: error.message || 'Unknown error occurred',
-      success: false 
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return createErrorResponse('An error occurred', 500);
   }
 })

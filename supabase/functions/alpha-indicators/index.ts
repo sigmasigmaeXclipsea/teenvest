@@ -1,12 +1,14 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { rateLimit, RateLimitConfig } from "../_shared/security.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Cache-Control": "public, max-age=300",
-};
+import { 
+  rateLimit, 
+  RateLimitConfig, 
+  validateSymbol,
+  secureCorsHeaders,
+  createRateLimitResponse,
+  createErrorResponse,
+  createSuccessResponse
+} from "../_shared/security.ts";
 
 const rateLimitConfig: RateLimitConfig = { windowMs: 60 * 1000, maxRequests: 5 };
 
@@ -97,16 +99,23 @@ const normalizeEmaPeriod = (raw: unknown) => {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: secureCorsHeaders });
+  }
+
+  if (req.method !== "POST") {
+    return createErrorResponse("Method not allowed", 405);
   }
 
   try {
+    // Validate request size (max 2KB)
+    const contentLength = req.headers.get('content-length');
+    if (contentLength && parseInt(contentLength) > 2048) {
+      return createErrorResponse('Request too large', 413);
+    }
+
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(
-        JSON.stringify({ error: "Authentication required" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return createErrorResponse("Authentication required", 401);
     }
 
     const supabaseClient = createClient(
@@ -118,49 +127,41 @@ serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     const { data: claims, error: authError } = await supabaseClient.auth.getClaims(token);
     if (authError || !claims?.claims) {
-      return new Response(
-        JSON.stringify({ error: "Authentication required" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return createErrorResponse("Authentication required", 401);
     }
 
-    const rateLimitResult = rateLimit(claims.claims.sub as string, rateLimitConfig);
+    const userId = claims.claims.sub as string;
+    const rateLimitResult = rateLimit(userId, rateLimitConfig);
     if (!rateLimitResult.allowed) {
-      return new Response(
-        JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
-        {
-          status: 429,
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-            "Retry-After": Math.ceil((rateLimitResult.resetTime! - Date.now()) / 1000).toString(),
-          },
-        }
-      );
+      console.warn(`Rate limit exceeded for user: ${userId}`);
+      return createRateLimitResponse(rateLimitResult.resetTime!);
     }
 
     const body = await req.json();
-    const rawTicker = typeof body?.ticker === "string" ? body.ticker.trim().toUpperCase() : "";
+    const rawTicker = validateSymbol(body?.ticker);
     const timeframe = (body?.timeframe || "1M") as TimeframeOption;
     const emaPeriod = normalizeEmaPeriod(body?.emaPeriod);
-    if (!rawTicker || !/^[A-Z]{1,5}$/.test(rawTicker)) {
-      return new Response(
-        JSON.stringify({ error: "Invalid ticker symbol" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    
+    if (!rawTicker) {
+      return createErrorResponse("Invalid ticker symbol", 400);
+    }
+
+    // Validate timeframe
+    const validTimeframes = ["1D", "5D", "1M", "3M", "6M", "1Y", "2Y", "YTD"];
+    if (!validTimeframes.includes(timeframe)) {
+      return createErrorResponse("Invalid timeframe", 400);
     }
 
     const apiKey = Deno.env.get("ALPHAVANTAGE_API_KEY");
     if (!apiKey) {
-      throw new Error("ALPHAVANTAGE_API_KEY is not configured");
+      console.error("ALPHAVANTAGE_API_KEY is not configured");
+      return createErrorResponse("Service temporarily unavailable", 503);
     }
 
     const cacheKey = `${rawTicker}-${timeframe}-ema${emaPeriod}`;
     const cached = serverCache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < SERVER_CACHE_TTL) {
-      return new Response(JSON.stringify(cached.data), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return createSuccessResponse(cached.data);
     }
 
     const { interval, outputsize } = timeframeToAlpha(timeframe);
@@ -229,15 +230,15 @@ serve(async (req) => {
 
     serverCache.set(cacheKey, { data: result, timestamp: Date.now() });
 
-    return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return createSuccessResponse(result);
   } catch (error) {
     const status = (error as any)?.status || 500;
     const message = (error as Error)?.message || "Unexpected error";
-    return new Response(JSON.stringify({ error: message }), {
-      status,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    
+    if (status === 429) {
+      return createErrorResponse("Rate limit exceeded. Please try again later.", 429);
+    }
+    
+    return createErrorResponse(message, status);
   }
 });

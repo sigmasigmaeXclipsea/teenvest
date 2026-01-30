@@ -1,5 +1,8 @@
 project_id = "qhnxaehwrntkioyioxtk"
 
+# All functions use verify_jwt = false because we validate JWTs in code
+# This is required for the signing-keys system used by Lovable Cloud
+
 [functions.chat]
 verify_jwt = false
 
@@ -25,4 +28,13 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.polygon-candles]
+verify_jwt = false
+
+[functions.alpha-indicators]
+verify_jwt = false
+
+[functions.finnhub-quote]
+verify_jwt = false
+
+[functions.gemini-news]
 verify_jwt = false

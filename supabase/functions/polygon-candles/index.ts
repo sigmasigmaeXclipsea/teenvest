@@ -1,11 +1,19 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { 
+  rateLimit, 
+  rateLimitByIP,
+  RateLimitConfig, 
+  validateSymbol,
+  secureCorsHeaders,
+  createRateLimitResponse,
+  createErrorResponse,
+  createSuccessResponse
+} from "../_shared/security.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Cache-Control': 'public, max-age=60',
-};
+// Strict rate limits
+const userRateLimitConfig: RateLimitConfig = { windowMs: 60 * 1000, maxRequests: 10 };
+const ipRateLimitConfig: RateLimitConfig = { windowMs: 60 * 1000, maxRequests: 30 };
 
 // Server-side cache
 const serverCache = new Map<string, { data: any; timestamp: number }>();
@@ -27,45 +35,47 @@ interface PolygonResponse {
   error?: string;
 }
 
-// Recursive function to fetch all paginated data
+// Recursive function to fetch all paginated data with timeout
 async function fetchAllData(initialUrl: string, apiKey: string): Promise<PolygonBar[]> {
   const allResults: PolygonBar[] = [];
   let nextUrl: string | null = initialUrl;
   let pageCount = 0;
-  const maxPages = 10; // Safety limit to prevent infinite loops
+  const maxPages = 5; // Reduced for security
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
 
-  while (nextUrl && pageCount < maxPages) {
-    console.log(`Fetching page ${pageCount + 1}: ${nextUrl.substring(0, 100)}...`);
-    
-    const res: Response = await fetch(nextUrl);
-    
-    if (!res.ok) {
-      const errorText = await res.text();
-      console.error(`Polygon error: ${res.status} - ${errorText}`);
-      throw new Error(`API error: ${res.status}`);
+  try {
+    while (nextUrl && pageCount < maxPages) {
+      console.log(`Fetching page ${pageCount + 1}`);
+      
+      const res: Response = await fetch(nextUrl, { signal: controller.signal });
+      
+      if (!res.ok) {
+        throw new Error(`API error: ${res.status}`);
+      }
+
+      const json: PolygonResponse = await res.json();
+      
+      if (json.status === 'ERROR') {
+        throw new Error(json.error || 'Polygon API error');
+      }
+
+      if (json.results && json.results.length > 0) {
+        allResults.push(...json.results);
+      }
+
+      if (json.next_url) {
+        nextUrl = json.next_url.includes('apiKey') 
+          ? json.next_url 
+          : `${json.next_url}&apiKey=${apiKey}`;
+      } else {
+        nextUrl = null;
+      }
+
+      pageCount++;
     }
-
-    const json: PolygonResponse = await res.json();
-    
-    if (json.status === 'ERROR') {
-      throw new Error(json.error || 'Polygon API error');
-    }
-
-    if (json.results && json.results.length > 0) {
-      allResults.push(...json.results);
-    }
-
-    // Check for next_url for pagination
-    if (json.next_url) {
-      // Polygon returns next_url without the API key, so we need to append it
-      nextUrl = json.next_url.includes('apiKey') 
-        ? json.next_url 
-        : `${json.next_url}&apiKey=${apiKey}`;
-    } else {
-      nextUrl = null;
-    }
-
-    pageCount++;
+  } finally {
+    clearTimeout(timeout);
   }
 
   console.log(`Fetched ${allResults.length} total bars across ${pageCount} pages`);
@@ -74,17 +84,31 @@ async function fetchAllData(initialUrl: string, apiKey: string): Promise<Polygon
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: secureCorsHeaders });
+  }
+
+  if (req.method !== 'POST') {
+    return createErrorResponse('Method not allowed', 405);
   }
 
   try {
-    // Authentication check - require valid user token
+    // Validate request size (max 2KB)
+    const contentLength = req.headers.get('content-length');
+    if (contentLength && parseInt(contentLength) > 2048) {
+      return createErrorResponse('Request too large', 413);
+    }
+
+    // IP-based rate limiting first
+    const ipRateLimitResult = rateLimitByIP(req, ipRateLimitConfig);
+    if (!ipRateLimitResult.allowed) {
+      console.warn('IP rate limit exceeded');
+      return createRateLimitResponse(ipRateLimitResult.resetTime!);
+    }
+
+    // Authentication check
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(
-        JSON.stringify({ error: 'Authentication required', candles: [] }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return createErrorResponse('Authentication required', 401);
     }
 
     const supabaseClient = createClient(
@@ -98,33 +122,45 @@ serve(async (req) => {
 
     if (authError || !claims?.claims) {
       console.error('Auth error:', authError?.message || 'Invalid token');
-      return new Response(
-        JSON.stringify({ error: 'Authentication required', candles: [] }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return createErrorResponse('Authentication required', 401);
     }
 
-    console.log(`Authenticated user: ${claims.claims.sub}`);
+    // User-based rate limiting
+    const userId = claims.claims.sub as string;
+    const userRateLimitResult = rateLimit(userId, userRateLimitConfig);
+    if (!userRateLimitResult.allowed) {
+      console.warn(`User rate limit exceeded: ${userId}`);
+      return createRateLimitResponse(userRateLimitResult.resetTime!);
+    }
 
-    const { ticker, timeframe } = await req.json();
+    console.log(`Authenticated user: ${userId}`);
+
+    const body = await req.json();
+    const ticker = validateSymbol(body?.ticker);
+    const timeframe = body?.timeframe;
     
-    if (!ticker || typeof ticker !== 'string') {
-      throw new Error('Invalid ticker symbol');
+    if (!ticker) {
+      return createErrorResponse('Invalid ticker symbol', 400);
+    }
+
+    // Validate timeframe
+    const validTimeframes = ['1D', '5D', '1M', '3M', '6M', 'YTD', '1Y', '2Y'];
+    if (timeframe && !validTimeframes.includes(timeframe)) {
+      return createErrorResponse('Invalid timeframe', 400);
     }
 
     const apiKey = Deno.env.get('POLYGON_API_KEY');
     if (!apiKey) {
-      throw new Error('Polygon API key not configured');
+      console.error('Polygon API key not configured');
+      return createErrorResponse('Service temporarily unavailable', 503);
     }
 
     // Check server cache first
-    const cacheKey = `${ticker.toUpperCase()}-${timeframe}`;
+    const cacheKey = `${ticker}-${timeframe}`;
     const cached = serverCache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < SERVER_CACHE_TTL) {
       console.log(`Cache hit for ${cacheKey}`);
-      return new Response(JSON.stringify(cached.data), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return createSuccessResponse(cached.data);
     }
 
     const now = new Date();
@@ -135,13 +171,10 @@ serve(async (req) => {
     let resolution: string;
     let displayResolution: string;
     
-    // TradingView-style: Each timeframe gets appropriate resolution for ~150-200 visible bars
-    // Full data is fetched, user can scroll through all of it
     switch (timeframe) {
       case '1D':
-        // 1 Day: 5-minute bars for intraday view
         const oneDayBack = new Date(now);
-        oneDayBack.setDate(oneDayBack.getDate() - 2); // Extra day to ensure we get full trading day
+        oneDayBack.setDate(oneDayBack.getDate() - 2);
         from = oneDayBack.toISOString().split('T')[0];
         multiplier = 5;
         resolution = 'minute';
@@ -149,7 +182,6 @@ serve(async (req) => {
         break;
         
       case '5D':
-        // 5 Days: 15-minute bars
         const fiveDaysBack = new Date(now);
         fiveDaysBack.setDate(fiveDaysBack.getDate() - 7);
         from = fiveDaysBack.toISOString().split('T')[0];
@@ -159,7 +191,6 @@ serve(async (req) => {
         break;
         
       case '1M':
-        // 1 Month: 1-hour bars
         const oneMonthAgo = new Date(now);
         oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
         from = oneMonthAgo.toISOString().split('T')[0];
@@ -169,7 +200,6 @@ serve(async (req) => {
         break;
         
       case '3M':
-        // 3 Months: 4-hour bars
         const threeMonthsAgo = new Date(now);
         threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
         from = threeMonthsAgo.toISOString().split('T')[0];
@@ -179,7 +209,6 @@ serve(async (req) => {
         break;
         
       case '6M':
-        // 6 Months: Daily bars
         const sixMonthsAgo = new Date(now);
         sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
         from = sixMonthsAgo.toISOString().split('T')[0];
@@ -189,7 +218,6 @@ serve(async (req) => {
         break;
         
       case 'YTD':
-        // Year to date: Daily bars
         from = `${now.getFullYear()}-01-01`;
         multiplier = 1;
         resolution = 'day';
@@ -197,7 +225,6 @@ serve(async (req) => {
         break;
         
       case '1Y':
-        // 1 Year: Daily bars
         const oneYearAgo = new Date(now);
         oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
         from = oneYearAgo.toISOString().split('T')[0];
@@ -207,7 +234,6 @@ serve(async (req) => {
         break;
         
       case '2Y':
-        // 2 Years: Daily bars (will give ~500 trading days)
         const twoYearsAgo = new Date(now);
         twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
         from = twoYearsAgo.toISOString().split('T')[0];
@@ -217,7 +243,6 @@ serve(async (req) => {
         break;
         
       default:
-        // Default to 1 month
         const defaultAgo = new Date(now);
         defaultAgo.setMonth(defaultAgo.getMonth() - 1);
         from = defaultAgo.toISOString().split('T')[0];
@@ -226,15 +251,12 @@ serve(async (req) => {
         displayResolution = '1H';
     }
 
-    // Build initial URL with high limit to minimize pagination
-    const initialUrl = `https://api.polygon.io/v2/aggs/ticker/${ticker.toUpperCase()}/range/${multiplier}/${resolution}/${from}/${to}?adjusted=true&sort=asc&limit=50000&apiKey=${apiKey}`;
+    const initialUrl = `https://api.polygon.io/v2/aggs/ticker/${ticker}/range/${multiplier}/${resolution}/${from}/${to}?adjusted=true&sort=asc&limit=50000&apiKey=${apiKey}`;
     
-    console.log(`Fetching ${ticker} ${timeframe}: ${multiplier} ${resolution} from ${from} to ${to}`);
+    console.log(`Fetching ${ticker} ${timeframe}`);
 
-    // Recursively fetch all paginated data
     const allResults = await fetchAllData(initialUrl, apiKey);
 
-    // Transform and sort data chronologically
     const candles = allResults
       .map((bar: any) => ({
         time: Math.floor(bar.t / 1000),
@@ -246,34 +268,32 @@ serve(async (req) => {
       }))
       .sort((a: any, b: any) => a.time - b.time);
 
-    // Deduplicate by time (in case of overlapping pages)
     const uniqueCandles = candles.filter((candle: any, index: number, arr: any[]) => 
       index === 0 || candle.time !== arr[index - 1].time
     );
 
-    console.log(`Returning ${uniqueCandles.length} unique candles for ${ticker} (${timeframe})`);
+    console.log(`Returning ${uniqueCandles.length} candles for ${ticker}`);
 
     const result = { 
       candles: uniqueCandles,
-      ticker: ticker.toUpperCase(),
+      ticker,
       timeframe,
       resolution: displayResolution,
       totalBars: uniqueCandles.length
     };
 
-    // Cache the result
     serverCache.set(cacheKey, { data: result, timestamp: Date.now() });
 
-    return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return createSuccessResponse(result);
 
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to fetch data';
     console.error('Error:', errorMessage);
-    return new Response(JSON.stringify({ error: errorMessage, candles: [] }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    
+    if ((error as Error).name === 'AbortError') {
+      return createErrorResponse('Request timeout', 504);
+    }
+    
+    return createErrorResponse('An error occurred', 500);
   }
 });
