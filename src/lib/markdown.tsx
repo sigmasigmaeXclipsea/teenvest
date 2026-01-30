@@ -1,3 +1,5 @@
+import React from 'react';
+
 /**
  * Simple markdown parser for basic formatting
  * Supports *italic* and **bold** text
