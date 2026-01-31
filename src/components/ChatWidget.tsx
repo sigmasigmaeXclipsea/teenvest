@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import { parseMarkdown } from '@/lib/markdown';
+import { parseMarkdown } from '@/lib/markdown.tsx';
 
 type Message = {
   role: 'user' | 'assistant';

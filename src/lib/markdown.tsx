@@ -1,8 +1,8 @@
 import React from 'react';
 
 /**
- * Simple markdown parser for basic formatting
- * Supports *italic* and **bold** text
+ * Simple markdown parser for basic formatting.
+ * Supports *italic* and **bold** text.
  */
 export const parseMarkdown = (text: string): React.ReactNode => {
   if (!text) return text;
