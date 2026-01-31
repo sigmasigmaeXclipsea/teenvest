@@ -1,3 +1,5 @@
+import React from 'react';
+
 /**
  * Simple markdown parser for basic formatting
  * Supports *italic* and **bold** text
@@ -17,11 +19,11 @@ export const parseMarkdown = (text: string): React.ReactNode => {
   return parts.map((part, index) => {
     if (part.startsWith('<strong>') && part.endsWith('</strong>')) {
       const content = part.slice(8, -9);
-      return <strong key={index}>{content}</strong>;
+      return React.createElement('strong', { key: index }, content);
     }
     if (part.startsWith('<em>') && part.endsWith('</em>')) {
       const content = part.slice(4, -5);
-      return <em key={index}>{content}</em>;
+      return React.createElement('em', { key: index }, content);
     }
     return part;
   });

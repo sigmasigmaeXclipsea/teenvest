@@ -41,10 +41,10 @@ serve(async (req) => {
     console.log("Authenticated user:", claims.claims.sub);
 
     const { trades, holdings, portfolio, startingBalance } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const GOOGLE_AI_API_KEY = Deno.env.get("GOOGLE_AI_API_KEY");
 
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    if (!GOOGLE_AI_API_KEY) {
+      throw new Error("GOOGLE_AI_API_KEY is not configured");
     }
 
     const systemPrompt = `You are a teen investment coach. Identify common trading mistakes in a supportive way. Look for: overconcentration, panic selling, chasing performance, lack of diversification, overtrading, holding losers, FOMO buying.
@@ -87,14 +87,14 @@ ${trades?.slice(0, 20).map((t: any) => {
 
 Identify any concerning patterns and provide supportive feedback as a JSON array.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${GOOGLE_AI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-1.5-flash",
+        model: "gemini-2.5-flash-lite",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage },
