@@ -208,11 +208,6 @@ const StockPage = () => {
           sector: stock.sector,
           limitPrice: orderType === 'limit' ? Number(limitPrice) : null,
           stopPrice: orderType === 'stop' ? Number(stopPrice) : null,
-          predictionDirection,
-          predictionThesis: predictionThesis.trim(),
-          predictionIndicators,
-          predictionTarget: Number.isFinite(predictionTargetValue as number) ? predictionTargetValue : null,
-          predictionHorizonAt,
         });
         toast({
           title: 'Order placed!',

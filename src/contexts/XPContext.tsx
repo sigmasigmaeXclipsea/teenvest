@@ -50,8 +50,8 @@ export const XPProvider: React.FC<XPProviderProps> = ({ children }) => {
         if (error && error.code !== 'PGRST116') {
           console.error('Error loading XP:', error);
         } else {
-          setXpState(data?.xp || 0);
-          setQuizPointsState(data?.quiz_points || 0);
+          setXpState((data as any)?.xp || 0);
+          setQuizPointsState((data as any)?.quiz_points || 0);
         }
       } catch (error) {
         console.error('Error loading XP:', error);
@@ -76,7 +76,7 @@ export const XPProvider: React.FC<XPProviderProps> = ({ children }) => {
           user_id: user.id,
           xp: newXP,
           updated_at: new Date().toISOString()
-        }, {
+        } as any, {
           onConflict: 'user_id'
         });
 
@@ -103,7 +103,7 @@ export const XPProvider: React.FC<XPProviderProps> = ({ children }) => {
           user_id: user.id,
           xp: newXP,
           updated_at: new Date().toISOString()
-        }, {
+        } as any, {
           onConflict: 'user_id'
         });
 
@@ -130,7 +130,7 @@ export const XPProvider: React.FC<XPProviderProps> = ({ children }) => {
           user_id: user.id,
           quiz_points: newPoints,
           updated_at: new Date().toISOString()
-        }, {
+        } as any, {
           onConflict: 'user_id'
         });
 
@@ -158,7 +158,7 @@ export const XPProvider: React.FC<XPProviderProps> = ({ children }) => {
           user_id: user.id,
           quiz_points: newPoints,
           updated_at: new Date().toISOString()
-        }, {
+        } as any, {
           onConflict: 'user_id'
         });
 

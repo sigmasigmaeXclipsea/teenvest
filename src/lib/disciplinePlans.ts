@@ -3,7 +3,7 @@ export type TradePlan = {
   stopLoss?: number | null;
   createdAt: string;
   symbol: string;
-  tradeType: 'buy' | 'sell';
+  tradeType: 'buy' | 'sell' | 'short' | 'cover';
 };
 
 export type TradePlanMap = Record<string, TradePlan>;

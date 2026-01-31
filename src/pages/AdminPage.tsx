@@ -131,7 +131,7 @@ const AdminPage = () => {
       if (!user) return false;
       if (isOwner) return true;
       
-      const { data, error } = await supabase.rpc('has_role', {
+      const { data, error } = await (supabase.rpc as any)('has_role', {
         _user_id: user.id,
         _role: 'admin'
       });
@@ -200,7 +200,7 @@ const AdminPage = () => {
   const { data: recentTrades, isLoading: loadingTrades, error: tradesError, refetch: refetchTrades } = useQuery({
     queryKey: ['recent-platform-trades', tradesLimit],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_recent_platform_trades', { _limit: tradesLimit });
+      const { data, error } = await (supabase.rpc as any)('get_recent_platform_trades', { _limit: tradesLimit });
       if (error) {
         console.error('Recent trades error:', error);
         throw error;
@@ -257,7 +257,7 @@ const AdminPage = () => {
   // Mutations
   const addAdminMutation = useMutation<AdminResult, Error, string>({
     mutationFn: async (email: string) => {
-      const { data, error } = await supabase.rpc('add_admin_by_email', { _email: email });
+      const { data, error } = await (supabase.rpc as any)('add_admin_by_email', { _email: email });
       if (error) throw error;
       return data as AdminResult;
     },
@@ -275,7 +275,7 @@ const AdminPage = () => {
 
   const removeAdminMutation = useMutation<AdminResult, Error, string>({
     mutationFn: async (email: string) => {
-      const { data, error } = await supabase.rpc('remove_admin_by_email', { _email: email });
+      const { data, error } = await (supabase.rpc as any)('remove_admin_by_email', { _email: email });
       if (error) throw error;
       return data as AdminResult;
     },
@@ -288,7 +288,7 @@ const AdminPage = () => {
 
   const resetPortfolioMutation = useMutation<ResetPortfolioResult, Error, string>({
     mutationFn: async (email: string) => {
-      const { data, error } = await supabase.rpc('admin_reset_portfolio', { _target_email: email });
+      const { data, error } = await (supabase.rpc as any)('admin_reset_portfolio', { _target_email: email });
       if (error) throw error;
       return data as ResetPortfolioResult;
     },
@@ -308,7 +308,7 @@ const AdminPage = () => {
 
   const grantAchievementMutation = useMutation<GrantAchievementResult, Error, { email: string; achievement: string }>({
     mutationFn: async ({ email, achievement }: { email: string; achievement: string }) => {
-      const { data, error } = await supabase.rpc('admin_grant_achievement', { 
+      const { data, error } = await (supabase.rpc as any)('admin_grant_achievement', { 
         _email: email, 
         _achievement_name: achievement 
       });
@@ -330,7 +330,7 @@ const AdminPage = () => {
 
   const setStartingBalanceMutation = useMutation<StartingBalanceResult, Error, { email: string; balance: number }>({
     mutationFn: async ({ email, balance }: { email: string; balance: number }) => {
-      const { data, error } = await supabase.rpc('admin_set_starting_balance', { 
+      const { data, error } = await (supabase.rpc as any)('admin_set_starting_balance', { 
         _email: email, 
         _new_balance: balance 
       });
@@ -446,8 +446,8 @@ const AdminPage = () => {
 
     setIsUpdating(true);
     try {
-      const { error } = await supabase
-        .from('portfolios')
+      const { error } = await (supabase
+        .from('portfolios') as any)
         .update({ cash_balance: cashValue })
         .eq('user_id', user.id);
 
@@ -468,7 +468,7 @@ const AdminPage = () => {
     if (!lookupEmail.trim()) return;
 
     try {
-      const { data, error } = await supabase.rpc('admin_lookup_user', { _email: lookupEmail.trim() });
+      const { data, error } = await (supabase.rpc as any)('admin_lookup_user', { _email: lookupEmail.trim() });
       if (error) throw error;
       const userData = data as LookupUser | null;
       setLookedUpUser(userData);
@@ -1059,10 +1059,11 @@ const AdminPage = () => {
                     </div>
                     <Switch
                       id="unlock-all"
-                      checked={settings.unlockAll}
-                      onCheckedChange={(checked) => updateSettings({ unlockAll: checked })}
+                      checked={false}
+                      disabled
                     />
                   </div>
+                  <p className="text-xs text-muted-foreground mt-2">Admin accounts automatically have all features unlocked.</p>
                 </CardContent>
               </Card>
 

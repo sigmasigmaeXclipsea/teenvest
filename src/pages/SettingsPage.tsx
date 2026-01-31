@@ -48,12 +48,12 @@ const SettingsPage = () => {
 
   const updateProfile = useMutation({
     mutationFn: async ({ displayName, profilePublic }: { displayName: string; profilePublic: boolean }) => {
-      const { error } = await supabase
-        .from('profiles')
+      const { error } = await (supabase
+        .from('profiles') as any)
         .update({ 
           display_name: displayName || null,
           profile_public: profilePublic 
-        } as any)
+        })
         .eq('user_id', user!.id);
       if (error) throw error;
     },

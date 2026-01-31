@@ -175,7 +175,7 @@ export const useDisciplineScore = () => {
   return {
     score: discipline.score,
     breakdown: discipline.breakdown,
-    isAtRisk: !(settings.unlockAll && hasAdminRole === true) && discipline.score < 50,
+    isAtRisk: !hasAdminRole && discipline.score < 50,
     loading: tradesLoading,
   };
 };

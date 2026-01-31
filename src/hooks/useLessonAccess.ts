@@ -13,7 +13,7 @@ export const useLessonAccess = () => {
   const { data: hasAdminRole } = useAdminRole();
 
   return useMemo(() => {
-    const unlockAllEnabled = settings.unlockAll && hasAdminRole === true;
+    const unlockAllEnabled = hasAdminRole === true;
     if (!modules || modules.length === 0) {
       return {
         modules: [],
@@ -64,5 +64,5 @@ export const useLessonAccess = () => {
       nextRequiredLesson,
       canAccessLesson,
     };
-  }, [modules, progress, placementIndex, settings.unlockAll, hasAdminRole]);
+  }, [modules, progress, placementIndex, hasAdminRole]);
 };

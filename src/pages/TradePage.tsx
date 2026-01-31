@@ -306,12 +306,12 @@ const TradePage = () => {
           predictionTarget: Number.isFinite(predictionTargetValue as number) ? predictionTargetValue : null,
           predictionHorizonAt,
         });
-        if (user && planData && result?.trade_id) {
-          saveTradePlan(user.id, result.trade_id, planData);
+        if (user && planData && (result as any)?.trade_id) {
+          saveTradePlan(user.id, (result as any).trade_id, planData);
         }
         toast({ title: 'Trade executed!', description: `${tradeVerb} ${shares} shares of ${selectedStock.symbol}` });
       } else {
-        const result = await placeOrder.mutateAsync({
+        const orderResult = await placeOrder.mutateAsync({
           symbol: selectedStock.symbol,
           companyName: selectedStock.companyName,
           tradeType,
@@ -321,14 +321,9 @@ const TradePage = () => {
           sector: selectedStock.sector,
           limitPrice: orderType === 'limit' ? Number(limitPrice) : null,
           stopPrice: orderType === 'stop' ? Number(stopPrice) : null,
-          predictionDirection,
-          predictionThesis: predictionThesis.trim(),
-          predictionIndicators,
-          predictionTarget: Number.isFinite(predictionTargetValue as number) ? predictionTargetValue : null,
-          predictionHorizonAt,
         });
-        if (user && planData && result?.trade_id) {
-          saveTradePlan(user.id, result.trade_id, planData);
+        if (user && planData && (orderResult as any)?.id) {
+          saveTradePlan(user.id, (orderResult as any).id, planData);
         }
         toast({
           title: 'Order placed!',

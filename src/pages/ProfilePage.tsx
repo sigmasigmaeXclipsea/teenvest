@@ -56,7 +56,7 @@ const ProfilePage = () => {
   const { data: publicProfile, isLoading: loadingPublic } = useQuery({
     queryKey: ['public-profile', userId],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_public_profile', { _user_id: userId });
+      const { data, error } = await (supabase.rpc as any)('get_public_profile', { _user_id: userId });
       if (error) throw error;
       return data as unknown as PublicProfile;
     },
@@ -99,8 +99,8 @@ const ProfilePage = () => {
   // Update profile mutation
   const updateProfileMutation = useMutation({
     mutationFn: async (displayName: string) => {
-      const { error } = await supabase
-        .from('profiles')
+      const { error } = await (supabase
+        .from('profiles') as any)
         .update({ display_name: displayName || null })
         .eq('user_id', user!.id);
       if (error) throw error;
@@ -148,8 +148,8 @@ const ProfilePage = () => {
         .getPublicUrl(fileName);
 
       // Update profile with avatar URL (add cache buster)
-      const { error: updateError } = await supabase
-        .from('profiles')
+      const { error: updateError } = await (supabase
+        .from('profiles') as any)
         .update({ avatar_url: `${publicUrl}?t=${Date.now()}` })
         .eq('user_id', user.id);
 
@@ -166,7 +166,7 @@ const ProfilePage = () => {
   };
 
   const handleStartEditing = () => {
-    setEditDisplayName(ownProfile?.display_name || '');
+    setEditDisplayName((ownProfile as any)?.display_name || '');
     setIsEditing(true);
   };
 
@@ -311,9 +311,9 @@ const ProfilePage = () => {
               {/* Avatar with upload button */}
               <div className="relative">
                 <Avatar className="w-20 h-20">
-                  <AvatarImage src={ownProfile?.avatar_url || undefined} />
+                  <AvatarImage src={(ownProfile as any)?.avatar_url || undefined} />
                   <AvatarFallback className="text-2xl">
-                    {ownProfile?.display_name?.charAt(0) || user?.email?.charAt(0) || '?'}
+                    {(ownProfile as any)?.display_name?.charAt(0) || user?.email?.charAt(0) || '?'}
                   </AvatarFallback>
                 </Avatar>
                 <input
@@ -371,7 +371,7 @@ const ProfilePage = () => {
                 ) : (
                   <>
                     <div className="flex items-center gap-2">
-                      <h1 className="text-2xl font-bold">{ownProfile?.display_name || 'Your Profile'}</h1>
+                      <h1 className="text-2xl font-bold">{(ownProfile as any)?.display_name || 'Your Profile'}</h1>
                       <Button size="icon" variant="ghost" onClick={handleStartEditing}>
                         <Pencil className="w-4 h-4" />
                       </Button>
@@ -379,7 +379,7 @@ const ProfilePage = () => {
                     <p className="text-muted-foreground">{user?.email}</p>
                     <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
                       <Clock className="w-4 h-4" />
-                      Member since {ownProfile?.created_at ? format(new Date(ownProfile.created_at), 'MMMM yyyy') : 'Unknown'}
+                      Member since {(ownProfile as any)?.created_at ? format(new Date((ownProfile as any).created_at), 'MMMM yyyy') : 'Unknown'}
                     </p>
                   </>
                 )}

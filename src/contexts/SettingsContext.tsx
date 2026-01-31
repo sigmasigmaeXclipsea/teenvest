@@ -6,7 +6,6 @@ import { useToast } from '@/hooks/use-toast';
 interface UserSettings {
   advancedMode: boolean;
   darkMode: boolean;
-  unlockAll: boolean;
   notifications: {
     priceAlerts: boolean;
     tradeConfirmations: boolean;
@@ -34,7 +33,6 @@ interface SettingsContextType {
 const defaultSettings: UserSettings = {
   advancedMode: false,
   darkMode: true, // Default to dark mode for the app's aesthetic
-  unlockAll: false,
   notifications: {
     priceAlerts: true,
     tradeConfirmations: true,
@@ -90,14 +88,13 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       if (dbSettings) {
         setSettings({
-          advancedMode: dbSettings.advanced_mode,
-          darkMode: dbSettings.dark_mode,
-          unlockAll: dbSettings.unlock_all ?? false,
+          advancedMode: (dbSettings as any).advanced_mode ?? false,
+          darkMode: (dbSettings as any).dark_mode ?? true,
           notifications: {
-            priceAlerts: dbSettings.notifications_price_alerts,
-            tradeConfirmations: dbSettings.notifications_trade_confirmations,
-            weeklyDigest: dbSettings.notifications_weekly_digest,
-            achievements: dbSettings.notifications_achievements,
+            priceAlerts: (dbSettings as any).notifications_price_alerts ?? true,
+            tradeConfirmations: (dbSettings as any).notifications_trade_confirmations ?? true,
+            weeklyDigest: (dbSettings as any).notifications_weekly_digest ?? false,
+            achievements: (dbSettings as any).notifications_achievements ?? true,
           },
         });
       } else {
@@ -108,12 +105,11 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             user_id: user.id,
             advanced_mode: defaultSettings.advancedMode,
             dark_mode: defaultSettings.darkMode,
-            unlock_all: defaultSettings.unlockAll,
             notifications_price_alerts: defaultSettings.notifications.priceAlerts,
             notifications_trade_confirmations: defaultSettings.notifications.tradeConfirmations,
             notifications_weekly_digest: defaultSettings.notifications.weeklyDigest,
             notifications_achievements: defaultSettings.notifications.achievements,
-          });
+          } as any);
 
         if (insertError) console.error('Failed to create settings:', insertError);
       }
@@ -132,7 +128,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (!user) return;
 
     try {
-      const { data, error } = await supabase.rpc('update_daily_streak', {
+      const { data, error } = await (supabase.rpc as any)('update_daily_streak', {
         p_user_id: user.id
       });
 
@@ -182,12 +178,11 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           user_id: user.id,
           advanced_mode: updated.advancedMode,
           dark_mode: updated.darkMode,
-          unlock_all: updated.unlockAll,
           notifications_price_alerts: updated.notifications.priceAlerts,
           notifications_trade_confirmations: updated.notifications.tradeConfirmations,
           notifications_weekly_digest: updated.notifications.weeklyDigest,
           notifications_achievements: updated.notifications.achievements,
-        }, {
+        } as any, {
           onConflict: 'user_id',
         });
 

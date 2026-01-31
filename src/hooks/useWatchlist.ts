@@ -45,7 +45,7 @@ export const useAddToWatchlist = () => {
           user_id: user.id,
           symbol,
           company_name: companyName,
-        });
+        } as any);
       
       if (error) throw error;
     },

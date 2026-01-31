@@ -65,7 +65,7 @@ export const useAchievementTracker = () => {
         .insert({
           user_id: user.id,
           achievement_id: achievementId,
-        });
+        } as any);
       
       // Ignore duplicate errors
       if (error && error.code !== '23505') {
@@ -132,8 +132,8 @@ export const useAchievementTracker = () => {
           // Check current or longest streak
           if (streakData) {
             const maxStreak = Math.max(
-              streakData.current_streak || 0,
-              streakData.longest_streak || 0
+              (streakData as any).current_streak || 0,
+              (streakData as any).longest_streak || 0
             );
             qualified = maxStreak >= achievement.requirement_value;
           }

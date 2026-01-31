@@ -66,7 +66,7 @@ const MistakeFeed = () => {
           trades,
           holdings,
           portfolio,
-          startingBalance: profile?.starting_balance || 10000
+          startingBalance: (profile as any)?.starting_balance || 10000
         }
       });
 
