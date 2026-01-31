@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { parseMarkdown } from '@/lib/markdown.tsx';
+import { parseMarkdownToHTML } from '@/lib/markdown.tsx';
 
 type Message = {
   role: 'user' | 'assistant';
@@ -255,7 +255,7 @@ const AIAssistantCard = ({
                     }`}
                   >
                     {msg.role === 'assistant' ? (
-                      <span dangerouslySetInnerHTML={{ __html: parseMarkdown(msg.content) }} />
+                      <span dangerouslySetInnerHTML={{ __html: parseMarkdownToHTML(msg.content) }} />
                     ) : (
                       msg.content
                     )}
