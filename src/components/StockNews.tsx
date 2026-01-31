@@ -43,6 +43,10 @@ const StockNews: React.FC<StockNewsProps> = ({ symbol, market, className = '' })
   }
 
   if (error || !newsData?.success || !newsData.data) {
+    const isRateLimited = newsData?.source === 'rate-limited' || 
+                          newsData?.error?.includes('Rate limit') ||
+                          error?.message?.includes('429');
+    
     return (
       <Card className={className}>
         <CardHeader>
@@ -52,10 +56,12 @@ const StockNews: React.FC<StockNewsProps> = ({ symbol, market, className = '' })
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Alert>
+          <Alert variant={isRateLimited ? 'default' : 'destructive'}>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              {error?.message || newsData?.error || 'Unable to load news at this time.'}
+              {isRateLimited 
+                ? 'News temporarily unavailable due to high demand. Please refresh in a moment.'
+                : (error?.message || newsData?.error || 'Unable to load news at this time.')}
             </AlertDescription>
           </Alert>
         </CardContent>
