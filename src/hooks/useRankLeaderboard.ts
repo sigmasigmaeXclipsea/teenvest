@@ -16,10 +16,12 @@ export const useRankLeaderboard = () => {
   return useQuery({
     queryKey: ['rank-leaderboard'],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_rank_leaderboard');
+      // Use 'as any' because get_rank_leaderboard is not in the generated types yet
+      const { data, error } = await (supabase.rpc as any)('get_rank_leaderboard');
       if (error) throw error;
 
-      const entries: RankLeaderboardEntry[] = (data || []).map((entry) => ({
+      const rawData = Array.isArray(data) ? data : [];
+      const entries: RankLeaderboardEntry[] = rawData.map((entry: any) => ({
         user_id: entry.user_id,
         display_name: entry.display_name || 'Anonymous',
         xp: Number(entry.xp) || 0,
