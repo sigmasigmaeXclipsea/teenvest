@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.gemini-news]
 verify_jwt = false
+
+[functions.rpe-feedback-ai]
+verify_jwt = false

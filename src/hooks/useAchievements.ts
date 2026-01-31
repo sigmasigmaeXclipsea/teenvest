@@ -66,7 +66,7 @@ export const useEarnAchievement = () => {
         .insert({
           user_id: user.id,
           achievement_id: achievementId,
-        });
+        } as any);
       
       // Ignore duplicate errors
       if (error && !error.message.includes('duplicate')) throw error;

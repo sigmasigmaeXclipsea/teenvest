@@ -30,7 +30,7 @@ export const useSkillTreeProgress = () => {
   const { passedTiers } = usePlacementExam();
 
   return useMemo(() => {
-    const unlockAllEnabled = settings.unlockAll && hasAdminRole === true;
+    const unlockAllEnabled = hasAdminRole === true;
     const allModules = modules || [];
     const completedIds = new Set(
       (progress || []).filter((entry) => entry.completed).map((entry) => entry.module_id)
@@ -150,5 +150,5 @@ export const useSkillTreeProgress = () => {
       progressByBranch,
       moduleBranchMap,
     };
-  }, [modules, progress, quizResults, trades, settings.unlockAll, hasAdminRole, passedTiers]);
+  }, [modules, progress, quizResults, trades, hasAdminRole, passedTiers]);
 };

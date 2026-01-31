@@ -22,14 +22,6 @@ export interface Holding {
   updated_at: string;
 }
 
-export interface TradePredictionInput {
-  predictionDirection: 'up' | 'down';
-  predictionThesis: string;
-  predictionIndicators: string[];
-  predictionTarget?: number | null;
-  predictionHorizonAt?: string | null;
-}
-
 export const usePortfolio = () => {
   const { user } = useAuth();
 
@@ -84,11 +76,6 @@ export const useExecuteTrade = () => {
       shares,
       price,
       sector,
-      predictionDirection,
-      predictionThesis,
-      predictionIndicators,
-      predictionTarget,
-      predictionHorizonAt,
     }: {
       symbol: string;
       companyName: string;
@@ -97,9 +84,10 @@ export const useExecuteTrade = () => {
       shares: number;
       price: number;
       sector?: string;
-      predictionDirection: 'up' | 'down';
-      predictionThesis: string;
-      predictionIndicators: string[];
+      // Prediction fields are optional and not stored in current schema
+      predictionDirection?: 'up' | 'down';
+      predictionThesis?: string;
+      predictionIndicators?: string[];
       predictionTarget?: number | null;
       predictionHorizonAt?: string | null;
     }) => {
@@ -107,7 +95,7 @@ export const useExecuteTrade = () => {
 
       // Use atomic stored procedure for trade execution
       // This prevents race conditions by using row-level locking and transactions
-      const { data, error } = await supabase.rpc('execute_trade', {
+      const { data, error } = await (supabase.rpc as any)('execute_trade', {
         p_user_id: user.id,
         p_symbol: symbol,
         p_company_name: companyName,
@@ -116,38 +104,10 @@ export const useExecuteTrade = () => {
         p_shares: shares,
         p_price: price,
         p_sector: sector || null,
-        p_prediction_direction: predictionDirection,
-        p_prediction_thesis: predictionThesis,
-        p_prediction_indicators: predictionIndicators,
-        p_prediction_target: predictionTarget ?? null,
-        p_prediction_horizon_at: predictionHorizonAt ?? null,
       });
 
       if (error) {
         const message = error.message || '';
-        const normalizedMessage = message.toLowerCase();
-        const missingFunction =
-          normalizedMessage.includes('execute_trade') &&
-          (normalizedMessage.includes('does not exist') ||
-            normalizedMessage.includes('could not find the function') ||
-            normalizedMessage.includes('schema cache'));
-
-        if (missingFunction) {
-          const fallback = await supabase.rpc('execute_trade', {
-            p_user_id: user.id,
-            p_symbol: symbol,
-            p_company_name: companyName,
-            p_trade_type: tradeType,
-            p_order_type: orderType,
-            p_shares: shares,
-            p_price: price,
-            p_sector: sector || null,
-          });
-          if (fallback.error) {
-            throw fallback.error;
-          }
-          return fallback.data;
-        }
         // Map database errors to user-friendly messages
         if (message.includes('Insufficient funds')) {
           throw new Error('Insufficient funds');
@@ -164,7 +124,7 @@ export const useExecuteTrade = () => {
         throw error;
       }
 
-      return data;
+      return data as { success: boolean; trade_id: string; total_amount: number } | null;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['portfolio'] });

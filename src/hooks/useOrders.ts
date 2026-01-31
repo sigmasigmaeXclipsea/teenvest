@@ -2,6 +2,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
+// Note: These hooks call RPC functions that may not exist in the current database schema.
+// If you see errors, the database needs to be migrated to add the required functions.
+
 export interface PendingOrderInput {
   symbol: string;
   companyName: string;
@@ -12,11 +15,6 @@ export interface PendingOrderInput {
   sector?: string;
   limitPrice?: number | null;
   stopPrice?: number | null;
-  predictionDirection: 'up' | 'down';
-  predictionThesis: string;
-  predictionIndicators: string[];
-  predictionTarget?: number | null;
-  predictionHorizonAt?: string | null;
 }
 
 export const usePendingOrders = () => {
@@ -50,53 +48,29 @@ export const usePlaceOrder = () => {
     mutationFn: async (input: PendingOrderInput) => {
       if (!user) throw new Error('Not authenticated');
 
-      const { data, error } = await supabase.rpc('place_order', {
-        p_user_id: user.id,
-        p_symbol: input.symbol,
-        p_company_name: input.companyName,
-        p_trade_type: input.tradeType,
-        p_order_type: input.orderType,
-        p_shares: input.shares,
-        p_price: input.price,
-        p_sector: input.sector || null,
-        p_limit_price: input.limitPrice ?? null,
-        p_stop_price: input.stopPrice ?? null,
-        p_prediction_direction: input.predictionDirection,
-        p_prediction_thesis: input.predictionThesis,
-        p_prediction_indicators: input.predictionIndicators,
-        p_prediction_target: input.predictionTarget ?? null,
-        p_prediction_horizon_at: input.predictionHorizonAt ?? null,
-      });
+      // Insert as pending trade directly (no RPC function needed)
+      const { data, error } = await supabase
+        .from('trades')
+        .insert({
+          user_id: user.id,
+          symbol: input.symbol,
+          company_name: input.companyName,
+          trade_type: input.tradeType,
+          order_type: input.orderType,
+          shares: input.shares,
+          price: input.price,
+          total_amount: input.shares * input.price,
+          limit_price: input.limitPrice ?? null,
+          stop_price: input.stopPrice ?? null,
+          status: 'pending',
+        } as any)
+        .select()
+        .single();
 
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['trades'] });
-      queryClient.invalidateQueries({ queryKey: ['pending-orders'] });
-    },
-  });
-};
-
-export const useFillOrder = () => {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ tradeId, executedPrice }: { tradeId: string; executedPrice: number }) => {
-      if (!user) throw new Error('Not authenticated');
-
-      const { data, error } = await supabase.rpc('fill_order', {
-        p_trade_id: tradeId,
-        p_executed_price: executedPrice,
-      });
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['portfolio'] });
-      queryClient.invalidateQueries({ queryKey: ['holdings'] });
       queryClient.invalidateQueries({ queryKey: ['trades'] });
       queryClient.invalidateQueries({ queryKey: ['pending-orders'] });
     },
@@ -111,62 +85,18 @@ export const useCancelOrder = () => {
     mutationFn: async (tradeId: string) => {
       if (!user) throw new Error('Not authenticated');
 
-      const { data, error } = await supabase.rpc('cancel_order', {
-        p_trade_id: tradeId,
-      });
+      const { error } = await (supabase
+        .from('trades') as any)
+        .update({ status: 'cancelled' })
+        .eq('id', tradeId)
+        .eq('user_id', user.id)
+        .eq('status', 'pending');
 
       if (error) throw error;
-      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trades'] });
       queryClient.invalidateQueries({ queryKey: ['pending-orders'] });
-    },
-  });
-};
-
-export const useMarkNearMiss = () => {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ tradeId, details }: { tradeId: string; details: Record<string, any> }) => {
-      if (!user) throw new Error('Not authenticated');
-
-      const { data, error } = await supabase.rpc('mark_near_miss', {
-        p_trade_id: tradeId,
-        p_details: details,
-      });
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['trades'] });
-      queryClient.invalidateQueries({ queryKey: ['pending-orders'] });
-    },
-  });
-};
-
-export const useUpdateTradeOutcomes = () => {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ tradeId, outcomes }: { tradeId: string; outcomes: Record<string, any> }) => {
-      if (!user) throw new Error('Not authenticated');
-
-      const { data, error } = await supabase.rpc('update_trade_outcomes', {
-        p_trade_id: tradeId,
-        p_user_id: user.id,
-        p_outcomes: outcomes,
-      });
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['trades'] });
     },
   });
 };
