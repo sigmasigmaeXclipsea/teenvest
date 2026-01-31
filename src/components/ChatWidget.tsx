@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import { parseMarkdown } from '@/lib/markdown.tsx';
+import { parseMarkdownToHTML } from '@/lib/markdown.tsx';
 
 type Message = {
   role: 'user' | 'assistant';
@@ -240,7 +240,7 @@ const ChatWidget = () => {
                     )}
                   >
                     {msg.role === 'assistant' ? (
-                      <span dangerouslySetInnerHTML={{ __html: parseMarkdown(msg.content) }} />
+                      <span dangerouslySetInnerHTML={{ __html: parseMarkdownToHTML(msg.content) }} />
                     ) : (
                       msg.content
                     )}
