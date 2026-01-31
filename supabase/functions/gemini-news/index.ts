@@ -3,7 +3,6 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { 
   rateLimit, 
   RateLimitConfig, 
-  sanitizeInput,
   validateSymbol,
   secureCorsHeaders,
   createRateLimitResponse,
@@ -12,6 +11,31 @@ import {
 } from "../_shared/security.ts";
 
 const rateLimitConfig: RateLimitConfig = { windowMs: 60 * 1000, maxRequests: 15 };
+
+// Simple in-memory cache with TTL (5 minutes)
+const newsCache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+function getCachedNews(key: string): any | null {
+  const cached = newsCache.get(key);
+  if (!cached) return null;
+  
+  if (Date.now() - cached.timestamp > CACHE_TTL_MS) {
+    newsCache.delete(key);
+    return null;
+  }
+  
+  return cached.data;
+}
+
+function setCachedNews(key: string, data: any): void {
+  // Limit cache size to prevent memory issues
+  if (newsCache.size > 100) {
+    const oldestKey = newsCache.keys().next().value;
+    if (oldestKey) newsCache.delete(oldestKey);
+  }
+  newsCache.set(key, { data, timestamp: Date.now() });
+}
 
 interface NewsRequest {
   symbol?: string;
@@ -72,6 +96,18 @@ serve(async (req: Request) => {
       if (!validatedSymbol) {
         return createErrorResponse('Invalid symbol format', 400);
       }
+    }
+
+    // Check cache first
+    const cacheKey = market ? 'market_news' : `symbol_${validatedSymbol}`;
+    const cachedData = getCachedNews(cacheKey);
+    if (cachedData) {
+      console.log(`Returning cached news for: ${cacheKey}`);
+      return createSuccessResponse({ 
+        success: true, 
+        data: cachedData,
+        source: 'AI-powered (cached)'
+      });
     }
 
     const GOOGLE_AI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY')
@@ -137,7 +173,8 @@ serve(async (req: Request) => {
 
     if (!response.ok) {
       if (response.status === 429) {
-        return createErrorResponse('AI service rate limit. Please try again later.', 429);
+        console.warn('Google AI API rate limit hit');
+        return createErrorResponse('Rate limit exceeded. Please try again in a moment.', 429);
       }
       const errorText = await response.text()
       console.error('AI gateway error:', response.status, errorText)
@@ -159,6 +196,11 @@ serve(async (req: Request) => {
     } catch (parseError) {
       console.error('Failed to parse news response:', parseError)
       newsData = []
+    }
+    
+    // Cache successful response
+    if (newsData && newsData.length > 0) {
+      setCachedNews(cacheKey, newsData);
     }
     
     return createSuccessResponse({ 
