@@ -50,7 +50,14 @@ type LessonCategory = {
   description: string;
   startIndex?: number;
   endIndex?: number;
-  modules?: LearningModule[];
+  modules?: Array<{
+    id: string;
+    title: string;
+    description: string;
+    duration_minutes: number;
+    interactive_blocks?: unknown[];
+    category?: string;
+  }>;
 };
 
 const fallbackCategories = (totalModules: number): LessonCategory[] => {
