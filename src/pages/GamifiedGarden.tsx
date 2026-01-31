@@ -330,7 +330,6 @@ export default function GamifiedGarden() {
           try {
             const parsed = JSON.parse(oldData);
             if (parsed.xp && parsed.xp > 0 && !xpLoading && xp === 0) {
-              console.log(`Migrating XP from ${key}: ${parsed.xp}`);
               await setXP(parsed.xp);
               // Remove old XP from localStorage to prevent duplicate migrations
               const updated = { ...parsed };
@@ -348,11 +347,9 @@ export default function GamifiedGarden() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        console.log('Loading garden state from version:', version);
         
         // Migrate XP from localStorage to database if exists
         if (parsed.xp && parsed.xp > 0 && !xpLoading && xp === 0) {
-          console.log('Migrating XP from current version:', parsed.xp);
           setXP(parsed.xp);
         }
         
@@ -373,7 +370,6 @@ export default function GamifiedGarden() {
         } else {
           // Migrate from old plot system to new garden system
           setGarden({ plants: [], width: 800, height: 600 });
-          console.log('Migrated from plot system to garden system');
         }
         
         setInventory(parsed.inventory ?? { seeds: [], gear: [] });
@@ -392,7 +388,6 @@ export default function GamifiedGarden() {
       }
     } else {
       // No saved state, use defaults
-      console.log('No saved state found, using defaults');
       setGarden({ plants: [], width: 800, height: 600 });
       // Check older versions for XP migration
       migrateOldXP();

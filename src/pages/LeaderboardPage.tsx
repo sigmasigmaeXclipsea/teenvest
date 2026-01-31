@@ -133,7 +133,6 @@ const LeaderboardPage = () => {
     is_current_user: entry.is_current_user || entry.user_id === user?.id,
   }));
 
-<<<<<<< HEAD
   // Separate top 3 for featured cards
   const top3 = enrichedLeaderboard.filter((entry) => entry.rank <= 3);
   
@@ -151,12 +150,6 @@ const LeaderboardPage = () => {
   
   // Check if current user is outside top 100
   const isUserOutsideTop100 = !!currentUserEntry && currentUserEntry.rank > 100;
-=======
-  // Separate top 10 and current user if outside top 10
-  const top10 = enrichedLeaderboard.filter((entry: any) => entry.rank <= 10);
-  const currentUserEntry = enrichedLeaderboard.find((entry: any) => entry.is_current_user);
-  const isUserOutsideTop10 = !!currentUserEntry && currentUserEntry.rank > 10;
->>>>>>> 545fffa (Fix lesson interactives, quiz points, and beanstalk questions)
 
   const renderPortfolioEntry = (entry: LeaderboardEntry, showSeparator = false) => (
     <div key={entry.rank}>
@@ -261,11 +254,7 @@ const LeaderboardPage = () => {
 
         {/* Top 3 Cards */}
         <div className="grid gap-4 md:grid-cols-3">
-<<<<<<< HEAD
           {top3.map((entry) => (
-=======
-          {top10.slice(0, 3).map((entry: any) => (
->>>>>>> 545fffa (Fix lesson interactives, quiz points, and beanstalk questions)
             <Card key={entry.rank} className={`${getRankBg(entry.rank, entry.is_current_user)} border`}>
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
@@ -291,12 +280,6 @@ const LeaderboardPage = () => {
                         <Badge variant="outline" className="text-xs border-primary text-primary">You</Badge>
                       )}
                     </div>
-<<<<<<< HEAD
-                    <p className="text-2xl font-bold text-primary">
-                      ${entry.total_value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">Total Portfolio Value</p>
-=======
                     {mode === 'portfolio' ? (
                       <>
                         <p className="text-2xl font-bold text-primary">
@@ -310,7 +293,6 @@ const LeaderboardPage = () => {
                         <p className="text-xs text-muted-foreground mt-1">{entry.rank_name}</p>
                       </>
                     )}
->>>>>>> 545fffa (Fix lesson interactives, quiz points, and beanstalk questions)
                   </div>
                   {entry.profile_public && !entry.is_current_user && (
                     <Link to={`/profile/${entry.user_id}`}>
@@ -330,32 +312,20 @@ const LeaderboardPage = () => {
           <CardHeader>
             <CardTitle>All Rankings</CardTitle>
             <CardDescription>
-<<<<<<< HEAD
               {isUserOutsideTop100 && currentUserEntry
                 ? `Top 100 performers + your rank (#${currentUserEntry.rank})`
-                : `Top 100 performers by portfolio value (Page ${currentPage} of ${totalPages || 1})`}
-=======
-              {isUserOutsideTop10 && currentUserEntry
-                ? `Top 10 performers + your rank (#${currentUserEntry.rank})`
-                : mode === 'portfolio' ? 'Top 10 by portfolio value' : 'Top 10 by rank (XP)'}
->>>>>>> 545fffa (Fix lesson interactives, quiz points, and beanstalk questions)
+                : `Top 100 performers (Page ${currentPage} of ${totalPages || 1})`}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-<<<<<<< HEAD
-              {currentPageEntries.map((entry) => renderEntry(entry))}
+              {currentPageEntries.map((entry) => (
+                mode === 'portfolio' ? renderPortfolioEntry(entry) : renderRankEntry(entry)
+              ))}
               
-              {isUserOutsideTop100 && currentUserEntry && currentPage === totalPages && renderEntry(currentUserEntry, true)}
-=======
-              {mode === 'portfolio'
-                ? top10.map((entry: any) => renderPortfolioEntry(entry))
-                : top10.map((entry: any) => renderRankEntry(entry))}
-              
-              {isUserOutsideTop10 && currentUserEntry && (mode === 'portfolio'
-                ? renderPortfolioEntry(currentUserEntry, true)
-                : renderRankEntry(currentUserEntry, true))}
->>>>>>> 545fffa (Fix lesson interactives, quiz points, and beanstalk questions)
+              {isUserOutsideTop100 && currentUserEntry && currentPage === totalPages && (
+                mode === 'portfolio' ? renderPortfolioEntry(currentUserEntry, true) : renderRankEntry(currentUserEntry, true)
+              )}
 
               {(!enrichedLeaderboard || enrichedLeaderboard.length === 0) && (
                 <div className="text-center py-8 text-muted-foreground">
