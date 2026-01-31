@@ -7,6 +7,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { useAlphaIndicators } from '@/hooks/useAlphaIndicators';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useSkillTreeProgress } from '@/hooks/useSkillTreeProgress';
+import LockedFeatureCard from '@/components/LockedFeatureCard';
 
 interface ProfessionalCandlestickChartProps {
   symbol: string;
@@ -92,6 +94,8 @@ const ProfessionalCandlestickChart = ({ symbol, previousClose }: ProfessionalCan
   const candleData = chartData?.candles || [];
   const resolution = chartData?.resolution || '';
   const { data: indicatorData } = useAlphaIndicators(symbol, activeTimeframe, { emaPeriod });
+  const { unlocks } = useSkillTreeProgress();
+  const technicianUnlocked = unlocks.technician;
 
   const clearPreview = () => {
     previewActiveRef.current = false;
@@ -613,6 +617,14 @@ const ProfessionalCandlestickChart = ({ symbol, previousClose }: ProfessionalCan
       try { emaSeriesRef.current.setData(emaSeries); } catch {}
     }
 
+    if (!technicianUnlocked) {
+      try { rsiSeriesRef.current?.setData([]); } catch {}
+      try { macdSeriesRef.current?.setData([]); } catch {}
+      try { macdSignalSeriesRef.current?.setData([]); } catch {}
+      try { macdHistSeriesRef.current?.setData([]); } catch {}
+      return;
+    }
+
     if (rsiSeriesRef.current) {
       const rsiSeries = rsiValues.map((p) => ({ time: toChartTime(p.time), value: p.value }));
       try { rsiSeriesRef.current.setData(rsiSeries); } catch {}
@@ -630,7 +642,7 @@ const ProfessionalCandlestickChart = ({ symbol, previousClose }: ProfessionalCan
       try { macdSignalSeriesRef.current.setData(signalSeries); } catch {}
       try { macdHistSeriesRef.current.setData(histSeries); } catch {}
     }
-  }, [indicatorData, activeTimeframe]);
+  }, [indicatorData, activeTimeframe, technicianUnlocked]);
 
   useEffect(() => {
     if (!isFullscreen) return;
@@ -831,14 +843,25 @@ const ProfessionalCandlestickChart = ({ symbol, previousClose }: ProfessionalCan
               <div className="text-xs text-[#787b86] px-2 py-1 bg-[#1e222d]">Volume</div>
               <div ref={volumeContainerRef} className="w-full" style={{ height: `${volumeHeight}px` }} />
             </div>
-            <div className="border-t border-[#2a2e39]">
-              <div className="text-xs text-[#787b86] px-2 py-1 bg-[#1e222d]">RSI (14)</div>
-              <div ref={rsiContainerRef} className="w-full" style={{ height: `${rsiHeight}px` }} />
-            </div>
-            <div className="border-t border-[#2a2e39]">
-              <div className="text-xs text-[#787b86] px-2 py-1 bg-[#1e222d]">MACD (12, 26, 9)</div>
-              <div ref={macdContainerRef} className="w-full" style={{ height: `${macdHeight}px` }} />
-            </div>
+            {technicianUnlocked ? (
+              <>
+                <div className="border-t border-[#2a2e39]">
+                  <div className="text-xs text-[#787b86] px-2 py-1 bg-[#1e222d]">RSI (14)</div>
+                  <div ref={rsiContainerRef} className="w-full" style={{ height: `${rsiHeight}px` }} />
+                </div>
+                <div className="border-t border-[#2a2e39]">
+                  <div className="text-xs text-[#787b86] px-2 py-1 bg-[#1e222d]">MACD (12, 26, 9)</div>
+                  <div ref={macdContainerRef} className="w-full" style={{ height: `${macdHeight}px` }} />
+                </div>
+              </>
+            ) : (
+              <div className="border-t border-[#2a2e39] bg-[#131722] p-4">
+                <LockedFeatureCard
+                  title="Indicators Locked"
+                  description="Unlock the Technician path (complete Foundation + 10 trades) to access RSI and MACD."
+                />
+              </div>
+            )}
           </div>
         )}
       </CardContent>

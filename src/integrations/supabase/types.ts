@@ -361,10 +361,22 @@ export type Database = {
         Row: {
           company_name: string
           created_at: string
+          entry_price: number | null
+          executed_price: number | null
+          filled_at: string | null
           id: string
           limit_price: number | null
+          near_miss: boolean
+          near_miss_details: Json | null
           order_type: string
           price: number
+          prediction_direction: string | null
+          prediction_horizon_at: string | null
+          prediction_indicators: Json | null
+          prediction_outcomes: Json | null
+          prediction_target: number | null
+          prediction_thesis: string | null
+          sector: string | null
           shares: number
           status: string
           stop_price: number | null
@@ -376,10 +388,22 @@ export type Database = {
         Insert: {
           company_name: string
           created_at?: string
+          entry_price?: number | null
+          executed_price?: number | null
+          filled_at?: string | null
           id?: string
           limit_price?: number | null
+          near_miss?: boolean
+          near_miss_details?: Json | null
           order_type: string
           price: number
+          prediction_direction?: string | null
+          prediction_horizon_at?: string | null
+          prediction_indicators?: Json | null
+          prediction_outcomes?: Json | null
+          prediction_target?: number | null
+          prediction_thesis?: string | null
+          sector?: string | null
           shares: number
           status?: string
           stop_price?: number | null
@@ -391,10 +415,22 @@ export type Database = {
         Update: {
           company_name?: string
           created_at?: string
+          entry_price?: number | null
+          executed_price?: number | null
+          filled_at?: string | null
           id?: string
           limit_price?: number | null
+          near_miss?: boolean
+          near_miss_details?: Json | null
           order_type?: string
           price?: number
+          prediction_direction?: string | null
+          prediction_horizon_at?: string | null
+          prediction_indicators?: Json | null
+          prediction_outcomes?: Json | null
+          prediction_target?: number | null
+          prediction_thesis?: string | null
+          sector?: string | null
           shares?: number
           status?: string
           stop_price?: number | null
@@ -497,6 +533,7 @@ export type Database = {
           notifications_price_alerts: boolean
           notifications_trade_confirmations: boolean
           notifications_weekly_digest: boolean
+          unlock_all: boolean
           updated_at: string
           user_id: string
         }
@@ -509,6 +546,7 @@ export type Database = {
           notifications_price_alerts?: boolean
           notifications_trade_confirmations?: boolean
           notifications_weekly_digest?: boolean
+          unlock_all?: boolean
           updated_at?: string
           user_id: string
         }
@@ -521,6 +559,7 @@ export type Database = {
           notifications_price_alerts?: boolean
           notifications_trade_confirmations?: boolean
           notifications_weekly_digest?: boolean
+          unlock_all?: boolean
           updated_at?: string
           user_id?: string
         }

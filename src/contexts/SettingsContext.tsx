@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 interface UserSettings {
   advancedMode: boolean;
   darkMode: boolean;
+  unlockAll: boolean;
   notifications: {
     priceAlerts: boolean;
     tradeConfirmations: boolean;
@@ -33,6 +34,7 @@ interface SettingsContextType {
 const defaultSettings: UserSettings = {
   advancedMode: false,
   darkMode: true, // Default to dark mode for the app's aesthetic
+  unlockAll: false,
   notifications: {
     priceAlerts: true,
     tradeConfirmations: true,
@@ -90,6 +92,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setSettings({
           advancedMode: dbSettings.advanced_mode,
           darkMode: dbSettings.dark_mode,
+          unlockAll: dbSettings.unlock_all ?? false,
           notifications: {
             priceAlerts: dbSettings.notifications_price_alerts,
             tradeConfirmations: dbSettings.notifications_trade_confirmations,
@@ -105,6 +108,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             user_id: user.id,
             advanced_mode: defaultSettings.advancedMode,
             dark_mode: defaultSettings.darkMode,
+            unlock_all: defaultSettings.unlockAll,
             notifications_price_alerts: defaultSettings.notifications.priceAlerts,
             notifications_trade_confirmations: defaultSettings.notifications.tradeConfirmations,
             notifications_weekly_digest: defaultSettings.notifications.weeklyDigest,
@@ -178,6 +182,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           user_id: user.id,
           advanced_mode: updated.advancedMode,
           dark_mode: updated.darkMode,
+          unlock_all: updated.unlockAll,
           notifications_price_alerts: updated.notifications.priceAlerts,
           notifications_trade_confirmations: updated.notifications.tradeConfirmations,
           notifications_weekly_digest: updated.notifications.weeklyDigest,

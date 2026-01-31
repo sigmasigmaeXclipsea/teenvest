@@ -3,6 +3,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { TrendingUp, TrendingDown, DollarSign, Briefcase, ArrowUpRight, ArrowDownRight, Trophy } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Link } from 'react-router-dom';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { usePortfolio, useHoldings } from '@/hooks/usePortfolio';
@@ -12,6 +13,10 @@ import PortfolioHealthAI from '@/components/PortfolioHealthAI';
 import AIAssistantCard from '@/components/AIAssistantCard';
 import DashboardStreakWidget from '@/components/DashboardStreakWidget';
 import StockNews from '@/components/StockNews';
+import DisciplineScoreCard from '@/components/DisciplineScoreCard';
+import CopyTradingHub from '@/components/CopyTradingHub';
+import MentorshipMarketplace from '@/components/MentorshipMarketplace';
+import PhantomPortfolioPanel from '@/components/PhantomPortfolioPanel';
 import { useAuth } from '@/contexts/AuthContext';
 import { useXP } from '@/contexts/XPContext';
 import { getRankFromXP } from '@/lib/ranks';
@@ -232,109 +237,127 @@ const DashboardPage = () => {
           </Card>
         </div>
 
-        {/* Holdings and Diversity */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Holdings */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Your Holdings</CardTitle>
-              <CardDescription>Current stock positions</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {holdings && holdings.length > 0 ? (
-                <div className="space-y-4">
-                    {holdings.map((holding) => {
-                    const stockData = priceMap.get(holding.symbol);
-                    const currentPrice = stockData?.price || Number(holding.average_cost);
-                    const currentValue = Number(holding.shares) * currentPrice;
-                    const costBasis = Number(holding.shares) * Number(holding.average_cost);
-                    const gain = currentValue - costBasis;
-                    const gainPercent = costBasis > 0 ? (gain / costBasis) * 100 : 0;
+        {/* Portfolio Tabs */}
+        <Tabs defaultValue="portfolio" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="portfolio">Your Portfolio</TabsTrigger>
+            <TabsTrigger value="phantom">Phantom Portfolio</TabsTrigger>
+          </TabsList>
+          <TabsContent value="portfolio">
+            <div className="grid gap-6 lg:grid-cols-2">
+              {/* Holdings */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Your Holdings</CardTitle>
+                  <CardDescription>Current stock positions</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {holdings && holdings.length > 0 ? (
+                    <div className="space-y-4">
+                      {holdings.map((holding) => {
+                        const stockData = priceMap.get(holding.symbol);
+                        const currentPrice = stockData?.price || Number(holding.average_cost);
+                        const currentValue = Number(holding.shares) * currentPrice;
+                        const costBasis = Number(holding.shares) * Number(holding.average_cost);
+                        const gain = currentValue - costBasis;
+                        const gainPercent = costBasis > 0 ? (gain / costBasis) * 100 : 0;
 
-                    return (
-                      <div key={holding.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
-                        <div>
-                          <p className="font-semibold">{holding.symbol}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {Number(holding.shares).toFixed(2)} shares @ ${Number(holding.average_cost).toFixed(2)}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold">${Number.isFinite(currentValue) ? currentValue.toFixed(2) : '0.00'}</p>
-                          <p className={`text-sm ${gain >= 0 ? 'text-primary' : 'text-destructive'}`}>
-                            {gain >= 0 ? '+' : ''}{gainPercent.toFixed(2)}%
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Briefcase className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-                  <p className="text-muted-foreground mb-4">No holdings yet. Start trading!</p>
-                  <Link to="/trade">
-                    <Button>Make Your First Trade</Button>
-                  </Link>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                        return (
+                          <div key={holding.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
+                            <div>
+                              <p className="font-semibold">{holding.symbol}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {Number(holding.shares).toFixed(2)} shares @ ${Number(holding.average_cost).toFixed(2)}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-semibold">${Number.isFinite(currentValue) ? currentValue.toFixed(2) : '0.00'}</p>
+                              <p className={`text-sm ${gain >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                                {gain >= 0 ? '+' : ''}{gainPercent.toFixed(2)}%
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Briefcase className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                      <p className="text-muted-foreground mb-4">No holdings yet. Start trading!</p>
+                      <Link to="/trade">
+                        <Button>Make Your First Trade</Button>
+                      </Link>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
-          {/* Portfolio Diversity */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Portfolio Diversity</CardTitle>
-              <CardDescription>Allocation by sector</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {sectorData.length > 0 ? (
-                <div className="flex items-center gap-6">
-                  <div className="w-48 h-48">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={sectorData}
-                          dataKey="value"
-                          nameKey="name"
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={40}
-                          outerRadius={70}
-                          paddingAngle={2}
-                        >
-                          {sectorData.map((_, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip 
-                          formatter={(value: number) => [`$${value.toFixed(2)}`, 'Value']}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="flex-1 space-y-2">
-                    {sectorData.map((sector, index) => (
-                      <div key={sector.name} className="flex items-center gap-2">
-                        <div
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                        />
-                        <span className="text-sm flex-1">{sector.name}</span>
-                        <span className="text-sm font-medium">${sector.value.toFixed(0)}</span>
+              {/* Portfolio Diversity */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Portfolio Diversity</CardTitle>
+                  <CardDescription>Allocation by sector</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {sectorData.length > 0 ? (
+                    <div className="flex items-center gap-6">
+                      <div className="w-48 h-48">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={sectorData}
+                              dataKey="value"
+                              nameKey="name"
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={40}
+                              outerRadius={70}
+                              paddingAngle={2}
+                            >
+                              {sectorData.map((_, index) => (
+                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                              ))}
+                            </Pie>
+                            <Tooltip 
+                              formatter={(value: number) => [`$${value.toFixed(2)}`, 'Value']}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">
-                    Your portfolio diversity will appear here once you start trading
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                      <div className="flex-1 space-y-2">
+                        {sectorData.map((sector, index) => (
+                          <div key={sector.name} className="flex items-center gap-2">
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                            />
+                            <span className="text-sm flex-1">{sector.name}</span>
+                            <span className="text-sm font-medium">${sector.value.toFixed(0)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground">
+                        Your portfolio diversity will appear here once you start trading
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+          <TabsContent value="phantom">
+            <PhantomPortfolioPanel userTotalValue={portfolioStats?.totalValue ?? startingBalance} />
+          </TabsContent>
+        </Tabs>
+
+        {/* Discipline, Copy Trading, Mentorship */}
+        <div className="grid gap-6 lg:grid-cols-3">
+          <DisciplineScoreCard />
+          <CopyTradingHub />
+          <MentorshipMarketplace />
         </div>
 
         {/* Streak Widget and AI Health */}

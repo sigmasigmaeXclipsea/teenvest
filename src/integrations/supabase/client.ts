@@ -8,10 +8,67 @@ const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-  auth: {
-    storage: localStorage,
-    persistSession: true,
-    autoRefreshToken: true,
+const createMemoryStorage = (): Storage => {
+  const store = new Map<string, string>();
+  return {
+    get length() {
+      return store.size;
+    },
+    clear() {
+      store.clear();
+    },
+    getItem(key: string) {
+      return store.has(key) ? store.get(key)! : null;
+    },
+    key(index: number) {
+      return Array.from(store.keys())[index] ?? null;
+    },
+    removeItem(key: string) {
+      store.delete(key);
+    },
+    setItem(key: string, value: string) {
+      store.set(key, value);
+    },
+  };
+};
+
+const resolveAuthStorage = (): Storage => {
+  try {
+    if (typeof window === 'undefined') {
+      return createMemoryStorage();
+    }
+    const storage = window.localStorage;
+    storage.getItem('__supabase_storage_test__');
+    return storage;
+  } catch (error) {
+    console.warn('Supabase auth storage unavailable, falling back to memory.', error);
+    return createMemoryStorage();
   }
-});
+};
+
+type SupabaseClientType = ReturnType<typeof createClient>;
+
+const createSupabaseStub = (): SupabaseClientType => {
+  const message =
+    'Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY to your .env.';
+  const proxy: any = new Proxy(() => {
+    throw new Error(message);
+  }, {
+    get: () => proxy,
+    apply: () => {
+      throw new Error(message);
+    },
+  });
+  console.warn(message);
+  return proxy as SupabaseClientType;
+};
+
+export const supabase: SupabaseClientType = SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY
+  ? createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+      auth: {
+        storage: resolveAuthStorage(),
+        persistSession: true,
+        autoRefreshToken: true,
+      },
+    })
+  : createSupabaseStub();

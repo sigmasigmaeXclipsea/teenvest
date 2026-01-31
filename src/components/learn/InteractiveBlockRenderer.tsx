@@ -4,6 +4,8 @@ import TradeSimBlock from '@/components/learn/TradeSimBlock';
 import ScenarioChartBlock from '@/components/learn/ScenarioChartBlock';
 import CandlestickBuilderBlock from '@/components/learn/CandlestickBuilderBlock';
 import ChartAnnotatorBlock from '@/components/learn/ChartAnnotatorBlock';
+import LessonVideoBlock from '@/components/learn/LessonVideoBlock';
+import ScaffoldedPracticeBlock, { type ScaffoldedPracticeStep } from '@/components/learn/ScaffoldedPracticeBlock';
 
 export type InteractiveBlock =
   | {
@@ -45,6 +47,22 @@ export type InteractiveBlock =
       title?: string;
       symbol?: string;
       timeframe?: string;
+    }
+  | {
+      type: 'lesson_video';
+      title: string;
+      description?: string;
+      videoUrl?: string;
+      posterUrl?: string;
+      durationSeconds?: number;
+      transcript?: string;
+    }
+  | {
+      type: 'scaffolded_practice';
+      title: string;
+      subtitle?: string;
+      moduleId?: string;
+      steps: ScaffoldedPracticeStep[];
     };
 
 type InteractiveBlockRendererProps = {
@@ -75,6 +93,14 @@ const InteractiveBlockRenderer = ({ blocks }: InteractiveBlockRendererProps) => 
 
         if (block.type === 'chart_annotator') {
           return <ChartAnnotatorBlock key={`chart-annotator-${index}`} {...block} />;
+        }
+
+        if (block.type === 'lesson_video') {
+          return <LessonVideoBlock key={`lesson-video-${index}`} {...block} />;
+        }
+
+        if (block.type === 'scaffolded_practice') {
+          return <ScaffoldedPracticeBlock key={`scaffolded-practice-${index}`} {...block} />;
         }
 
         return (

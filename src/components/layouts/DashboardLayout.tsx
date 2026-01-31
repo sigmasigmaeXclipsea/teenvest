@@ -15,12 +15,14 @@ import {
   Award,
   User,
   Search,
-  Sprout
+  Sprout,
+  CreditCard
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useState, useEffect } from 'react';
 import { useAchievementTracker } from '@/hooks/useAchievementTracker';
+import { useOrderProcessor } from '@/hooks/useOrderProcessor';
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 
@@ -38,6 +40,7 @@ const navItems = [
   { path: '/garden', icon: Sprout, label: 'Garden' },
   { path: '/profile', icon: User, label: 'Profile' },
   { path: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
+  { path: '/subscription', icon: CreditCard, label: 'Subscription' },
   { path: '/settings', icon: Settings, label: 'Settings' },
   { path: '/admin', icon: Shield, label: 'Admin' },
 ];
@@ -51,6 +54,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   
   // Track and auto-award achievements
   useAchievementTracker();
+  useOrderProcessor();
 
   const handleLogout = async () => {
     await signOut();
@@ -89,7 +93,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 Screener
               </Link>
               <Link 
-                to="/research" 
+                to="/research"
                 className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                   location.pathname === '/research' ? 'bg-secondary text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
                 }`}

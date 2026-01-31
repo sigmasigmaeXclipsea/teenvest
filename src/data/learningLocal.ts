@@ -1,4 +1,5 @@
 import type { InteractiveBlock } from '@/components/learn/InteractiveBlockRenderer';
+import type { ScaffoldedPracticeStep } from '@/components/learn/ScaffoldedPracticeBlock';
 
 export type LocalLearningModule = {
   id: string;
@@ -347,6 +348,111 @@ ${integrationSentences[2]}
 - ${exerciseSentence}`;
 };
 
+const SHORT_SELLING_TITLE = 'Short Selling Risks';
+const MARKET_ORDER_TITLE = 'Market Orders';
+
+const buildScaffoldedTranscript = (seed: LessonSeed) => {
+  const topic = seed.title.toLowerCase();
+  const sentences = [
+    ensureSentence(seed.definition),
+    ensureSentence(`Here is the core idea behind ${topic} and how it changes risk`),
+    ensureSentence(`Watch how the setup, trigger, and exit work together for ${topic}`),
+    ensureSentence('Next, you will practice with guidance and then run it solo'),
+  ];
+  return sentences.join(' ');
+};
+
+const buildShortSellingTranscript = () =>
+  [
+    'Short selling means borrowing shares to sell now and buy back later at a lower price.',
+    'The risk is asymmetric because losses can grow if price rises.',
+    'A protective stop loss caps the damage and keeps the lesson survivable.',
+    'Watch the setup, then practice the short with and without guardrails.',
+  ]
+    .map((sentence) => ensureSentence(sentence))
+    .join(' ');
+
+const buildScaffoldedSteps = (seed: LessonSeed, moduleId: string): ScaffoldedPracticeStep[] => {
+  if (seed.title === SHORT_SELLING_TITLE) {
+    return [
+      {
+        id: `${moduleId}-i-do`,
+        label: 'I Do',
+        kind: 'video',
+        title: 'Short selling in 60 seconds',
+        description: 'Watch a quick walkthrough of a short sale with a stop loss.',
+        durationSeconds: 60,
+        transcript: buildShortSellingTranscript(),
+      },
+      {
+        id: `${moduleId}-we-do`,
+        label: 'We Do',
+        kind: 'guided_trade',
+        scenario: {
+          symbol: 'TEENV',
+          setup: 'Price breaks below support with heavy volume after weak guidance.',
+          entryPrice: 102,
+          stopLossPrice: 105.5,
+          targetPrice: 96,
+          direction: 'short',
+        },
+        ctaLabel: 'Confirm short',
+        highlightLabel: 'Sell',
+        autoStopLoss: 105.5,
+      },
+      {
+        id: `${moduleId}-you-do`,
+        label: 'You Do',
+        kind: 'independent_trade',
+        scenario: {
+          symbol: 'TEENV',
+          setup: 'Bearish reversal candle forms near the prior highs.',
+          entryPrice: 108,
+          targetPrice: 100,
+          direction: 'short',
+        },
+        requireStopLoss: true,
+        stopLossHint: 'Try 3-5% above entry',
+        ctaLabel: 'Place short',
+      },
+    ];
+  }
+
+  return [
+    {
+      id: `${moduleId}-i-do`,
+      label: 'I Do',
+      kind: 'video',
+      title: `${seed.title} in 60 seconds`,
+      description: 'Watch the core idea before you practice.',
+      durationSeconds: 60,
+      transcript: buildScaffoldedTranscript(seed),
+    },
+    {
+      id: `${moduleId}-we-do`,
+      label: 'We Do',
+      kind: 'guided_prompt',
+      prompt: `Follow along as we apply ${seed.title} to a simple decision.`,
+      helperText: 'We highlight the key signal and the rule you will follow.',
+      ctaLabel: 'Confirm setup',
+    },
+    {
+      id: `${moduleId}-you-do`,
+      label: 'You Do',
+      kind: 'reflection',
+      prompt: `In one sentence, when would you use ${seed.title}?`,
+      placeholder: `I would use ${seed.title.toLowerCase()} when...`,
+      ctaLabel: 'Save response',
+    },
+  ];
+};
+
+const shouldAttachScaffold = (seed: LessonSeed) => {
+  if (seed.title === MARKET_ORDER_TITLE) return false;
+  if (seed.title === SHORT_SELLING_TITLE) return true;
+  return seed.category === 'Foundations' || seed.category === 'Strategy';
+};
+
 const buildLessonContent = (seed: LessonSeed, orderIndex: number) => {
   if (seed.category === 'Foundations') {
     return buildFoundationsContent(seed, orderIndex);
@@ -672,8 +778,9 @@ const buildAutoInteractiveBlocks = (seed: LessonSeed, orderIndex: number): Inter
 
 export const localLearningModules: LocalLearningModule[] = lessonSeeds.map((seed, index) => {
   const orderIndex = index + 1;
+  const moduleId = `local-lesson-${orderIndex}`;
   const base: LocalLearningModule = {
-    id: `local-lesson-${orderIndex}`,
+    id: moduleId,
     title: seed.title,
     description: seed.description,
     content: buildLessonContent(seed, orderIndex),
@@ -683,9 +790,20 @@ export const localLearningModules: LocalLearningModule[] = lessonSeeds.map((seed
     category: seed.category,
   };
 
-  const blocks = buildAutoInteractiveBlocks(seed, orderIndex);
-  if (blocks) {
-    base.interactive_blocks = blocks;
+  const blocks = buildAutoInteractiveBlocks(seed, orderIndex) ?? [];
+  const scaffoldBlock: InteractiveBlock | null = shouldAttachScaffold(seed)
+    ? {
+        type: 'scaffolded_practice',
+        title: `${seed.title} practice`,
+        subtitle: 'I Do, We Do, You Do',
+        moduleId,
+        steps: buildScaffoldedSteps(seed, moduleId),
+      }
+    : null;
+
+  const mergedBlocks = scaffoldBlock ? [scaffoldBlock, ...blocks] : blocks;
+  if (mergedBlocks.length > 0) {
+    base.interactive_blocks = mergedBlocks;
   }
   return base;
 });

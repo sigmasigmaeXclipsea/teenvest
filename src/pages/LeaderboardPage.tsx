@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trophy, Medal, TrendingUp, TrendingDown, User, Eye, Star } from 'lucide-react';
+import { Trophy, Medal, TrendingUp, TrendingDown, User, Eye, Star, Copy } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,7 @@ import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { useLeaderboard, type LeaderboardEntry } from '@/hooks/useLeaderboard';
 import { useRankLeaderboard, type RankLeaderboardEntry } from '@/hooks/useRankLeaderboard';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCopyTrading } from '@/hooks/useCopyTrading';
 import { Link } from 'react-router-dom';
 import {
   Pagination,
@@ -25,6 +26,7 @@ const LeaderboardPage = () => {
   const { data: portfolioLeaderboard, isLoading: portfolioLoading, error: portfolioError } = useLeaderboard();
   const { data: rankLeaderboard, isLoading: rankLoading, error: rankError } = useRankLeaderboard();
   const { user } = useAuth();
+  const { isCopied, toggleCopy } = useCopyTrading();
   const [currentPage, setCurrentPage] = useState(1);
 
   const leaderboard = mode === 'portfolio' ? portfolioLeaderboard : rankLeaderboard;
@@ -187,6 +189,17 @@ const LeaderboardPage = () => {
             {entry.gain_percent >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
             {entry.gain_percent >= 0 ? '+' : ''}{entry.gain_percent.toFixed(2)}%
           </div>
+          {!entry.is_current_user && (
+            <Button
+              variant={isCopied(entry.user_id) ? 'secondary' : 'outline'}
+              size="sm"
+              className="gap-1"
+              onClick={() => toggleCopy(entry.user_id, entry.display_name)}
+            >
+              <Copy className="w-4 h-4" />
+              {isCopied(entry.user_id) ? 'Copied' : 'Copy'}
+            </Button>
+          )}
           {entry.profile_public && !entry.is_current_user && (
             <Link to={`/profile/${entry.user_id}`}>
               <Button variant="ghost" size="sm" className="gap-1">
@@ -302,12 +315,25 @@ const LeaderboardPage = () => {
                       </>
                     )}
                   </div>
-                  {entry.profile_public && !entry.is_current_user && (
-                    <Link to={`/profile/${entry.user_id}`}>
-                      <Button variant="ghost" size="icon" title="View Profile">
-                        <Eye className="w-4 h-4" />
+                  {!entry.is_current_user && (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant={isCopied(entry.user_id) ? 'secondary' : 'outline'}
+                        size="sm"
+                        className="gap-1"
+                        onClick={() => toggleCopy(entry.user_id, entry.display_name)}
+                      >
+                        <Copy className="w-3 h-3" />
+                        {isCopied(entry.user_id) ? 'Copied' : 'Copy'}
                       </Button>
-                    </Link>
+                      {entry.profile_public && (
+                        <Link to={`/profile/${entry.user_id}`}>
+                          <Button variant="ghost" size="icon" title="View Profile">
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                        </Link>
+                      )}
+                    </div>
                   )}
                 </div>
               </CardContent>

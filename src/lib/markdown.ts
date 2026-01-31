@@ -2,7 +2,10 @@
  * Simple markdown parser for basic formatting
  * Supports *italic* and **bold** text
  */
-export const parseMarkdown = (text: string): React.ReactNode => {
+import { createElement } from "react";
+import type { ReactNode } from "react";
+
+export const parseMarkdown = (text: string): ReactNode => {
   if (!text) return text;
 
   // First process bold text (**text**)
@@ -17,11 +20,11 @@ export const parseMarkdown = (text: string): React.ReactNode => {
   return parts.map((part, index) => {
     if (part.startsWith('<strong>') && part.endsWith('</strong>')) {
       const content = part.slice(8, -9);
-      return <strong key={index}>{content}</strong>;
+      return createElement('strong', { key: index }, content);
     }
     if (part.startsWith('<em>') && part.endsWith('</em>')) {
       const content = part.slice(4, -5);
-      return <em key={index}>{content}</em>;
+      return createElement('em', { key: index }, content);
     }
     return part;
   });

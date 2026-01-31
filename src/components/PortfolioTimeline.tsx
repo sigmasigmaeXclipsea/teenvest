@@ -129,7 +129,7 @@ const PortfolioTimeline = () => {
             {trades.slice(0, 10).map((trade, index) => {
               const insight = getInsightForTrade(trade.id);
               const isExpanded = expandedTrade === trade.id;
-              const isBuy = trade.trade_type?.toLowerCase() === 'buy';
+              const isBuy = trade.trade_type?.toLowerCase() === 'buy' || trade.trade_type?.toLowerCase() === 'cover';
 
               return (
                 <div key={trade.id} className="relative pl-10">

@@ -21,9 +21,11 @@ import TradePage from "./pages/TradePage";
 import HistoryPage from "./pages/HistoryPage";
 import LearnPage from "./pages/LearnPage";
 import LessonPage from "./pages/LessonPage";
+import PlacementExamPage from "./pages/PlacementExamPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import StockPage from "./pages/StockPage";
 import SettingsPage from "./pages/SettingsPage";
+import SubscriptionPage from "./pages/SubscriptionPage";
 import AdminPage from "./pages/AdminPage";
 import ProfilePage from "./pages/ProfilePage";
 import ResearchPage from "./pages/ResearchPage";
@@ -61,6 +63,7 @@ const App = () => (
                   <Route path="/history" element={<ProtectedRoute><ErrorBoundary><HistoryPage /></ErrorBoundary></ProtectedRoute>} />
                   <Route path="/learn" element={<ProtectedRoute><ErrorBoundary><LearnPage /></ErrorBoundary></ProtectedRoute>} />
                   <Route path="/learn/:moduleId" element={<ProtectedRoute><ErrorBoundary><LessonPage /></ErrorBoundary></ProtectedRoute>} />
+                  <Route path="/learn/placement" element={<ProtectedRoute><ErrorBoundary><PlacementExamPage /></ErrorBoundary></ProtectedRoute>} />
                   <Route path="/garden" element={
                     <ProtectedRoute>
                       <ErrorBoundary>
@@ -73,6 +76,7 @@ const App = () => (
                   <Route path="/insights" element={<ProtectedRoute><ErrorBoundary><LearnPage initialTab="insights" /></ErrorBoundary></ProtectedRoute>} />
                   <Route path="/research" element={<ProtectedRoute><ErrorBoundary><ResearchPage /></ErrorBoundary></ProtectedRoute>} />
                   <Route path="/leaderboard" element={<ProtectedRoute><ErrorBoundary><LeaderboardPage /></ErrorBoundary></ProtectedRoute>} />
+                  <Route path="/subscription" element={<ProtectedRoute><ErrorBoundary><SubscriptionPage /></ErrorBoundary></ProtectedRoute>} />
                   <Route path="/profile" element={<ProtectedRoute><ErrorBoundary><ProfilePage /></ErrorBoundary></ProtectedRoute>} />
                   <Route path="/profile/:userId" element={<ProtectedRoute><ErrorBoundary><ProfilePage /></ErrorBoundary></ProtectedRoute>} />
                   <Route path="/stocks/:symbol" element={<ProtectedRoute><ErrorBoundary><StockPage /></ErrorBoundary></ProtectedRoute>} />

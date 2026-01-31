@@ -6,6 +6,8 @@ import { Progress } from '@/components/ui/progress';
 import { useAlphaIndicators } from '@/hooks/useAlphaIndicators';
 import { useStockQuote } from '@/hooks/useStockAPI';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useSkillTreeProgress } from '@/hooks/useSkillTreeProgress';
+import LockedFeatureCard from '@/components/LockedFeatureCard';
 
 interface ResearchTechnicalIndicatorsProps {
   symbol: string;
@@ -30,6 +32,16 @@ const ResearchTechnicalIndicators = ({ symbol }: ResearchTechnicalIndicatorsProp
   const emaOptions = [10, 20, 50, 100, 200];
   const { data: indicators, isLoading, error } = useAlphaIndicators(symbol, '6M', { emaPeriod });
   const { data: quote } = useStockQuote(symbol);
+  const { unlocks } = useSkillTreeProgress();
+
+  if (!unlocks.technician) {
+    return (
+      <LockedFeatureCard
+        title="Indicators Locked"
+        description="Unlock the Technician path (complete Foundation + 10 trades) to access RSI, MACD, and EMA insights."
+      />
+    );
+  }
 
   if (isLoading && !indicators) {
     return (
@@ -173,7 +185,7 @@ const ResearchTechnicalIndicators = ({ symbol }: ResearchTechnicalIndicatorsProp
             <Activity className="w-5 h-5" />
             Oscillators
           </CardTitle>
-          <CardDescription>RSI and MACD from Alpha Vantage</CardDescription>
+          <CardDescription>RSI and MACD calculated from price data</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid md:grid-cols-2 gap-6">

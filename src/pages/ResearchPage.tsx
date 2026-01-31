@@ -7,13 +7,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useLearningModules } from '@/hooks/useLearning';
 import { useCachedStocks, useRefreshStockCache, isCacheStale } from '@/hooks/useStockCache';
 import { useStockQuote } from '@/hooks/useStockAPI';
-import { useSettings } from '@/contexts/SettingsContext';
 import StockLineChart from '@/components/StockLineChart';
 import ProfessionalCandlestickChart from '@/components/ProfessionalCandlestickChart';
 import StockNews from '@/components/StockNews';
+import LockedFeatureCard from '@/components/LockedFeatureCard';
+import { useSkillTreeProgress } from '@/hooks/useSkillTreeProgress';
 
 // Lazy load heavy research components - only load when tab is active
 const ResearchCompanyProfile = lazy(() => import('@/components/research/ResearchCompanyProfile'));
@@ -28,7 +30,6 @@ const ResearchVolumeWidget = lazy(() => import('@/components/research/ResearchVo
 
 const ResearchPage = () => {
   const navigate = useNavigate();
-  const { settings, loading: settingsLoading } = useSettings();
   const [searchParams, setSearchParams] = useSearchParams();
   const symbolFromUrl = searchParams.get('symbol') || '';
   
@@ -37,6 +38,14 @@ const ResearchPage = () => {
   const [selectedStock, setSelectedStock] = useState<string | null>(symbolFromUrl || null);
   const [activeTab, setActiveTab] = useState('charts'); // Default to charts tab
   const { data: cachedStocks, isLoading } = useCachedStocks();
+  const { unlocks, foundationCompleted } = useSkillTreeProgress();
+  const { data: modules } = useLearningModules();
+  const foundationUnlockThreshold = 15;
+  const unlockLesson = useMemo(
+    () => modules?.find((module) => module.order_index === foundationUnlockThreshold),
+    [modules, foundationUnlockThreshold]
+  );
+  const unlockLessonHref = unlockLesson ? `/learn/${unlockLesson.id}` : `/learn/local-lesson-${foundationUnlockThreshold}`;
   
   // Debounce search input to reduce re-renders
   useEffect(() => {
@@ -109,6 +118,26 @@ const ResearchPage = () => {
   
   // Check if we have any valid stock data
   const hasValidStockData = !!stockData;
+
+  if (foundationCompleted < foundationUnlockThreshold) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-3xl mx-auto py-16">
+          <LockedFeatureCard
+            title="Research Locked"
+            description={`Complete ${foundationUnlockThreshold} Foundation lessons to unlock Research. Progress: ${foundationCompleted}/${foundationUnlockThreshold}.`}
+            ctaLabel={`Go to Lesson ${foundationUnlockThreshold}`}
+            ctaHref={unlockLessonHref}
+          />
+          <p className="mt-4 text-sm text-muted-foreground text-center">
+            <Link to={unlockLessonHref} className="text-primary hover:underline">
+              Lesson {foundationUnlockThreshold} unlocks Research
+            </Link>
+          </p>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   // If no stock selected, show search interface
   if (!selectedStock) {
@@ -492,26 +521,15 @@ const ResearchPage = () => {
                       </Suspense>
                     </div>
 
-                    {/* Professional Full-Width Candlestick Chart with Volume (real data) - Only in Advanced Mode */}
-                    {!settingsLoading && settings?.advancedMode ? (
-                      <ProfessionalCandlestickChart
-                        symbol={stockData.symbol}
-                        currentPrice={stockData.price}
-                        previousClose={stockData.previousClose}
-                        high={stockData.high}
-                        low={stockData.low}
-                        open={stockData.open}
-                      />
-                    ) : (
-                      <Card>
-                        <CardContent className="text-center py-12">
-                          <BarChart3 className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-                          <h3 className="text-lg font-semibold text-foreground mb-2">Candlestick Chart</h3>
-                          <p className="text-sm text-muted-foreground mb-4">Advanced trading charts are disabled</p>
-                          <p className="text-xs text-muted-foreground">Enable Advanced Mode in Settings to access professional candlestick charts with volume analysis</p>
-                        </CardContent>
-                      </Card>
-                    )}
+                    {/* Professional Full-Width Candlestick Chart with Volume (real data) */}
+                    <ProfessionalCandlestickChart
+                      symbol={stockData.symbol}
+                      currentPrice={stockData.price}
+                      previousClose={stockData.previousClose}
+                      high={stockData.high}
+                      low={stockData.low}
+                      open={stockData.open}
+                    />
                   </div>
                 ) : (
                   <Card>
@@ -539,9 +557,16 @@ const ResearchPage = () => {
               </TabsContent>
 
               <TabsContent value="statistics">
-                <Suspense fallback={<Skeleton className="h-64" />}>
-                  <ResearchKeyStats symbol={selectedStock} stockData={selectedStockData} />
-                </Suspense>
+                {unlocks.fundamentalist ? (
+                  <Suspense fallback={<Skeleton className="h-64" />}>
+                    <ResearchKeyStats symbol={selectedStock} stockData={selectedStockData} />
+                  </Suspense>
+                ) : (
+                  <LockedFeatureCard
+                    title="Advanced Fundamentals Locked"
+                    description="Unlock the Fundamentalist path (complete Foundation + a quiz score of 80%+) to access valuation metrics, trading info, and dividend stats."
+                  />
+                )}
               </TabsContent>
 
               <TabsContent value="analysts">
@@ -563,9 +588,16 @@ const ResearchPage = () => {
               </TabsContent>
 
               <TabsContent value="compare">
-                <Suspense fallback={<Skeleton className="h-64" />}>
-                  <ResearchComparison primarySymbol={selectedStock} cachedStocks={cachedStocks || []} />
-                </Suspense>
+                {unlocks.fundamentalist ? (
+                  <Suspense fallback={<Skeleton className="h-64" />}>
+                    <ResearchComparison primarySymbol={selectedStock} cachedStocks={cachedStocks || []} />
+                  </Suspense>
+                ) : (
+                  <LockedFeatureCard
+                    title="Stock Comparisons Locked"
+                    description="Unlock the Fundamentalist path (complete Foundation + a quiz score of 80%+) to compare stocks side-by-side."
+                  />
+                )}
               </TabsContent>
 
               <TabsContent value="ai">

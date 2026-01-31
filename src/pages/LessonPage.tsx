@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Clock, CheckCircle, BookOpen, HelpCircle, Award, ChevronLeft, ChevronRight, XCircle, CheckCircle2, Sparkles, Trophy, Zap } from 'lucide-react';
+import { ArrowLeft, Clock, CheckCircle, BookOpen, HelpCircle, Award, ChevronLeft, ChevronRight, XCircle, CheckCircle2, Sparkles, Trophy, Zap, Lock, Star } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,6 +20,9 @@ import ChartAnnotator from '@/components/learn/ChartAnnotator';
 import Level2Simulator from '@/components/learn/Level2Simulator';
 import LessonPodcast from '@/components/LessonPodcast';
 import BeanstalkGameModal from '@/components/BeanstalkGameModal';
+import { useSkillTreeProgress } from '@/hooks/useSkillTreeProgress';
+import { getBranchById, getBranchForModule } from '@/lib/skillTree';
+import { useLessonAccess } from '@/hooks/useLessonAccess';
 
 const LessonPage = () => {
   const { moduleId } = useParams<{ moduleId: string }>();
@@ -33,6 +36,8 @@ const LessonPage = () => {
   const { data: quizQuestions } = useQuizQuestions(moduleId || null);
   const completeModule = useCompleteModule();
   const saveQuizResult = useSaveQuizResult();
+  const { unlocks, unmetCriteria } = useSkillTreeProgress();
+  const { canAccessLesson, nextRequiredLesson } = useLessonAccess();
 
   const [activeView, setActiveView] = useState<'content' | 'quiz' | 'game'>('content');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -274,6 +279,63 @@ const interactiveBlocks = (() => {
     );
   }
 
+  const branchId = getBranchForModule(currentModule);
+  const branch = getBranchById(branchId);
+  const isBranchUnlocked = unlocks[branchId];
+  const isLessonAllowed = currentModule ? canAccessLesson(currentModule) : true;
+
+  if (!isBranchUnlocked) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-3xl mx-auto py-16">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Lock className="w-5 h-5 text-muted-foreground" />
+                {branch.name} Locked
+              </CardTitle>
+              <CardDescription>
+                {unmetCriteria[branchId]}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Link to="/learn">
+                <Button>View Skill Tree</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!isLessonAllowed) {
+    const fallbackHref = nextRequiredLesson ? `/learn/${nextRequiredLesson.id}` : '/learn';
+    const nextLabel = nextRequiredLesson?.order_index ?? 1;
+    return (
+      <DashboardLayout>
+        <div className="max-w-3xl mx-auto py-16">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Lock className="w-5 h-5 text-muted-foreground" />
+                Lesson Locked
+              </CardTitle>
+              <CardDescription>
+                Complete lessons in order. Your next lesson is {nextLabel}.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Link to={fallbackHref}>
+                <Button>Go to Lesson {nextLabel}</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="max-w-5xl mx-auto">
@@ -295,7 +357,7 @@ const interactiveBlocks = (() => {
                 </Button>
               </Link>
             )}
-            {nextModule && (
+            {nextModule && canAccessLesson(nextModule) && (
               <Link to={`/learn/${nextModule.id}`}>
                 <Button variant="outline" size="sm" className="gap-1">
                   Next
@@ -333,6 +395,12 @@ const interactiveBlocks = (() => {
                 <Badge variant="outline" className="gap-1 bg-primary/10">
                   <Award className="w-3 h-3 text-primary" />
                   Score: {quizScore.score}/{quizScore.total_questions}
+                </Badge>
+              )}
+              {currentModule.order_index === 15 && (
+                <Badge variant="outline" className="gap-1 bg-amber-500/10 text-amber-700 border-amber-500/20">
+                  <Star className="w-3 h-3" />
+                  Unlocks Research
                 </Badge>
               )}
               {isCompleted && (
@@ -785,26 +853,46 @@ const interactiveBlocks = (() => {
                   <div className="space-y-1">
                     {modules?.map((mod, i) => {
                       const completed = progress?.some(p => p.module_id === mod.id && p.completed);
+                      const canAccess = canAccessLesson(mod);
                       return (
-                        <Link
-                          key={mod.id}
-                          to={`/learn/${mod.id}`}
-                          className={`flex items-center gap-2 p-2 rounded-lg transition-colors text-left ${
-                            mod.id === moduleId
-                              ? 'bg-primary/10 text-primary font-medium'
-                              : 'hover:bg-secondary'
-                          }`}
-                        >
-                          <span className="w-6 text-xs tabular-nums text-muted-foreground flex-shrink-0">
-                            {i + 1}
-                          </span>
-                          {completed ? (
-                            <CheckCircle className="w-4 h-4 text-primary flex-shrink-0" />
-                          ) : (
-                            <div className="w-4 h-4 rounded-full border-2 border-muted flex-shrink-0" />
-                          )}
-                          <span className="text-sm truncate flex-1">{mod.title}</span>
-                        </Link>
+                        canAccess ? (
+                          <Link
+                            key={mod.id}
+                            to={`/learn/${mod.id}`}
+                            className={`flex items-center gap-2 p-2 rounded-lg transition-colors text-left ${
+                              mod.id === moduleId
+                                ? 'bg-primary/10 text-primary font-medium'
+                                : 'hover:bg-secondary'
+                            }`}
+                          >
+                            <span className="w-6 text-xs tabular-nums text-muted-foreground flex-shrink-0">
+                              {i + 1}
+                            </span>
+                            {completed ? (
+                              <CheckCircle className="w-4 h-4 text-primary flex-shrink-0" />
+                            ) : (
+                              <div className="w-4 h-4 rounded-full border-2 border-muted flex-shrink-0" />
+                            )}
+                            <span className="text-sm truncate flex-1">{mod.title}</span>
+                            {mod.order_index === 15 && (
+                              <Star className="w-3 h-3 text-amber-500" />
+                            )}
+                          </Link>
+                        ) : (
+                          <div
+                            key={mod.id}
+                            className="flex items-center gap-2 p-2 rounded-lg text-left opacity-60"
+                          >
+                            <span className="w-6 text-xs tabular-nums text-muted-foreground flex-shrink-0">
+                              {i + 1}
+                            </span>
+                            <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                            <span className="text-sm truncate flex-1">{mod.title}</span>
+                            {mod.order_index === 15 && (
+                              <Star className="w-3 h-3 text-amber-500" />
+                            )}
+                          </div>
+                        )
                       );
                     })}
                   </div>

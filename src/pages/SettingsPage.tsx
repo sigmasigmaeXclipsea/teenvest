@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Moon, Sun, User, Bell, Shield, LogOut, Eye, EyeOff, Zap, Flame, ChevronRight } from 'lucide-react';
+import { Moon, Sun, User, Bell, Shield, LogOut, Eye, EyeOff, Flame } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -17,7 +16,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const SettingsPage = () => {
   const { user, signOut } = useAuth();
-  const { settings, streak, updateSettings, toggleAdvancedMode } = useSettings();
+  const { settings, streak, updateSettings } = useSettings();
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -151,67 +150,6 @@ const SettingsPage = () => {
                 ))}
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Advanced Mode */}
-        <Card className="border-primary/30 bg-primary/5">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Zap className="w-5 h-5 text-primary" />
-              Advanced Mode
-              {settings.advancedMode && (
-                <Badge className="bg-primary text-primary-foreground">ENABLED</Badge>
-              )}
-            </CardTitle>
-            <CardDescription>
-              Unlock advanced trading features for experienced users
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <Label htmlFor="advanced-mode" className="text-base font-medium">
-                  Enable Advanced Mode
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                  Adds candlestick charts, options trading concepts, advanced order types, and technical indicators
-                </p>
-              </div>
-              <Switch
-                id="advanced-mode"
-                checked={settings.advancedMode}
-                onCheckedChange={toggleAdvancedMode}
-              />
-            </div>
-            
-            {settings.advancedMode && (
-              <div className="pt-4 border-t space-y-2">
-                <h4 className="font-medium text-sm">Features Unlocked:</h4>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  <li className="flex items-center gap-2">
-                    <ChevronRight className="w-3 h-3 text-primary" />
-                    Candlestick & OHLC charts
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <ChevronRight className="w-3 h-3 text-primary" />
-                    Technical indicators (RSI, MACD, Moving Averages)
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <ChevronRight className="w-3 h-3 text-primary" />
-                    Advanced order types (Limit, Stop-Loss)
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <ChevronRight className="w-3 h-3 text-primary" />
-                    Options trading education
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <ChevronRight className="w-3 h-3 text-primary" />
-                    Detailed market analysis tools
-                  </li>
-                </ul>
-              </div>
-            )}
           </CardContent>
         </Card>
 

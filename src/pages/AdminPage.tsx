@@ -4,12 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { usePortfolio } from '@/hooks/usePortfolio';
+import { useSettings } from '@/contexts/SettingsContext';
 import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { 
@@ -19,6 +21,7 @@ import {
 } from 'lucide-react';
 import { getUserFriendlyError } from '@/lib/errorMessages';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
+import RpeSimulationCard from '@/components/admin/RpeSimulationCard';
 
 const OWNER_EMAIL = '2landonl10@gmail.com';
 
@@ -39,7 +42,7 @@ type RecentTrade = {
   user_email: string;
   user_name: string;
   symbol: string;
-  trade_type: 'buy' | 'sell';
+  trade_type: 'buy' | 'sell' | 'short' | 'cover';
   shares: number;
   price: number;
   total_amount: number;
@@ -99,6 +102,7 @@ const AdminPage = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { data: portfolio } = usePortfolio();
+  const { settings, updateSettings } = useSettings();
   
   const [newCashBalance, setNewCashBalance] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
@@ -208,7 +212,13 @@ const AdminPage = () => {
         user_email: trade.user_email || 'unknown',
         user_name: trade.user_name || trade.user_email || 'Unknown User',
         symbol: trade.symbol || '',
-        trade_type: trade.trade_type === 'sell' ? 'sell' : 'buy',
+        trade_type: trade.trade_type === 'short'
+          ? 'short'
+          : trade.trade_type === 'cover'
+            ? 'cover'
+            : trade.trade_type === 'sell'
+              ? 'sell'
+              : 'buy',
         shares: Number(trade.shares) || 0,
         price: Number(trade.price) || 0,
         total_amount: Number(trade.total_amount ?? (Number(trade.shares) || 0) * (Number(trade.price) || 0)) || 0,
@@ -635,8 +645,8 @@ const AdminPage = () => {
                       {recentTrades.map((trade) => (
                         <div key={trade.id} className="flex items-center justify-between p-4 rounded-lg bg-secondary/50 border border-border/50 hover:bg-secondary/70 transition-colors">
                           <div className="flex items-center gap-4 flex-1">
-                            <div className={`p-2 rounded-lg ${trade.trade_type === 'buy' ? 'bg-primary/20' : 'bg-destructive/20'}`}>
-                              {trade.trade_type === 'buy' ? (
+                            <div className={`p-2 rounded-lg ${trade.trade_type === 'buy' || trade.trade_type === 'cover' ? 'bg-primary/20' : 'bg-destructive/20'}`}>
+                              {trade.trade_type === 'buy' || trade.trade_type === 'cover' ? (
                                 <ArrowUpRight className="w-5 h-5 text-primary" />
                               ) : (
                                 <ArrowDownRight className="w-5 h-5 text-destructive" />
@@ -645,7 +655,16 @@ const AdminPage = () => {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1">
                                 <p className="font-bold text-lg">{trade.symbol}</p>
-                                <Badge variant={trade.trade_type === 'buy' ? 'default' : 'destructive'} className="text-xs">
+                                <Badge
+                                  variant={
+                                    trade.trade_type === 'short'
+                                      ? 'destructive'
+                                      : trade.trade_type === 'buy' || trade.trade_type === 'cover'
+                                        ? 'default'
+                                        : 'secondary'
+                                  }
+                                  className="text-xs"
+                                >
                                   {trade.trade_type.toUpperCase()}
                                 </Badge>
                               </div>
@@ -1020,6 +1039,34 @@ const AdminPage = () => {
                   </Button>
                 </CardContent>
               </Card>
+
+              {/* Unlock All Features */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Crown className="w-5 h-5" />
+                    Unlock All Features
+                  </CardTitle>
+                  <CardDescription>Grant access to all skill tree curriculum and reward-locked features.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="unlock-all">Enable Unlock All</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Bypasses skill tree locks, discipline requirements, and reward gates.
+                      </p>
+                    </div>
+                    <Switch
+                      id="unlock-all"
+                      checked={settings.unlockAll}
+                      onCheckedChange={(checked) => updateSettings({ unlockAll: checked })}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <RpeSimulationCard />
 
               {/* Note: Other users' garden state cannot be updated from here since garden data is stored in each user's browser localStorage */}
 
