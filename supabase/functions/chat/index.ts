@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { rateLimit, RateLimitConfig, sanitizeInput, cspHeaders } from "../_shared/security.ts";
+import { estimateTokens, logCostUsage } from "../_shared/cost-monitor.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,7 +10,7 @@ const corsHeaders = {
   ...cspHeaders,
 };
 
-const rateLimitConfig: RateLimitConfig = { windowMs: 60 * 1000, maxRequests: 20 };
+const rateLimitConfig: RateLimitConfig = { windowMs: 60 * 1000, maxRequests: 10 };
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -88,35 +89,16 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const systemPrompt = `You are TeenVest AI, a friendly and knowledgeable financial assistant designed specifically for teenagers learning about investing. You're like a smart older sibling who happens to know a lot about money!
+    const systemPrompt = `You are TeenVest AI, a friendly financial assistant for teenagers. Be concise, helpful, and use simple language with occasional emojis.
 
-YOUR PERSONALITY:
-- Friendly, patient, and encouraging
-- Use simple language - explain complex terms like you're talking to a friend
-- Add relevant emojis occasionally to keep it engaging 💰📈
-- Be honest about risks without being scary
-- Celebrate their learning and curiosity!
+Keep answers under 150 words. Focus on practical learning. Never give specific investment advice.
 
-WHAT YOU CAN HELP WITH:
-1. **Stock Questions**: Explain what stocks are, how they work, different types
-2. **Portfolio Advice**: Help understand diversification, risk management, asset allocation
-3. **Financial Terms**: Define and explain any investing/finance terms simply
-4. **Learning Support**: Guide them through lessons and exercises on the platform
-5. **Market Concepts**: Explain how markets work, why prices change, etc.
-6. **Career & Money**: Basic personal finance, saving, budgeting for teens
+${context ? `CONTEXT: ${context}` : ''}`;
 
-GUIDELINES:
-- Keep responses concise (under 200 words unless they ask for detail)
-- Use examples teens can relate to (gaming, social media companies, etc.)
-- When explaining concepts, use analogies (e.g., "Diversification is like not putting all your eggs in one basket")
-- If they ask about specific trades, remind them this is paper trading for learning
-- Never give specific buy/sell recommendations for real money
-- Encourage them to keep learning!
-
-${context ? `CURRENT CONTEXT:\n${context}` : ''}
-
-Remember: You're helping build financial literacy in the next generation. Make it fun and empowering!`;
-
+    // Estimate input tokens for cost tracking
+    const inputText = systemPrompt + messages.map((m: any) => m.content).join('');
+    const inputTokens = estimateTokens(inputText);
+    
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -124,12 +106,14 @@ Remember: You're helping build financial literacy in the next generation. Make i
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-1.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
           ...messages,
         ],
         stream: true,
+        max_tokens: 800, // Reduced from 1000 to save costs
+        temperature: 0.7,
       }),
     });
 
@@ -154,7 +138,35 @@ Remember: You're helping build financial literacy in the next generation. Make i
       });
     }
 
-    return new Response(response.body, {
+    // Create a transform stream to track output tokens
+    const { readable, writable } = new TransformStream();
+    let outputText = '';
+    
+    const responseReader = response.body?.getReader();
+    const responseWriter = writable.getWriter();
+    
+    if (responseReader) {
+      (async () => {
+        try {
+          while (true) {
+            const { done, value } = await responseReader.read();
+            if (done) break;
+            
+            const chunk = new TextDecoder().decode(value);
+            outputText += chunk;
+            await responseWriter.write(value);
+          }
+        } finally {
+          await responseWriter.close();
+          
+          // Log cost usage
+          const outputTokens = estimateTokens(outputText);
+          logCostUsage("google/gemini-1.5-flash", inputTokens, outputTokens);
+        }
+      })();
+    }
+
+    return new Response(readable, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (error) {
