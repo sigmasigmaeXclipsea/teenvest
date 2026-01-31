@@ -7,6 +7,18 @@ export interface CostMetrics {
 
 // Rough cost estimates (in USD per 1M tokens)
 const MODEL_COSTS = {
+  "gemini-2.5-flash-lite": {
+    input: 0.10,   // $0.10 per 1M input tokens
+    output: 0.40   // $0.40 per 1M output tokens
+  },
+  "gemini-2.5-flash": {
+    input: 0.15,   // $0.15 per 1M input tokens  
+    output: 0.60   // $0.60 per 1M output tokens
+  },
+  "gemini-2.5-pro": {
+    input: 1.25,   // $1.25 per 1M input tokens
+    output: 5.00   // $5.00 per 1M output tokens
+  },
   "google/gemini-1.5-flash": {
     input: 0.075,  // $0.075 per 1M input tokens
     output: 0.15   // $0.15 per 1M output tokens

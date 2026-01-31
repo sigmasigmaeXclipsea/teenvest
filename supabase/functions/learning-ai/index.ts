@@ -83,10 +83,10 @@ serve(async (req) => {
       title: sanitizeInput(m.title),
       description: sanitizeInput(m.description),
     }));
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const GOOGLE_AI_API_KEY = Deno.env.get("GOOGLE_AI_API_KEY");
     
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    if (!GOOGLE_AI_API_KEY) {
+      throw new Error("GOOGLE_AI_API_KEY is not configured");
     }
 
     const systemPrompt = `You are a supportive learning coach for teens. Analyze quiz performance and create a personalized learning plan. Be encouraging and use simple language. Keep responses under 200 words.
@@ -114,14 +114,14 @@ ${sanitizedAllModules?.map((m: any) => `- ${m.title}: ${m.description}`).join('\
 
 Please give me personalized learning recommendations based on my performance!`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${GOOGLE_AI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-1.5-flash",
+        model: "gemini-2.5-flash-lite",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage },
