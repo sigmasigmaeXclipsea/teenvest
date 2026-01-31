@@ -49,46 +49,38 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const GOOGLE_AI_API_KEY = Deno.env.get("GOOGLE_AI_API_KEY");
     
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    if (!GOOGLE_AI_API_KEY) {
+      throw new Error("GOOGLE_AI_API_KEY is not configured");
     }
 
-    const systemPrompt = `You are a financial news summarizer for teen investors. Your job is to provide recent, relevant news about a stock.
+    const systemPrompt = `You are a financial news summarizer for teens. Provide 3-4 recent news items about a stock. Use simple language, be factual, no buy/sell advice. Each item: headline, summary (1-2 sentences), date, sentiment.
 
-IMPORTANT GUIDELINES:
-- Provide 3-5 recent news items about the company
-- Each news item should have: headline, brief summary (1-2 sentences), and approximate date (like "2 days ago", "last week")
-- Focus on news that would affect stock price: earnings, products, leadership changes, market trends
-- Use simple language teens can understand
-- Be factual and neutral - don't give buy/sell advice
-- If you don't have recent news, mention general industry trends
-
-Return your response as valid JSON in this exact format:
+Return JSON format:
 {
   "news": [
     {
-      "headline": "Example Headline",
-      "summary": "Brief summary of the news.",
-      "date": "2 days ago",
-      "sentiment": "positive" | "negative" | "neutral"
+      "headline": "",
+      "summary": "",
+      "date": "",
+      "sentiment": "positive|negative|neutral"
     }
   ],
-  "marketSentiment": "bullish" | "bearish" | "neutral",
-  "keyInsight": "One sentence summary of overall market sentiment for this stock"
+  "marketSentiment": "bullish|bearish|neutral",
+  "keyInsight": "One sentence summary"
 }`;
 
     const userMessage = `Please provide recent news and market sentiment for ${symbol} (${companyName || symbol}). Focus on the most impactful recent developments.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${GOOGLE_AI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "gemini-2.5-flash-lite",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage },

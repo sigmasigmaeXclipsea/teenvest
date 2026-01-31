@@ -41,35 +41,22 @@ serve(async (req) => {
     console.log("Authenticated user:", claims.claims.sub);
 
     const { trades, holdings } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const GOOGLE_AI_API_KEY = Deno.env.get("GOOGLE_AI_API_KEY");
 
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    if (!GOOGLE_AI_API_KEY) {
+      throw new Error("GOOGLE_AI_API_KEY is not configured");
     }
 
-    const systemPrompt = `You are a supportive investment coach for teens learning about paper trading. Your job is to analyze their trading history and explain what happened in simple, educational terms.
-
-IMPORTANT GUIDELINES:
-- Be encouraging and educational - never judgmental
-- Use simple language that teens understand
-- Focus on cause and effect: "You did X, then Y happened because..."
-- Connect decisions to market events when possible
-- Keep each explanation under 50 words
-- Use emojis sparingly to keep it friendly 📈
-- NEVER give buy/sell recommendations
-- Focus on teaching, not advising
+    const systemPrompt = `You are a teen investment coach. Analyze trading history in simple, educational terms. Be encouraging and focus on cause/effect. Keep explanations under 40 words each.
 
 For each trade, provide:
-1. A brief context of what happened
-2. What market conditions existed
-3. What the outcome taught them
-
-Format as JSON array with objects containing:
 - trade_id: string
 - context: string (what they did)
-- market_insight: string (what was happening in the market)
+- market_insight: string (what was happening)
 - lesson_learned: string (educational takeaway)
-- sentiment: "positive" | "neutral" | "learning_moment"`;
+- sentiment: "positive" | "neutral" | "learning_moment"
+
+Format as JSON array.`;
 
     const userMessage = `Analyze these trades and provide educational context for each:
 
@@ -85,14 +72,14 @@ ${holdings?.map((h: any) =>
 
 Provide educational insights for each trade as a JSON array.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${GOOGLE_AI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "gemini-2.5-flash-lite",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage },

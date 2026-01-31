@@ -42,33 +42,24 @@ serve(async (req) => {
     console.log("Authenticated user:", claims.claims.sub);
 
     const { holdings, cashBalance, totalValue, startingBalance } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const GOOGLE_AI_API_KEY = Deno.env.get("GOOGLE_AI_API_KEY");
     
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    if (!GOOGLE_AI_API_KEY) {
+      throw new Error("GOOGLE_AI_API_KEY is not configured");
     }
 
     const gainLoss = totalValue - startingBalance;
     const gainLossPercent = ((totalValue - startingBalance) / startingBalance * 100).toFixed(2);
 
-    const systemPrompt = `You are a friendly financial advisor for teens who are learning to invest. Your job is to analyze their portfolio and give clear, encouraging, teen-friendly advice.
+    const systemPrompt = `You are a friendly teen financial advisor. Analyze portfolio and give clear, encouraging advice. Use simple language, explain terms, be honest but positive. Give 3-4 suggestions. Keep under 300 words.
 
-IMPORTANT GUIDELINES:
-- Use simple language that a 14-17 year old can understand
-- Explain financial terms when you use them (e.g., "diversification means spreading your money across different types of investments")
-- Be encouraging but honest about risks
-- Use emojis sparingly to keep it engaging 📈
-- Give 3-5 specific, actionable suggestions
-- Highlight what they're doing well first, then areas to improve
-- Keep your total response under 400 words
+Format:
+1. **Health Score**: Score/100 with brief explanation
+2. **Strengths**: 2-3 things done well
+3. **Improve**: 2-3 areas with simple explanations
+4. **Action Steps**: 3-4 specific improvements
 
-Format your response like this:
-1. **Portfolio Health Score**: Give a score out of 100 with a brief explanation
-2. **What You're Doing Well**: 2-3 strengths
-3. **Areas to Improve**: 2-3 weaknesses with simple explanations
-4. **Action Steps**: 3-5 specific things they can do to improve
-
-Remember: This is paper trading for learning, so focus on teaching good habits!`;
+Focus on teaching good habits! 📈`;
 
     const userMessage = `Please analyze my portfolio:
 
@@ -84,14 +75,14 @@ ${holdings && holdings.length > 0
 
 Please give me a teen-friendly analysis of my portfolio health and how I can improve!`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${GOOGLE_AI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "gemini-2.5-flash-lite",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage },

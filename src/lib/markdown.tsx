@@ -1,11 +1,9 @@
-import React from 'react';
-
 /**
- * Simple markdown parser for basic formatting
- * Supports *italic* and **bold** text
+ * Simple markdown parser for basic formatting.
+ * Supports *italic* and **bold** text.
  */
-import { createElement } from "react";
-import type { ReactNode } from "react";
+import { createElement } from 'react';
+import type { ReactNode } from 'react';
 
 export const parseMarkdown = (text: string): ReactNode => {
   if (!text) return text;

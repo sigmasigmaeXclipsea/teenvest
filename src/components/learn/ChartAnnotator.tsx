@@ -165,8 +165,8 @@ const ChartAnnotator = ({ moduleId }: { moduleId: string }) => {
                     const xAxis = Object.values(xAxisMap)[0] as { scale: (v: number) => number } | undefined;
                     const yAxis = Object.values(yAxisMap)[0] as { scale: (v: number) => number } | undefined;
                     if (!xAxis || !yAxis) return null;
-                    const xScale = xAxis.scale;
-                    const yScale = yAxis.scale;
+                    const xScale = xAxis.scale as (value: number) => number;
+                    const yScale = yAxis.scale as (value: number) => number;
                     const candleWidth = Math.max(8, (width / data.length) * 0.6);
 
                     return (

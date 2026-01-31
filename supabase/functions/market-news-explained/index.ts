@@ -41,10 +41,10 @@ serve(async (req) => {
     console.log("Authenticated user:", claims.claims.sub);
 
     const { userHoldings } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const GOOGLE_AI_API_KEY = Deno.env.get("GOOGLE_AI_API_KEY");
 
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    if (!GOOGLE_AI_API_KEY) {
+      throw new Error("GOOGLE_AI_API_KEY is not configured");
     }
 
     const today = new Date().toLocaleDateString('en-US', { 
@@ -57,27 +57,17 @@ serve(async (req) => {
     const userSectors = userHoldings?.map((h: any) => h.sector).filter(Boolean) || [];
     const userSymbols = userHoldings?.map((h: any) => h.symbol) || [];
 
-    const systemPrompt = `You are an educational market analyst for teens learning about investing. Create a daily market briefing that explains important news in simple terms.
+    const systemPrompt = `You are an educational market analyst for teens. Create daily market briefing explaining news simply. Focus on 3-4 events, explain WHY things happen, use teen analogies. Keep each item under 60 words. Never give trading advice.
 
-GUIDELINES:
-- Write for a 16-year-old who is new to investing
-- Focus on 3-4 key market events from today/this week
-- Explain WHY things happen, not just WHAT happened
-- Show how news affects different sectors
-- NEVER give trading recommendations
-- Use analogies teens can relate to
-- Keep each news item under 80 words
-- Use emojis to categorize topics
-
-For each news item include:
-- headline: string (catchy, educational headline)
+For each news item:
+- headline: string
 - category: "macro" | "earnings" | "sector" | "global" | "tech" | "crypto"
 - summary: string (what happened)
-- why_it_matters: string (teen-friendly explanation)
-- affected_sectors: string[] (which sectors are impacted)
+- why_it_matters: string (teen explanation)
+- affected_sectors: string[]
 - impact_type: "positive" | "negative" | "mixed" | "neutral"
-- learning_concept: string (what investing concept this teaches)
-- icon: string (relevant emoji)
+- learning_concept: string
+- icon: string (emoji)
 
 Return as JSON array.`;
 
@@ -94,14 +84,14 @@ Create 3-4 educational news items about current market events. Focus on:
 
 Make it educational and relevant to a teen learning to invest.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${GOOGLE_AI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "gemini-2.5-flash-lite",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage },

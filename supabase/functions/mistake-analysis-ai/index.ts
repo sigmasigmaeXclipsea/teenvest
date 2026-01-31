@@ -59,10 +59,10 @@ serve(async (req) => {
     console.log("Authenticated user:", userId);
 
     const { trades, holdings, portfolio, startingBalance } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const GOOGLE_AI_API_KEY = Deno.env.get("GOOGLE_AI_API_KEY");
 
-    if (!LOVABLE_API_KEY) {
-      console.error("LOVABLE_API_KEY is not configured");
+    if (!GOOGLE_AI_API_KEY) {
+      console.error("GOOGLE_AI_API_KEY is not configured");
       return createErrorResponse("Service temporarily unavailable", 503);
     }
 
@@ -104,11 +104,11 @@ Format as JSON array with objects containing:
 - id: string (unique identifier)
 - pattern: string (name of pattern)
 - severity: "low" | "medium" | "high"
-- title: string (teen-friendly headline)
-- explanation: string (why this matters)
-- action: string (what they can do)
-- related_lesson: string (topic to learn about)
-- icon: string (emoji representing the pattern)`;
+- title: string
+- explanation: string
+- action: string
+- related_lesson: string
+- icon: string (emoji)`;
 
     const portfolioValue = sanitizedHoldings?.reduce((sum: number, h: any) => 
       sum + (h.shares * h.average_cost), 0) + (portfolio?.cash_balance || 0);
@@ -136,14 +136,14 @@ ${sanitizedTrades?.slice(0, 20).map((t: any) => {
 
 Identify any concerning patterns and provide supportive feedback as a JSON array.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${GOOGLE_AI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "gemini-2.5-flash-lite",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage },
