@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, type KeyboardEvent } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowUpDown, TrendingUp, TrendingDown, Search, Loader2, ExternalLink, BarChart3, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { ArrowUpDown, TrendingUp, TrendingDown, Search, Loader2, ExternalLink, BarChart3, AlertTriangle, ShieldCheck, HelpCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { ToastAction } from '@/components/ui/toast';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { Stock } from '@/data/mockStocks';
 import { searchTickers, getTickerInfo } from '@/data/russell5000Tickers';
@@ -160,6 +161,13 @@ const TradePage = () => {
     };
   }, [currentQuote, tickerInfo]);
   
+  const cashBalance = Number(portfolio?.cash_balance || 0);
+  const marginMultiplier = marginTradingEnabled ? 2 : 1;
+  const buyingPower = cashBalance * marginMultiplier;
+  const buyingPowerLabel = marginTradingEnabled
+    ? `Buying power: $${buyingPower.toLocaleString(undefined, { minimumFractionDigits: 2 })} (2x cash)`
+    : `Cash available: $${cashBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+
   const orderPrice = useMemo(() => {
     if (!selectedStock) return 0;
     if (orderType === 'limit') return Number(limitPrice) || 0;
@@ -265,6 +273,19 @@ const TradePage = () => {
       return;
     }
 
+    if ((tradeType === 'buy' || tradeType === 'cover') && totalCost > buyingPower) {
+      const formattedPower = buyingPower.toLocaleString(undefined, { minimumFractionDigits: 2 });
+      const formattedCash = cashBalance.toLocaleString(undefined, { minimumFractionDigits: 2 });
+      toast({
+        title: 'Insufficient buying power',
+        description: marginTradingEnabled
+          ? `Max buying power is $${formattedPower}. Reduce size or add cash.`
+          : `You have $${formattedCash} available. Enable margin trading to use up to 2x cash.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     const takeProfitValue = takeProfit ? Number(takeProfit) : null;
     const stopLossValue = stopLoss ? Number(stopLoss) : null;
 
@@ -300,6 +321,8 @@ const TradePage = () => {
           shares: Number(shares),
           price: selectedStock.price,
           sector: selectedStock.sector,
+          allowMargin: marginTradingEnabled,
+          marginMultiplier,
           predictionDirection,
           predictionThesis: predictionThesis.trim(),
           predictionIndicators,
@@ -538,13 +561,31 @@ const TradePage = () => {
             ) : (
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <ShieldCheck className="w-5 h-5" />
-                    Margin Trading (Pro)
-                  </CardTitle>
-                  <CardDescription>
-                    Access leverage once your discipline stays above 50.
-                  </CardDescription>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <ShieldCheck className="w-5 h-5" />
+                      Margin Trading (Pro)
+                    </CardTitle>
+                    <CardDescription>
+                      Access leverage once your discipline stays above 50.
+                    </CardDescription>
+                  </div>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        className="text-muted-foreground hover:text-foreground"
+                        aria-label="What is margin trading?"
+                      >
+                        <HelpCircle className="w-4 h-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      Boosts buying power up to 2x cash for buys and covers. Cash balance can go negative.
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
                 </CardHeader>
                 <CardContent className="flex items-center justify-between">
                   <div>
@@ -552,6 +593,9 @@ const TradePage = () => {
                     <div className="text-xs text-muted-foreground">
                       Current Discipline Score: {disciplineScore}/100
                     </div>
+                  <div className="text-xs text-muted-foreground">
+                    {buyingPowerLabel}
+                  </div>
                   </div>
                   <Switch
                     checked={marginTradingEnabled}
@@ -567,7 +611,7 @@ const TradePage = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Place Order</CardTitle>
-                <CardDescription>Cash available: ${Number(portfolio?.cash_balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</CardDescription>
+                <CardDescription>{buyingPowerLabel}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
               <Tabs value={tradeType} onValueChange={(v) => handleTradeTypeChange(v as 'buy' | 'sell' | 'short' | 'cover')}>

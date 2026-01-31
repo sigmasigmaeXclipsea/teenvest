@@ -76,6 +76,8 @@ export const useExecuteTrade = () => {
       shares,
       price,
       sector,
+      allowMargin,
+      marginMultiplier,
     }: {
       symbol: string;
       companyName: string;
@@ -84,6 +86,8 @@ export const useExecuteTrade = () => {
       shares: number;
       price: number;
       sector?: string;
+      allowMargin?: boolean;
+      marginMultiplier?: number;
       // Prediction fields are optional and not stored in current schema
       predictionDirection?: 'up' | 'down';
       predictionThesis?: string;
@@ -104,6 +108,8 @@ export const useExecuteTrade = () => {
         p_shares: shares,
         p_price: price,
         p_sector: sector || null,
+        p_allow_margin: Boolean(allowMargin),
+        p_margin_multiplier: Number.isFinite(marginMultiplier as number) ? marginMultiplier : 1,
       });
 
       if (error) {
