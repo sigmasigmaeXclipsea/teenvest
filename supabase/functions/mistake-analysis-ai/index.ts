@@ -1,24 +1,37 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { 
+  rateLimit, 
+  RateLimitConfig, 
+  sanitizeInput, 
+  secureCorsHeaders,
+  createRateLimitResponse,
+  createErrorResponse,
+  createSuccessResponse
+} from "../_shared/security.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+const rateLimitConfig: RateLimitConfig = { windowMs: 60 * 1000, maxRequests: 15 };
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: secureCorsHeaders });
+  }
+
+  if (req.method !== 'POST') {
+    return createErrorResponse('Method not allowed', 405);
   }
 
   try {
+    // Validate request size (max 10KB)
+    const contentLength = req.headers.get('content-length');
+    if (contentLength && parseInt(contentLength) > 10240) {
+      return createErrorResponse('Request too large', 413);
+    }
+
     // Authentication check
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(
-        JSON.stringify({ error: "Authentication required" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return createErrorResponse("Authentication required", 401);
     }
 
     const supabaseClient = createClient(
@@ -32,20 +45,39 @@ serve(async (req) => {
 
     if (authError || !claims?.claims) {
       console.error("Auth error:", authError);
-      return new Response(
-        JSON.stringify({ error: "Authentication required" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return createErrorResponse("Authentication required", 401);
     }
 
-    console.log("Authenticated user:", claims.claims.sub);
+    // Rate limiting per user
+    const userId = claims.claims.sub as string;
+    const rateLimitResult = rateLimit(userId, rateLimitConfig);
+    if (!rateLimitResult.allowed) {
+      console.warn(`Rate limit exceeded for user: ${userId}`);
+      return createRateLimitResponse(rateLimitResult.resetTime!);
+    }
+
+    console.log("Authenticated user:", userId);
 
     const { trades, holdings, portfolio, startingBalance } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+      console.error("LOVABLE_API_KEY is not configured");
+      return createErrorResponse("Service temporarily unavailable", 503);
     }
+
+    // Sanitize and validate inputs
+    const sanitizedTrades = (trades || []).slice(0, 50).map((t: any) => ({
+      ...t,
+      symbol: sanitizeInput(t.symbol),
+      company_name: sanitizeInput(t.company_name),
+    }));
+
+    const sanitizedHoldings = (holdings || []).slice(0, 50).map((h: any) => ({
+      ...h,
+      symbol: sanitizeInput(h.symbol),
+      sector: sanitizeInput(h.sector),
+    }));
 
     const systemPrompt = `You are a supportive investment coach for teens. Analyze their trading patterns to identify common mistakes and learning opportunities.
 
@@ -78,7 +110,7 @@ Format as JSON array with objects containing:
 - related_lesson: string (topic to learn about)
 - icon: string (emoji representing the pattern)`;
 
-    const portfolioValue = holdings?.reduce((sum: number, h: any) => 
+    const portfolioValue = sanitizedHoldings?.reduce((sum: number, h: any) => 
       sum + (h.shares * h.average_cost), 0) + (portfolio?.cash_balance || 0);
     
     const gainPercent = ((portfolioValue - startingBalance) / startingBalance * 100).toFixed(2);
@@ -91,13 +123,13 @@ PORTFOLIO SUMMARY:
 - Performance: ${gainPercent}%
 - Cash on hand: $${portfolio?.cash_balance?.toFixed(2)}
 
-CURRENT HOLDINGS (${holdings?.length || 0} positions):
-${holdings?.map((h: any) => 
+CURRENT HOLDINGS (${sanitizedHoldings?.length || 0} positions):
+${sanitizedHoldings?.map((h: any) => 
   `- ${h.symbol} (${h.sector || 'Unknown sector'}): ${h.shares} shares @ $${h.average_cost}`
 ).join('\n') || 'No holdings'}
 
-RECENT TRADES (${trades?.length || 0} total):
-${trades?.slice(0, 20).map((t: any) => {
+RECENT TRADES (${sanitizedTrades?.length || 0} total):
+${sanitizedTrades?.slice(0, 20).map((t: any) => {
   const date = new Date(t.created_at);
   return `- ${date.toLocaleDateString()}: ${t.trade_type.toUpperCase()} ${t.shares} ${t.symbol} @ $${t.price}`;
 }).join('\n') || 'No trades'}
@@ -120,9 +152,12 @@ Identify any concerning patterns and provide supportive feedback as a JSON array
     });
 
     if (!response.ok) {
+      if (response.status === 429) {
+        return createErrorResponse("AI service rate limit. Please try again later.", 429);
+      }
       const errorText = await response.text();
       console.error("AI gateway error:", response.status, errorText);
-      throw new Error(`AI gateway error: ${response.status}`);
+      return createErrorResponse("AI service temporarily unavailable", 502);
     }
 
     const data = await response.json();
@@ -140,15 +175,10 @@ Identify any concerning patterns and provide supportive feedback as a JSON array
       content = [];
     }
 
-    return new Response(JSON.stringify({ patterns: content }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return createSuccessResponse({ patterns: content });
 
   } catch (error) {
     console.error("Error in mistake-analysis-ai:", error);
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return createErrorResponse("An error occurred", 500);
   }
 });

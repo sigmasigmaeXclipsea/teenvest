@@ -1,15 +1,22 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { 
+  rateLimitByIP, 
+  RateLimitConfig, 
+  validateSymbol,
+  secureCorsHeaders,
+  createRateLimitResponse,
+  createErrorResponse,
+  createSuccessResponse
+} from "../_shared/security.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// Very strict rate limiting for this service endpoint
+const rateLimitConfig: RateLimitConfig = { windowMs: 60 * 1000, maxRequests: 5 };
 
 const FINNHUB_API_BASE = "https://finnhub-stock-api-5xrj.onrender.com/api/stock";
 
 // Popular tickers to always keep fresh
 const POPULAR_TICKERS = [
-  "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "BRK.B", "JPM", "JNJ",
+  "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "JPM", "JNJ",
   "V", "PG", "UNH", "HD", "MA", "DIS", "PYPL", "ADBE", "NFLX", "CRM",
   "INTC", "VZ", "KO", "PEP", "CSCO", "ABT", "MRK", "CMCSA", "XOM", "CVX"
 ];
@@ -29,7 +36,15 @@ interface StockData {
 
 async function fetchStockData(symbol: string): Promise<StockData | null> {
   try {
-    const res = await fetch(`${FINNHUB_API_BASE}/${encodeURIComponent(symbol)}`);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    
+    const res = await fetch(`${FINNHUB_API_BASE}/${encodeURIComponent(symbol)}`, {
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeout);
+    
     if (!res.ok) {
       console.log(`Failed to fetch ${symbol}: ${res.status}`);
       return null;
@@ -56,7 +71,11 @@ async function fetchStockData(symbol: string): Promise<StockData | null> {
       low: Number(data.quote?.l) || 0,
     };
   } catch (error) {
-    console.error(`Error fetching ${symbol}:`, error);
+    if ((error as Error).name === 'AbortError') {
+      console.log(`Timeout fetching ${symbol}`);
+    } else {
+      console.error(`Error fetching ${symbol}:`, error);
+    }
     return null;
   }
 }
@@ -64,12 +83,36 @@ async function fetchStockData(symbol: string): Promise<StockData | null> {
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: secureCorsHeaders });
+  }
+
+  // Only allow POST
+  if (req.method !== "POST") {
+    return createErrorResponse("Method not allowed", 405);
   }
 
   try {
+    // IP-based rate limiting for this internal service
+    const rateLimitResult = rateLimitByIP(req, rateLimitConfig);
+    if (!rateLimitResult.allowed) {
+      console.warn('Rate limit exceeded for refresh-stock-cache');
+      return createRateLimitResponse(rateLimitResult.resetTime!);
+    }
+
+    // Validate request size
+    const contentLength = req.headers.get('content-length');
+    if (contentLength && parseInt(contentLength) > 5120) {
+      return createErrorResponse('Request too large', 413);
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Missing Supabase credentials');
+      return createErrorResponse('Service configuration error', 503);
+    }
+    
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Parse request body for custom symbols, or use popular tickers
@@ -78,11 +121,20 @@ Deno.serve(async (req) => {
     try {
       const body = await req.json();
       if (body.symbols && Array.isArray(body.symbols)) {
-        symbolsToFetch = [...new Set([...body.symbols, ...POPULAR_TICKERS.slice(0, 10)])];
+        // Validate and limit custom symbols
+        const validSymbols = body.symbols
+          .slice(0, 20) // Limit to 20 custom symbols
+          .map((s: unknown) => validateSymbol(s))
+          .filter((s: string | null): s is string => s !== null);
+        
+        symbolsToFetch = [...new Set([...validSymbols, ...POPULAR_TICKERS.slice(0, 10)])];
       }
     } catch {
       // No body or invalid JSON, use defaults
     }
+
+    // Limit total symbols
+    symbolsToFetch = symbolsToFetch.slice(0, 30);
 
     console.log(`Refreshing cache for ${symbolsToFetch.length} symbols`);
 
@@ -119,7 +171,7 @@ Deno.serve(async (req) => {
         change: stock.change,
         change_percent: stock.changePercent,
         volume: Math.round(stock.volume),
-        market_cap: Math.round(stock.marketCap), // Round to avoid bigint issues
+        market_cap: Math.round(stock.marketCap),
         sector: stock.sector,
         high: stock.high,
         low: stock.low,
@@ -138,20 +190,13 @@ Deno.serve(async (req) => {
       console.log(`Cached ${cacheData.length} stocks`);
     }
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        cached: results.length,
-        symbols: results.map(r => r.symbol)
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return createSuccessResponse({ 
+      success: true, 
+      cached: results.length,
+      symbols: results.map(r => r.symbol)
+    });
   } catch (error) {
     console.error("Edge function error:", error);
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return new Response(
-      JSON.stringify({ error: message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return createErrorResponse("An error occurred", 500);
   }
 });
