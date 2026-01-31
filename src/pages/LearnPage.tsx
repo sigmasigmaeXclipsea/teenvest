@@ -43,6 +43,15 @@ const getDifficulty = (index: number, totalModules: number): { label: string; co
   return { label: 'Advanced', color: 'bg-red-500/10 text-red-600 dark:text-red-400' };
 };
 
+type LearningModule = {
+  id: string;
+  title: string;
+  description: string;
+  duration_minutes: number;
+  category?: string;
+  interactive_blocks?: unknown[];
+};
+
 type LessonCategory = {
   name: 'Foundations' | 'Strategy' | 'Advanced';
   icon: typeof BookOpen;
