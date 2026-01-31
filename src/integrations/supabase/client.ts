@@ -46,7 +46,7 @@ const resolveAuthStorage = (): Storage => {
   }
 };
 
-type SupabaseClientType = ReturnType<typeof createClient>;
+type SupabaseClientType = ReturnType<typeof createClient<Database>>;
 
 const createSupabaseStub = (): SupabaseClientType => {
   const message =
