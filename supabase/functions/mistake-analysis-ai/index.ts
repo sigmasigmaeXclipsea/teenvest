@@ -47,36 +47,19 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const systemPrompt = `You are a supportive investment coach for teens. Analyze their trading patterns to identify common mistakes and learning opportunities.
+    const systemPrompt = `You are a teen investment coach. Identify common trading mistakes in a supportive way. Look for: overconcentration, panic selling, chasing performance, lack of diversification, overtrading, holding losers, FOMO buying.
 
-PATTERNS TO LOOK FOR:
-1. Overconcentration - Too much in one stock/sector
-2. Panic selling - Selling quickly after buying
-3. Chasing performance - Buying after big gains
-4. Lack of diversification - Too few positions
-5. Overtrading - Too many trades in short time
-6. Holding losers too long - Not cutting losses
-7. FOMO buying - Buying at peaks
-8. Ignoring sectors - No sector balance
+Be encouraging, use teen-friendly language, keep explanations under 50 words each. Max 4 insights.
 
-GUIDELINES:
-- Be encouraging, never judgmental
-- Use teen-friendly language
-- Each insight should be actionable
-- Link to learning concepts they can study
-- Keep explanations under 60 words each
-- Use emojis to keep it friendly
-- Max 5 insights per analysis
-
-Format as JSON array with objects containing:
-- id: string (unique identifier)
-- pattern: string (name of pattern)
+Format as JSON array with:
+- id: string
+- pattern: string
 - severity: "low" | "medium" | "high"
-- title: string (teen-friendly headline)
-- explanation: string (why this matters)
-- action: string (what they can do)
-- related_lesson: string (topic to learn about)
-- icon: string (emoji representing the pattern)`;
+- title: string
+- explanation: string
+- action: string
+- related_lesson: string
+- icon: string (emoji)`;
 
     const portfolioValue = holdings?.reduce((sum: number, h: any) => 
       sum + (h.shares * h.average_cost), 0) + (portfolio?.cash_balance || 0);
@@ -111,7 +94,7 @@ Identify any concerning patterns and provide supportive feedback as a JSON array
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-1.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage },

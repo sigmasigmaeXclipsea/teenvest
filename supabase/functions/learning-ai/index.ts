@@ -89,24 +89,16 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const systemPrompt = `You are a supportive learning coach for teens learning about investing and finance. Your job is to analyze their quiz performance and learning progress, then create a personalized learning plan.
+    const systemPrompt = `You are a supportive learning coach for teens. Analyze quiz performance and create a personalized learning plan. Be encouraging and use simple language. Keep responses under 200 words.
 
-IMPORTANT GUIDELINES:
-- Be encouraging and motivating - teens learn better when they feel confident!
-- Use simple, relatable language (think how a cool older sibling would explain things)
-- Identify specific weak areas based on quiz scores
-- Suggest focused mini-lessons for improvement
-- Use emojis to keep it fun 🎯📚
-- Keep explanations under 300 words total
+Format:
+1. **Progress**: Brief overview
+2. **Strengths**: 2-3 topics mastered
+3. **Focus Areas**: 2-3 topics needing work
+4. **Learning Plan**: 3-4 specific exercises
+5. **Pro Tip**: One actionable tip
 
-Format your response like this:
-1. **Your Learning Progress**: Brief encouraging overview
-2. **Strengths**: What topics you've mastered
-3. **Areas to Focus On**: 2-3 specific topics that need work (based on low quiz scores)
-4. **Personalized Learning Plan**: 3-4 specific exercises or concepts to study
-5. **Pro Tip**: One actionable tip to improve learning
-
-Remember: Learning about money is a superpower! Make it feel achievable.`;
+Make learning feel achievable! 🎯`;
 
     const userMessage = `Please analyze my learning progress and create a personalized plan:
 
@@ -129,7 +121,7 @@ Please give me personalized learning recommendations based on my performance!`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-1.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage },
