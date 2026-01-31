@@ -231,7 +231,7 @@ const GlobalCursorEffect = memo(() => {
           width: '500px',
           height: '500px',
           background: 'radial-gradient(ellipse at center, rgba(34, 197, 94, 0.06) 0%, rgba(6, 182, 212, 0.04) 40%, transparent 70%)',
-          filter: 'blur(60px',
+          filter: 'blur(60px)',
           borderRadius: '40% 60% 70% 30% / 40% 50% 60% 50%',
         }}
       />
@@ -243,7 +243,7 @@ const GlobalCursorEffect = memo(() => {
           width: '350px',
           height: '350px',
           background: 'radial-gradient(ellipse at center, rgba(168, 85, 247, 0.07) 0%, rgba(139, 92, 246, 0.05) 40%, transparent 70%)',
-          filter: 'blur(40px',
+          filter: 'blur(40px)',
           borderRadius: '60% 40% 30% 70% / 60% 30% 70% 40%',
         }}
       />
@@ -255,7 +255,7 @@ const GlobalCursorEffect = memo(() => {
           width: '200px',
           height: '200px',
           background: 'radial-gradient(ellipse at center, rgba(34, 197, 94, 0.08) 0%, rgba(168, 85, 247, 0.06) 50%, transparent 70%)',
-          filter: 'blur(25px',
+          filter: 'blur(25px)',
           borderRadius: '30% 70% 70% 30% / 30% 30% 70% 70%',
         }}
       />
