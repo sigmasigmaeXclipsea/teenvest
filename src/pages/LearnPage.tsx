@@ -30,8 +30,83 @@ import SkillTree from '@/components/learn/SkillTree';
 import { usePlacementExam } from '@/hooks/usePlacementExam';
 import { Link } from 'react-router-dom';
 
+<<<<<<< HEAD
 type LearnPageProps = {
   initialTab?: 'learn' | 'insights';
+=======
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1 }
+  }
+};
+
+const item = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0 }
+};
+
+// Difficulty levels for modules
+const getDifficulty = (index: number, totalModules: number): { label: string; color: string } => {
+  const foundationsEnd = Math.floor(totalModules * 0.3); // First 30%
+  const strategyEnd = Math.floor(totalModules * 0.6); // Next 30%
+  
+  if (index < foundationsEnd) return { label: 'Beginner', color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' };
+  if (index < strategyEnd) return { label: 'Intermediate', color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400' };
+  return { label: 'Advanced', color: 'bg-red-500/10 text-red-600 dark:text-red-400' };
+};
+
+type LearningModule = {
+  id: string;
+  title: string;
+  description: string;
+  duration_minutes: number;
+  category?: string;
+  interactive_blocks?: unknown[];
+};
+
+type LessonCategory = {
+  name: 'Foundations' | 'Strategy' | 'Advanced';
+  icon: typeof BookOpen;
+  color: string;
+  description: string;
+  startIndex?: number;
+  endIndex?: number;
+  modules?: LearningModule[];
+};
+
+const fallbackCategories = (totalModules: number): LessonCategory[] => {
+  const foundationsEnd = Math.floor(totalModules * 0.3);
+  const strategyEnd = Math.floor(totalModules * 0.6);
+  
+  return [
+    { 
+      name: 'Foundations', 
+      icon: BookOpen, 
+      startIndex: 0, 
+      endIndex: foundationsEnd, 
+      color: 'from-emerald-500 to-teal-500',
+      description: 'Master the basics of investing'
+    },
+    { 
+      name: 'Strategy', 
+      icon: Target, 
+      startIndex: foundationsEnd, 
+      endIndex: strategyEnd, 
+      color: 'from-amber-500 to-orange-500',
+      description: 'Build your investment toolkit'
+    },
+    { 
+      name: 'Advanced', 
+      icon: Trophy, 
+      startIndex: strategyEnd, 
+      endIndex: totalModules, 
+      color: 'from-purple-500 to-pink-500',
+      description: 'Professional-level strategies'
+    },
+  ];
+>>>>>>> a398009a4477ed85581aae27611f08e45fdfc99c
 };
 
 const LearnPage = ({ initialTab = 'learn' }: LearnPageProps) => {

@@ -44,8 +44,6 @@ export const useLeaderboard = () => {
 
         return entries;
       } catch (error) {
-        console.log('Using fallback leaderboard system');
-        
         // Fallback: Simple query without complex calculations
         const { data: profiles, error: profilesError } = await supabase
           .from('profiles')

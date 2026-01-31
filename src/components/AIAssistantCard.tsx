@@ -254,7 +254,11 @@ const AIAssistantCard = ({
                         : 'bg-secondary'
                     }`}
                   >
-                    {msg.role === 'assistant' ? parseMarkdown(msg.content) : msg.content}
+                    {msg.role === 'assistant' ? (
+                      <span dangerouslySetInnerHTML={{ __html: parseMarkdown(msg.content) }} />
+                    ) : (
+                      msg.content
+                    )}
                   </div>
                 </div>
               ))}

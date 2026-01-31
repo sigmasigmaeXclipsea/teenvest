@@ -162,8 +162,13 @@ const ChartAnnotator = ({ moduleId }: { moduleId: string }) => {
                 <YAxis domain={[Math.max(0, minPrice - 15), maxPrice + 15]} hide />
                 <Customized
                   component={({ width, height, xAxisMap, yAxisMap, data }: any) => {
+<<<<<<< HEAD
                     const xAxis = Object.values(xAxisMap)[0] as { scale: (v: number) => number } | undefined;
                     const yAxis = Object.values(yAxisMap)[0] as { scale: (v: number) => number } | undefined;
+=======
+                    const xAxis = Object.values(xAxisMap as Record<string, any>)[0];
+                    const yAxis = Object.values(yAxisMap as Record<string, any>)[0];
+>>>>>>> a398009a4477ed85581aae27611f08e45fdfc99c
                     if (!xAxis || !yAxis) return null;
                     const xScale = xAxis.scale as (value: number) => number;
                     const yScale = yAxis.scale as (value: number) => number;

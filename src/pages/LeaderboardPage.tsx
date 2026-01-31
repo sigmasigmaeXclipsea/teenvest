@@ -275,7 +275,11 @@ const LeaderboardPage = () => {
 
         {/* Top 3 Cards */}
         <div className="grid gap-4 md:grid-cols-3">
+<<<<<<< HEAD
           {top3.map((entry: any) => (
+=======
+          {top3.map((entry) => (
+>>>>>>> a398009a4477ed85581aae27611f08e45fdfc99c
             <Card key={entry.rank} className={`${getRankBg(entry.rank, entry.is_current_user)} border`}>
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
@@ -348,16 +352,30 @@ const LeaderboardPage = () => {
             <CardDescription>
               {isUserOutsideTop100 && currentUserEntry
                 ? `Top 100 performers + your rank (#${currentUserEntry.rank})`
+<<<<<<< HEAD
                 : mode === 'portfolio' 
                   ? `Top 100 by portfolio value (Page ${currentPage} of ${totalPages || 1})`
                   : `Top 100 by rank (XP) (Page ${currentPage} of ${totalPages || 1})`}
+=======
+                : `Top 100 performers (Page ${currentPage} of ${totalPages || 1})`}
+>>>>>>> a398009a4477ed85581aae27611f08e45fdfc99c
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
+<<<<<<< HEAD
               {currentPageEntries.map((entry: any) => renderEntry(entry))}
               
               {isUserOutsideTop100 && currentUserEntry && currentPage === totalPages && renderEntry(currentUserEntry, true)}
+=======
+              {currentPageEntries.map((entry) => (
+                mode === 'portfolio' ? renderPortfolioEntry(entry) : renderRankEntry(entry)
+              ))}
+              
+              {isUserOutsideTop100 && currentUserEntry && currentPage === totalPages && (
+                mode === 'portfolio' ? renderPortfolioEntry(currentUserEntry, true) : renderRankEntry(currentUserEntry, true)
+              )}
+>>>>>>> a398009a4477ed85581aae27611f08e45fdfc99c
 
               {(!enrichedLeaderboard || enrichedLeaderboard.length === 0) && (
                 <div className="text-center py-8 text-muted-foreground">

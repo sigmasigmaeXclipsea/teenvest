@@ -68,7 +68,11 @@ const keyPointSets = [
   ],
 ];
 
+<<<<<<< HEAD
 const fillTemplate = (template: string, topic: string) => template.replace(/{topic}/g, topic);
+=======
+const fillTemplate = (template: string, topic: string) => template.split('{topic}').join(topic);
+>>>>>>> a398009a4477ed85581aae27611f08e45fdfc99c
 
 const ensureSentence = (text: string) => {
   const trimmed = text.trim();
@@ -707,9 +711,13 @@ const buildMiniQuizBlock = (seed: LessonSeed, orderIndex: number, variant: 'defi
   };
 };
 
-const buildChartBlock = (seed: LessonSeed, orderIndex: number) => {
+const buildChartBlock = (seed: LessonSeed, orderIndex: number): InteractiveBlock => {
   const chartLabel = seed.category === 'Foundations' ? 'Years invested' : 'Risk level';
+<<<<<<< HEAD
   const seriesFormula = (seed.category === 'Foundations' ? 'compound' : 'linear') as 'compound' | 'linear';
+=======
+  const seriesFormula: 'compound' | 'linear' = seed.category === 'Foundations' ? 'compound' : 'linear';
+>>>>>>> a398009a4477ed85581aae27611f08e45fdfc99c
   return {
     type: 'interactive_chart' as const,
     title: `${seed.title} in action`,
@@ -767,7 +775,11 @@ const buildAutoInteractiveBlocks = (seed: LessonSeed, orderIndex: number): Inter
     return [buildChartBlock(seed, orderIndex)];
   }
   if (mod === 4) {
+<<<<<<< HEAD
     if (orderIndex % 10 === 4) {
+=======
+    if ((seed.category as string) === 'Strategy' && orderIndex % 10 === 4) {
+>>>>>>> a398009a4477ed85581aae27611f08e45fdfc99c
       return [buildTradeSimBlock(seed)];
     }
     return [buildMiniQuizBlock(seed, orderIndex, 'application')];

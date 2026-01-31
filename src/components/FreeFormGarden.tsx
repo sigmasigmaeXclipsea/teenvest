@@ -133,8 +133,7 @@ export default function FreeFormGarden({
       if (isValidPlantingPosition(x, y)) {
         onPlantSeed(x, y, selectedSeed);
       } else {
-        // Show feedback that position is too close
-        console.log('Too close to other plants!');
+        // Position too close to other plants - silently ignore
       }
       return;
     }
