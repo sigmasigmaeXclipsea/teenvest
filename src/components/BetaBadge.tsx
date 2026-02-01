@@ -1,27 +1,42 @@
-import React from 'react';
-import { Badge } from '@/components/ui/badge';
+import React, { useState, useEffect } from 'react';
+import { X } from 'lucide-react';
 
-interface BetaBadgeProps {
-  variant?: 'default' | 'subtle' | 'prominent';
-  className?: string;
-}
+export default function BetaBadge() {
+  const [dismissed, setDismissed] = useState(false);
+  const [visible, setVisible] = useState(false);
 
-export default function BetaBadge({ variant = 'subtle', className = '' }: BetaBadgeProps) {
-  const baseClasses = "font-medium";
-  
-  const variants = {
-    default: "bg-yellow-100 text-yellow-800 border-yellow-200",
-    subtle: "bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100 transition-colors",
-    prominent: "bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0 shadow-lg"
+  useEffect(() => {
+    const wasDismissed = localStorage.getItem('teenvest-beta-dismissed');
+    if (!wasDismissed) {
+      setVisible(true);
+    }
+  }, []);
+
+  const handleDismiss = () => {
+    setDismissed(true);
+    localStorage.setItem('teenvest-beta-dismissed', 'true');
+    setTimeout(() => setVisible(false), 300);
   };
 
+  if (!visible) return null;
+
   return (
-    <Badge 
-      variant="outline" 
-      className={`${baseClasses} ${variants[variant]} ${className}`}
+    <div 
+      className={`fixed top-4 right-4 z-50 transition-all duration-300 ${
+        dismissed ? "opacity-0 translate-x-2" : "opacity-100 translate-x-0"
+      }`}
     >
-      <span className="w-2 h-2 bg-yellow-500 rounded-full mr-2 animate-pulse" />
-      BETA
-    </Badge>
+      <div className="flex items-center gap-2 bg-yellow-50 text-yellow-800 border border-yellow-200 px-3 py-1.5 rounded-md shadow-sm text-xs font-medium hover:bg-yellow-100 transition-colors">
+        <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
+        <span>BETA</span>
+        <button
+          onClick={handleDismiss}
+          className="p-0.5 rounded hover:bg-yellow-200 transition-colors"
+          aria-label="Dismiss beta badge"
+        >
+          <X className="w-3 h-3" />
+        </button>
+      </div>
+    </div>
   );
 }
