@@ -29,13 +29,13 @@ export default function FeedbackButton() {
     setIsSubmitting(true);
     
     try {
-      const { error } = await supabase.from('feedback').insert({
+      const { error } = await supabase.from('feedback' as any).insert({
         category: formData.category,
         message: formData.message,
         email: formData.email || null,
         status: 'new',
         created_at: new Date().toISOString()
-      });
+      } as any);
 
       if (error) throw error;
 

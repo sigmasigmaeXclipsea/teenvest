@@ -77,6 +77,36 @@ export type Database = {
         }
         Relationships: []
       }
+      feedback: {
+        Row: {
+          category: string
+          created_at: string
+          email: string | null
+          id: string
+          message: string
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          message: string
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          message?: string
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       garden_state: {
         Row: {
           created_at: string
