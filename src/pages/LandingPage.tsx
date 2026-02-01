@@ -1799,53 +1799,6 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-16 relative">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <p className="text-xs font-semibold uppercase tracking-widest text-accent mb-3">What Teens Say</p>
-            <h2 className="text-3xl md:text-4xl font-black tracking-tight">
-              Real Stories, <span className="gradient-text">Real Growth</span>
-            </h2>
-          </motion.div>
-          
-          <div className="grid md:grid-cols-3 gap-4 max-w-5xl mx-auto">
-            {[
-              { name: 'Alex M.', age: '16', avatar: '🧑‍💻', quote: "I went from knowing nothing about stocks to having a $15K virtual portfolio. TeenVest made it easy!" },
-              { name: 'Sarah K.', age: '17', avatar: '👩‍🎓', quote: "The AI coach is like having a finance teacher 24/7. My parents are impressed!" },
-              { name: 'Jordan T.', age: '15', avatar: '🎮', quote: "Competing on the leaderboard made learning investing actually fun. Top 100 now!" },
-            ].map((testimonial, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1, duration: 0.4 }}
-                className="p-5 rounded-xl bg-card border border-border/50 hover:border-primary/30 transition-colors"
-              >
-                <p className="text-sm text-muted-foreground mb-4">"{testimonial.quote}"</p>
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">{testimonial.avatar}</span>
-                  <div>
-                    <p className="font-bold text-sm">{testimonial.name}</p>
-                    <p className="text-xs text-muted-foreground">Age {testimonial.age}</p>
-                  </div>
-                  <div className="ml-auto flex gap-0.5">
-                    {[...Array(5)].map((_, j) => (
-                      <Star key={j} className="w-3 h-3 fill-warning text-warning" />
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* Final CTA */}
       <section className="py-24 md:py-32 relative">
