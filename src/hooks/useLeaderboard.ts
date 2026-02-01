@@ -24,8 +24,9 @@ export const useLeaderboard = () => {
         }
 
         // Transform the data to match the expected interface
+        // Note: user_id may be null for other users (privacy protection)
         const entries: LeaderboardEntry[] = (data || []).map((entry: {
-          user_id: string;
+          user_id: string | null;
           display_name: string;
           total_value: number;
           gain_percent: number;
@@ -33,7 +34,7 @@ export const useLeaderboard = () => {
           profile_public: boolean;
           is_current_user: boolean;
         }) => ({
-          user_id: entry.user_id,
+          user_id: entry.user_id || '', // Empty string for non-current users (privacy)
           display_name: entry.display_name || 'Anonymous',
           total_value: Number(entry.total_value),
           gain_percent: Number(entry.gain_percent),

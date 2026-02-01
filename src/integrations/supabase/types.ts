@@ -582,7 +582,71 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      profiles_public: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          display_name: string | null
+          profile_public: boolean | null
+          user_id: string | null
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          profile_public?: boolean | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          profile_public?: boolean | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
+      quiz_questions_public: {
+        Row: {
+          created_at: string | null
+          explanation: string | null
+          id: string | null
+          module_id: string | null
+          options: Json | null
+          order_index: number | null
+          question: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          explanation?: string | null
+          id?: string | null
+          module_id?: string | null
+          options?: Json | null
+          order_index?: number | null
+          question?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          explanation?: string | null
+          id?: string | null
+          module_id?: string | null
+          options?: Json | null
+          order_index?: number | null
+          question?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_questions_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "learning_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       add_admin_by_email: { Args: { _email: string }; Returns: Json }
@@ -668,6 +732,10 @@ export type Database = {
       is_owner: { Args: { _user_id: string }; Returns: boolean }
       remove_admin_by_email: { Args: { _email: string }; Returns: Json }
       update_daily_streak: { Args: { p_user_id: string }; Returns: Json }
+      validate_quiz_answer: {
+        Args: { p_question_id: string; p_selected_answer: number }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "user"
