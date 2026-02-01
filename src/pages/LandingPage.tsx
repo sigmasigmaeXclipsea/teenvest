@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useState, useEffect, useMemo, memo, useRef, useCallback, type ReactNode, type ElementType, type FC, type MouseEvent } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { GardenGameScreenshot, BeanstalkGameScreenshot, AIPodcastScreenshot } from '@/components/FeatureScreenshots';
+import BetaBadge from '@/components/BetaBadge';
 
 type DashboardStock = {
   symbol: string;
@@ -1885,6 +1886,8 @@ const LandingPage = () => {
           background-clip: text;
         }
       `}</style>
+      
+      <BetaBadge />
     </div>
   );
 };
