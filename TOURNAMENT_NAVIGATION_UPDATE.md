@@ -1,6 +1,6 @@
 # 🧭 Tournament Navigation Integration
 
-## 📍 Navigation Menu Update
+## 📍 Sidebar Preview Integration
 
 ### Current Navigation Items
 ```tsx
@@ -14,12 +14,12 @@
 - Profile
 ```
 
-### Updated Navigation Items
+### Updated Layout
 ```tsx
-// Add Tournament after Trade:
+// Add Tournament Preview Card after Trade section:
 - Dashboard
 - Trade
-- 🏆 Tournaments  // NEW
+- [TOURNAMENT PREVIEW CARD]  // NEW - Not a nav item
 - Learn
 - Research
 - Garden
@@ -27,40 +27,35 @@
 - Profile
 ```
 
-## 🎨 Navigation Item Design
+## 🎨 Sidebar Preview Card Design
 
-### Tournament Nav Item
-```tsx
-// In navigation component:
-<Link 
-  to="/tournaments"
-  className={cn(
-    "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
-    location.pathname === '/tournaments' 
-      ? "bg-primary text-primary-foreground" 
-      : "hover:bg-secondary"
-  )}
->
-  <Trophy className="w-4 h-4" />
-  <span>Tournaments</span>
-  <Badge variant="secondary" className="ml-auto text-xs">
-    BETA
-  </Badge>
-</Link>
-```
+### Tournament Preview Card
+- **Style**: Gradient purple-to-blue card, not a nav item
+- **Content**: Large "⚔️ VS" symbol with features list
+- **Interaction**: Opens "Coming Soon" modal (not navigation)
+- **Position**: Between Trade and Learn nav items
+- **Size**: Full width of sidebar with margins
 
 ### Features
-- Trophy icon from lucide-react
-- "BETA" badge next to text
-- Active state highlighting
-- Hover effects
-- Responsive design
+- Eye-catching gradient design
+- "COMING SOON" with pulsing indicator
+- Hover effects (scale and shadow)
+- Click opens modal, not navigation
+- No route needed initially
 
-## 🗂️ Route Addition
+## 🗂️ No Route Needed Initially
 
-### Add to App.tsx Routes
+### Modal-Only Approach
+Since the sidebar preview opens a "Coming Soon" modal:
+- No route required initially
+- No navigation state needed
+- Component lives entirely in sidebar
+- Modal handles all interactions
+
+### Future Route Addition
+When tournaments are ready to launch:
 ```tsx
-// Add tournament route:
+// Then add route to App.tsx:
 <Route path="/tournaments" element={
   <ProtectedRoute>
     <TournamentsPage />
@@ -68,62 +63,41 @@
 } />
 ```
 
-### Create Placeholder Component
-```tsx
-// src/pages/TournamentsPage.tsx
-export default function TournamentsPage() {
-  return (
-    <DashboardLayout>
-      <div className="container mx-auto p-6">
-        <div className="text-center py-20">
-          <Trophy className="w-16 h-16 mx-auto mb-4 text-primary" />
-          <h1 className="text-3xl font-bold mb-2">🏆 Tournaments</h1>
-          <p className="text-muted-foreground mb-4">
-            Competitive trading tournaments coming soon!
-          </p>
-          <Badge variant="secondary" className="text-lg px-4 py-2">
-            COMING SOON
-          </Badge>
-        </div>
-      </div>
-    </DashboardLayout>
-  );
-}
-```
-
 ## 📱 Mobile Navigation
 
-### Mobile Menu Update
-- Add tournament item to mobile navigation drawer
-- Same icon and badge styling
-- Ensure proper spacing and scroll
+### Mobile Sidebar
+- Same preview card appears in mobile sidebar
+- Touch-friendly tap target
+- Modal adapts to mobile screen
+- Prevents body scroll when modal open
 
-### Bottom Tab Bar (if applicable)
-- Consider adding tournament tab if using bottom navigation
-- Trophy icon with "Tournaments" label
-- Beta indicator dot
+### Collapsed Sidebar
+- When collapsed, show just "⚔️ VS" text
+- Expand on hover to show full card
+- Maintain click functionality
 
 ## 🎯 Implementation Steps
 
-1. **Update Navigation Component**
-   - Add tournament link with trophy icon
-   - Include beta badge
-   - Test active states
+1. **Create Sidebar Preview Component**
+   - Build gradient card with VS symbol
+   - Add hover animations and effects
+   - Implement click handler for modal
 
-2. **Create Placeholder Page**
-   - Simple "Coming Soon" page
-   - Trophy icon and VS symbol
-   - Beta version notice
+2. **Create Coming Soon Modal**
+   - Design modal with tournament features
+   - Add "Notify Me" functionality
+   - Include close button and backdrop
 
-3. **Add Route**
-   - Add tournament route to App.tsx
-   - Ensure protected route wrapper
-   - Test navigation flow
+3. **Add to DashboardLayout**
+   - Import component
+   - Place between Trade and Learn sections
+   - Test sidebar layout
 
-4. **Mobile Testing**
-   - Verify mobile navigation
-   - Check responsive behavior
-   - Test drawer/scrolling
+4. **Test Interactions**
+   - Verify card hover effects
+   - Test modal open/close
+   - Check mobile responsiveness
+   - Test notify me feature
 
 ## ⚠️ Important Notes
 
