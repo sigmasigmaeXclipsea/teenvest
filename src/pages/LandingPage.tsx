@@ -93,121 +93,43 @@ const InfiniteCarousel = ({ children, direction = 'left', speed = 1 }: { childre
   );
 };
 
-// Global cursor effect - continuously morphing blob that never holds one form
+// Global cursor effect - subtle spotlight glow inspired by buttermax.net
 const GlobalCursorEffect = memo(() => {
-  const blobRef = useRef<HTMLDivElement>(null);
-  const blob2Ref = useRef<HTMLDivElement>(null);
-  const blob3Ref = useRef<HTMLDivElement>(null);
+  const spotlightRef = useRef<HTMLDivElement>(null);
+  const trailRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
     let mouseX = window.innerWidth / 2;
     let mouseY = window.innerHeight / 2;
-    let blobX = mouseX;
-    let blobY = mouseY;
-    let blob2X = mouseX;
-    let blob2Y = mouseY;
-    let blob3X = mouseX;
-    let blob3Y = mouseY;
-    let velocityX = 0;
-    let velocityY = 0;
-    let rotation = 0;
-    let scaleX = 1;
-    let scaleY = 1;
-    let morphTime = 0;
-    let morphTime2 = 0;
-    let morphTime3 = 0;
+    let spotlightX = mouseX;
+    let spotlightY = mouseY;
+    let trailX = mouseX;
+    let trailY = mouseY;
 
     const handleMouseMove = (e: globalThis.MouseEvent) => {
-      const prevX = mouseX;
-      const prevY = mouseY;
       mouseX = e.clientX;
       mouseY = e.clientY;
-      velocityX = mouseX - prevX;
-      velocityY = mouseY - prevY;
     };
 
     let animationId: number;
     const animate = () => {
-      // Main blob - follows cursor with smoother easing
-      const dx = mouseX - blobX;
-      const dy = mouseY - blobY;
-      blobX += dx * 0.06;
-      blobY += dy * 0.06;
+      // Smooth easing for spotlight
+      const dx = mouseX - spotlightX;
+      const dy = mouseY - spotlightY;
+      spotlightX += dx * 0.15;
+      spotlightY += dy * 0.08;
       
-      // Second blob - slower, more flowy follow
-      const dx2 = mouseX - blob2X;
-      const dy2 = mouseY - blob2Y;
-      blob2X += dx2 * 0.03;
-      blob2Y += dy2 * 0.03;
+      // Slower trail for depth
+      const dx2 = mouseX - trailX;
+      const dy2 = mouseY - trailY;
+      trailX += dx2 * 0.04;
+      trailY += dy2 * 0.04;
       
-      // Third blob - slowest, most flowy follow
-      const dx3 = mouseX - blob3X;
-      const dy3 = mouseY - blob3Y;
-      blob3X += dx3 * 0.015;
-      blob3Y += dy3 * 0.015;
-      
-      // Calculate morph based on velocity
-      const speed = Math.sqrt(velocityX * velocityX + velocityY * velocityY);
-      const targetScaleX = 1 + Math.min(speed * 0.02, 0.5);
-      const targetScaleY = 1 - Math.min(speed * 0.01, 0.3);
-      scaleX += (targetScaleX - scaleX) * 0.1;
-      scaleY += (targetScaleY - scaleY) * 0.1;
-      
-      // Rotation based on movement direction
-      if (speed > 1) {
-        const targetRotation = Math.atan2(velocityY, velocityX) * (180 / Math.PI);
-        const diff = targetRotation - rotation;
-        rotation += diff * 0.15;
+      if (spotlightRef.current) {
+        spotlightRef.current.style.transform = `translate(${spotlightX}px, ${spotlightY}px) translate(-50%, -50%)`;
       }
-      
-      // Continuous morphing animation - very smooth and flowy
-      morphTime += 0.002;
-      morphTime2 += 0.0025;
-      morphTime3 += 0.0015;
-      
-      // Generate gentle border-radius values with minimal changes
-      const r1 = 45 + Math.sin(morphTime) * 8;
-      const r2 = 55 + Math.cos(morphTime * 1.1) * 8;
-      const r3 = 55 + Math.sin(morphTime * 0.9) * 8;
-      const r4 = 45 + Math.cos(morphTime * 1.0) * 8;
-      const r5 = 45 + Math.cos(morphTime * 0.95) * 5;
-      const r6 = 45 + Math.sin(morphTime * 1.05) * 5;
-      const r7 = 55 + Math.cos(morphTime * 0.9) * 5;
-      const r8 = 50 + Math.sin(morphTime * 1.1) * 5;
-      
-      const r1_2 = 48 + Math.sin(morphTime2) * 6;
-      const r2_2 = 52 + Math.cos(morphTime2 * 1.0) * 6;
-      const r3_2 = 48 + Math.sin(morphTime2 * 0.9) * 6;
-      const r4_2 = 52 + Math.cos(morphTime2 * 1.1) * 6;
-      const r5_2 = 48 + Math.cos(morphTime2 * 0.95) * 4;
-      const r6_2 = 48 + Math.sin(morphTime2 * 1.05) * 4;
-      const r7_2 = 52 + Math.cos(morphTime2 * 0.9) * 4;
-      const r8_2 = 50 + Math.sin(morphTime2 * 1.1) * 4;
-      
-      const r1_3 = 47 + Math.sin(morphTime3) * 4;
-      const r2_3 = 53 + Math.cos(morphTime3 * 1.0) * 4;
-      const r3_3 = 53 + Math.sin(morphTime3 * 0.9) * 4;
-      const r4_3 = 47 + Math.cos(morphTime3 * 1.1) * 4;
-      const r5_3 = 47 + Math.cos(morphTime3 * 0.95) * 3;
-      const r6_3 = 47 + Math.sin(morphTime3 * 1.05) * 3;
-      const r7_3 = 53 + Math.cos(morphTime3 * 0.9) * 3;
-      const r8_3 = 50 + Math.sin(morphTime3 * 1.1) * 3;
-      
-      // Decay velocity
-      velocityX *= 0.95;
-      velocityY *= 0.95;
-      
-      if (blobRef.current) {
-        blobRef.current.style.transform = `translate(${blobX}px, ${blobY}px) translate(-50%, -50%) rotate(${rotation}deg) scale(${scaleX}, ${scaleY})`;
-        blobRef.current.style.borderRadius = `${r1}% ${r2}% ${r3}% ${r4}% / ${r5}% ${r6}% ${r7}% ${r8}%`;
-      }
-      if (blob2Ref.current) {
-        blob2Ref.current.style.transform = `translate(${blob2X}px, ${blob2Y}px) translate(-50%, -50%) rotate(${rotation * 0.7}deg) scale(${1 + (scaleX - 1) * 0.6}, ${1 + (scaleY - 1) * 0.6})`;
-        blob2Ref.current.style.borderRadius = `${r1_2}% ${r2_2}% ${r3_2}% ${r4_2}% / ${r5_2}% ${r6_2}% ${r7_2}% ${r8_2}%`;
-      }
-      if (blob3Ref.current) {
-        blob3Ref.current.style.transform = `translate(${blob3X}px, ${blob3Y}px) translate(-50%, -50%) rotate(${rotation * 0.4}deg) scale(${1 + (scaleX - 1) * 0.3}, ${1 + (scaleY - 1) * 0.3})`;
-        blob3Ref.current.style.borderRadius = `${r1_3}% ${r2_3}% ${r3_3}% ${r4_3}% / ${r5_3}% ${r6_3}% ${r7_3}% ${r8_3}%`;
+      if (trailRef.current) {
+        trailRef.current.style.transform = `translate(${trailX}px, ${trailY}px) translate(-50%, -50%)`;
       }
       
       animationId = requestAnimationFrame(animate);
@@ -224,40 +146,28 @@ const GlobalCursorEffect = memo(() => {
 
   return (
     <div className="pointer-events-none fixed inset-0 z-30 overflow-hidden">
-      {/* Outer blob - green/cyan, largest, slowest */}
+      {/* Outer trail glow - very subtle, larger */}
       <div
-        ref={blob3Ref}
+        ref={trailRef}
         className="absolute"
         style={{
-          width: '500px',
-          height: '500px',
-          background: 'radial-gradient(ellipse at center, rgba(34, 197, 94, 0.06) 0%, rgba(6, 182, 212, 0.04) 40%, transparent 70%)',
-          filter: 'blur(60px)',
-          borderRadius: '40% 60% 70% 30% / 40% 50% 60% 50%',
+          width: '600px',
+          height: '600px',
+          background: 'radial-gradient(circle at center, rgba(34, 197, 94, 0.03) 0%, rgba(16, 185, 129, 0.015) 30%, transparent 60%)',
+          filter: 'blur(80px)',
+          borderRadius: '50%',
         }}
       />
-      {/* Middle blob - purple */}
+      {/* Main spotlight - subtle glow */}
       <div
-        ref={blob2Ref}
+        ref={spotlightRef}
         className="absolute"
         style={{
-          width: '350px',
-          height: '350px',
-          background: 'radial-gradient(ellipse at center, rgba(168, 85, 247, 0.07) 0%, rgba(139, 92, 246, 0.05) 40%, transparent 70%)',
+          width: '400px',
+          height: '400px',
+          background: 'radial-gradient(circle at center, rgba(34, 197, 94, 0.04) 0%, rgba(16, 185, 129, 0.02) 40%, transparent 70%)',
           filter: 'blur(40px)',
-          borderRadius: '60% 40% 30% 70% / 60% 30% 70% 40%',
-        }}
-      />
-      {/* Inner blob - bright center */}
-      <div
-        ref={blobRef}
-        className="absolute"
-        style={{
-          width: '200px',
-          height: '200px',
-          background: 'radial-gradient(ellipse at center, rgba(34, 197, 94, 0.08) 0%, rgba(168, 85, 247, 0.06) 50%, transparent 70%)',
-          filter: 'blur(25px)',
-          borderRadius: '30% 70% 70% 30% / 30% 30% 70% 70%',
+          borderRadius: '50%',
         }}
       />
     </div>
