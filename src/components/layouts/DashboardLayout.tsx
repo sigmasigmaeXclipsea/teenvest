@@ -25,6 +25,8 @@ import { useAchievementTracker } from '@/hooks/useAchievementTracker';
 import { useOrderProcessor } from '@/hooks/useOrderProcessor';
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import TournamentSidebarPreview from '@/components/TournamentSidebarPreview';
+import FeedbackButton from '@/components/FeedbackButton';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -174,6 +176,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             })}
           </nav>
 
+          {/* Tournament Preview Section */}
+          <TournamentSidebarPreview sidebarExpanded={sidebarExpanded} />
+
           {/* Logout */}
           <div className="p-2 border-t border-border">
             <button
@@ -275,6 +280,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       <main className="lg:pl-16 pt-14 min-h-screen">
         <div className="p-6">{children}</div>
       </main>
+      
+      {/* Feedback Button */}
+      <FeedbackButton />
     </div>
   );
 };

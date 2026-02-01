@@ -1360,46 +1360,55 @@ const LandingPage = () => {
               <Flame className="w-3 h-3 text-warning" />
             </div>
             
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight mb-6 leading-tight relative">
-              {/* Star particles - appear and disappear */}
-              <motion.span
-                className="absolute -left-4 -top-4 text-warning"
-                animate={{ rotate: [0, 360], scale: [0, 1.2, 1, 1.2, 0], opacity: [0, 1, 1, 1, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+            <div className="flex items-start gap-3 mb-6">
+              <h1 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight leading-tight relative">
+                {/* Star particles - appear and disappear */}
+                <motion.span
+                  className="absolute -left-4 -top-4 text-warning"
+                  animate={{ rotate: [0, 360], scale: [0, 1.2, 1, 1.2, 0], opacity: [0, 1, 1, 1, 0] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                >
+                  <Star className="w-5 h-5 fill-warning" />
+                </motion.span>
+                <motion.span
+                  className="absolute -right-4 top-2 text-primary"
+                  animate={{ rotate: [360, 0], scale: [0, 1.3, 1, 1.3, 0], opacity: [0, 1, 1, 1, 0] }}
+                  transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+                >
+                  <Star className="w-4 h-4 fill-primary" />
+                </motion.span>
+                <motion.span
+                  className="absolute -left-2 bottom-0 text-accent"
+                  animate={{ rotate: [0, -360], scale: [0, 1.4, 1, 1.4, 0], opacity: [0, 1, 1, 1, 0] }}
+                  transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
+                >
+                  <Star className="w-3 h-3 fill-current" />
+                </motion.span>
+                <motion.span
+                  className="absolute right-2 -bottom-2 text-warning"
+                  animate={{ rotate: [0, 360], scale: [0, 1.2, 1, 1.2, 0], opacity: [0, 1, 1, 1, 0] }}
+                  transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
+                >
+                  <Star className="w-4 h-4 fill-warning" />
+                </motion.span>
+                <motion.span
+                  className="absolute -right-6 bottom-4 text-green-400"
+                  animate={{ rotate: [180, -180], scale: [0, 1.3, 1, 1.3, 0], opacity: [0, 1, 1, 1, 0] }}
+                  transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut', delay: 3 }}
+                >
+                  <Sparkles className="w-5 h-5" />
+                </motion.span>
+                <span className="block">Build Your</span>
+                <span className="gradient-text">Financial Empire</span>
+              </h1>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, delay: 0.8 }}
               >
-                <Star className="w-5 h-5 fill-warning" />
-              </motion.span>
-              <motion.span
-                className="absolute -right-4 top-2 text-primary"
-                animate={{ rotate: [360, 0], scale: [0, 1.3, 1, 1.3, 0], opacity: [0, 1, 1, 1, 0] }}
-                transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-              >
-                <Star className="w-4 h-4 fill-primary" />
-              </motion.span>
-              <motion.span
-                className="absolute -left-2 bottom-0 text-accent"
-                animate={{ rotate: [0, -360], scale: [0, 1.4, 1, 1.4, 0], opacity: [0, 1, 1, 1, 0] }}
-                transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-              >
-                <Star className="w-3 h-3 fill-current" />
-              </motion.span>
-              <motion.span
-                className="absolute right-2 -bottom-2 text-warning"
-                animate={{ rotate: [0, 360], scale: [0, 1.2, 1, 1.2, 0], opacity: [0, 1, 1, 1, 0] }}
-                transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
-              >
-                <Star className="w-4 h-4 fill-warning" />
-              </motion.span>
-              <motion.span
-                className="absolute -right-6 bottom-4 text-green-400"
-                animate={{ rotate: [180, -180], scale: [0, 1.3, 1, 1.3, 0], opacity: [0, 1, 1, 1, 0] }}
-                transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut', delay: 3 }}
-              >
-                <Sparkles className="w-5 h-5" />
-              </motion.span>
-              <span className="block">Build Your</span>
-              <span className="gradient-text">Financial Empire</span>
-            </h1>
+                <BetaBadge variant="subtle" className="mt-2" />
+              </motion.div>
+            </div>
             
             <p className="text-lg text-muted-foreground mb-6 max-w-lg">
               Master investing with <span className="text-primary font-semibold">zero risk</span>.
