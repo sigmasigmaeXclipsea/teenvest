@@ -1,11 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MessageCircle, X, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
-export default function FeedbackButton() {
-  const [isOpen, setIsOpen] = useState(false);
+interface FeedbackButtonProps {
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  showFloatingButton?: boolean;
+}
+
+export default function FeedbackButton({ 
+  isOpen: controlledOpen, 
+  onOpenChange,
+  showFloatingButton = true 
+}: FeedbackButtonProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     category: 'General Feedback',
@@ -13,6 +23,16 @@ export default function FeedbackButton() {
     email: ''
   });
   const { toast } = useToast();
+
+  // Handle controlled vs uncontrolled state
+  const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setIsOpen = (open: boolean) => {
+    if (onOpenChange) {
+      onOpenChange(open);
+    } else {
+      setInternalOpen(open);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,24 +85,26 @@ export default function FeedbackButton() {
 
   return (
     <>
-      {/* Feedback Button */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-40 
-                   bg-primary text-primary-foreground 
-                   p-4 rounded-full shadow-lg 
-                   hover:shadow-xl transform transition-all 
-                   hover:scale-110 group"
-        aria-label="Send feedback"
-      >
-        <MessageCircle className="w-6 h-6" />
-        <span className="absolute -top-8 right-0 
-                       bg-gray-900 text-white text-xs 
-                       px-2 py-1 rounded opacity-0 
-                       group-hover:opacity-100 transition-opacity whitespace-nowrap">
-          Feedback
-        </span>
-      </button>
+      {/* Floating Feedback Button */}
+      {showFloatingButton && (
+        <button
+          onClick={() => setIsOpen(true)}
+          className="fixed bottom-6 right-6 z-40 
+                     bg-primary text-primary-foreground 
+                     p-4 rounded-full shadow-lg 
+                     hover:shadow-xl transform transition-all 
+                     hover:scale-110 group"
+          aria-label="Send feedback"
+        >
+          <MessageCircle className="w-6 h-6" />
+          <span className="absolute -top-8 right-0 
+                         bg-card text-foreground text-xs 
+                         px-2 py-1 rounded opacity-0 
+                         group-hover:opacity-100 transition-opacity whitespace-nowrap border border-border shadow-md">
+            Feedback
+          </span>
+        </button>
+      )}
       
       {/* Feedback Modal */}
       {isOpen && (

@@ -16,7 +16,8 @@ import {
   User,
   Search,
   Sprout,
-  CreditCard
+  CreditCard,
+  MessageCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
@@ -53,6 +54,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   
   // Track and auto-award achievements
   useAchievementTracker();
@@ -179,6 +181,30 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           {/* Tournament Preview Section */}
           <TournamentSidebarPreview sidebarExpanded={sidebarExpanded} />
 
+          {/* Feedback Section */}
+          <div className="p-2 border-t border-border">
+            <button
+              className={cn(
+                "flex items-center h-11 w-full rounded-xl overflow-hidden",
+                "transition-colors duration-150",
+                "px-3 min-w-[44px]",
+                "text-muted-foreground hover:bg-primary/10 hover:text-primary"
+              )}
+              onClick={() => setFeedbackOpen(true)}
+            >
+              <MessageCircle className="w-5 h-5 shrink-0" />
+              <span 
+                className={cn(
+                  "ml-3 text-sm font-medium whitespace-nowrap overflow-hidden",
+                  "transition-opacity duration-150",
+                  sidebarExpanded ? "opacity-100" : "opacity-0 w-0 ml-0"
+                )}
+              >
+                Feedback
+              </span>
+            </button>
+          </div>
+
           {/* Logout */}
           <div className="p-2 border-t border-border">
             <button
@@ -248,6 +274,17 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <p className="text-sm font-medium text-muted-foreground px-3 mb-2">Account</p>
               <Button
                 variant="ghost"
+                className="w-full justify-start gap-3 text-muted-foreground hover:text-primary transition-all duration-200 hover:scale-[1.02]"
+                onClick={() => {
+                  setFeedbackOpen(true);
+                  setMobileMenuOpen(false);
+                }}
+              >
+                <MessageCircle className="w-5 h-5" />
+                <span>Give Feedback</span>
+              </Button>
+              <Button
+                variant="ghost"
                 className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground transition-all duration-200 hover:scale-[1.02]"
                 onClick={() => {
                   handleLogout();
@@ -281,8 +318,12 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         <div className="p-6">{children}</div>
       </main>
       
-      {/* Feedback Button */}
-      <FeedbackButton />
+      {/* Feedback Modal (controlled by sidebar/mobile menu) */}
+      <FeedbackButton 
+        isOpen={feedbackOpen} 
+        onOpenChange={setFeedbackOpen} 
+        showFloatingButton={false} 
+      />
     </div>
   );
 };
